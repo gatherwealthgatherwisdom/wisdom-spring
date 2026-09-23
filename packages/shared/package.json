@@ -1,0 +1,26 @@
+{
+  "name": "@spring/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src test"
+  },
+  "dependencies": {
+    "ulid": "^2.4.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@spring/eslint-config": "workspace:*",
+    "@spring/tsconfig": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.30.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
