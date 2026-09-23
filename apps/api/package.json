@@ -1,0 +1,43 @@
+{
+  "name": "@spring/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src test",
+    "catalog:sync": "tsx src/scripts/catalog-sync.ts",
+    "catalog:probe": "tsx src/scripts/catalog-probe.ts"
+  },
+  "prisma": {
+    "schema": "../../prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@fastify/rate-limit": "^10.3.0",
+    "@prisma/client": "6.19.3",
+    "@spring/domain": "workspace:*",
+    "@spring/shared": "workspace:*",
+    "argon2": "^0.44.0",
+    "bullmq": "^5.58.5",
+    "dotenv": "^17.2.2",
+    "fastify": "^5.6.0",
+    "ioredis": "^5.7.0",
+    "jose": "^6.1.0",
+    "pino": "^9.9.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@spring/eslint-config": "workspace:*",
+    "@spring/tsconfig": "workspace:*",
+    "@types/node": "^24.3.0",
+    "eslint": "^9.30.0",
+    "prisma": "6.19.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
