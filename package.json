@@ -1,0 +1,29 @@
+{
+  "name": "wisdom-spring",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @spring/api exec prisma generate",
+    "db:migrate": "pnpm --filter @spring/api exec prisma migrate dev",
+    "db:deploy": "pnpm --filter @spring/api exec prisma migrate deploy",
+    "postinstall": "pnpm --filter @spring/api exec prisma generate"
+  },
+  "devDependencies": {
+    "@prisma/client": "6.19.3",
+    "prettier": "^3.6.2",
+    "prisma": "6.19.3",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  }
+}

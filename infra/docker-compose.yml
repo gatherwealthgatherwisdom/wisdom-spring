@@ -1,0 +1,30 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: spring
+      MYSQL_USER: spring
+      MYSQL_PASSWORD: spring
+      MYSQL_ROOT_PASSWORD: spring
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uspring", "-pspring"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - spring-mysql:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  spring-mysql:

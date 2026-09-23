@@ -1,0 +1,14 @@
+node_modules
+dist
+.turbo
+.env
+.env.local
+coverage
+.expo
+apps/mobile/.expo
+apps/admin/dist
+*.tsbuildinfo
+.DS_Store
+prisma/*.db
+apps/api/src/generated
+*.log
