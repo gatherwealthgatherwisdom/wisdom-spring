@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlanTier {
+  FREE
+  PLUS
+  INTERNAL
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum MessageRole {
+  SYSTEM
+  USER
+  ASSISTANT
+}
+
+enum MessageStatus {
+  PENDING
+  STREAMING
+  COMPLETED
+  FAILED
+  CANCELLED
+  SUPERSEDED
+}
+
+enum ModelRegionStatus {
+  HK_SAFE
+  HK_BLOCKED
+  UNKNOWN
+}
+
+enum ModelHealthStatus {
+  HEALTHY
+  DEGRADED
+  DOWN
+}
+
+model User {
+  id            String         @id
+  email         String?        @unique @db.VarChar(320)
+  passwordHash  String?        @db.VarChar(255)
+  status        UserStatus     @default(ACTIVE)
+  role          UserRole       @default(USER)
+  planTier      PlanTier       @default(FREE)
+  locale        String         @default("zh-HK") @db.VarChar(16)
+  displayName   String?        @db.VarChar(80)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+  usage         UsageLedger[]
+  refreshTokens RefreshToken[]
+  oauthAccounts OAuthAccount[]
+}
+
+model OAuthAccount {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  provider  String   @db.VarChar(32)
+  subject   String   @db.VarChar(191)
+  createdAt DateTime @default(now())
+
+  @@unique([provider, subject])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  hashed    String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Conversation {
+  id            String             @id
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  title         String?            @db.VarChar(80)
+  status        ConversationStatus @default(ACTIVE)
+  pinnedAt      DateTime?
+  lastMessageAt DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  messages      Message[]
+
+  @@index([userId, lastMessageAt])
+}
+
+model Message {
+  id               String        @id
+  conversationId   String
+  conversation     Conversation  @relation(fields: [conversationId], references: [id])
+  clientMessageId  String?       @db.VarChar(36)
+  role             MessageRole
+  status           MessageStatus
+  content          String        @db.LongText
+  requestedModel   String?       @db.VarChar(191)
+  servedModel      String?       @db.VarChar(191)
+  fallbackUsed     Boolean       @default(false)
+  promptTokens     Int           @default(0)
+  completionTokens Int           @default(0)
+  costUsdMicros    BigInt        @default(0)
+  latencyMs        Int?
+  errorCode        String?       @db.VarChar(64)
+  parentMessageId  String?       @db.VarChar(26)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([conversationId, clientMessageId])
+  @@index([conversationId, createdAt])
+}
+
+model ClientMessage {
+  userId             String
+  clientMessageId    String      @db.VarChar(36)
+  conversationId     String
+  userMessageId      String
+  assistantMessageId String
+  createdAt          DateTime    @default(now())
+
+  @@id([userId, clientMessageId])
+  @@index([conversationId])
+}
+
+model ModelCatalog {
+  slug            String   @id @db.VarChar(191)
+  name            String   @db.VarChar(255)
+  author          String   @db.VarChar(64)
+  contextLength   Int
+  inputModalities Json
+  pricing         Json
+  isFreeRoute     Boolean  @default(false)
+  raw             Json
+  syncedAt        DateTime
+}
+
+model ModelPoolEntry {
+  slug                     String            @id @db.VarChar(191)
+  enabled                  Boolean           @default(false)
+  regionStatus             ModelRegionStatus @default(UNKNOWN)
+  healthStatus             ModelHealthStatus @default(DOWN)
+  weight                   Int               @default(100)
+  qualityScore             Int               @default(50)
+  minPlanTier              PlanTier          @default(FREE)
+  lastProbeAt              DateTime?
+  lastErrorCode            String?           @db.VarChar(64)
+  success24h               Int               @default(0)
+  fail24h                  Int               @default(0)
+  consecutiveRegionBlocks  Int               @default(0)
+}
+
+model UsageLedger {
+  id               String   @id
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  messageId        String
+  model            String   @db.VarChar(191)
+  promptTokens     Int
+  completionTokens Int
+  costUsdMicros    BigInt
+  occurredAt       DateTime @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([occurredAt])
+  @@index([model, occurredAt])
+}
+
+model FeatureFlag {
+  key       String   @id @db.VarChar(64)
+  enabled   Boolean
+  payload   Json?
+  updatedAt DateTime @updatedAt
+}
+
+model AdminAuditLog {
+  id        String   @id
+  actorId   String
+  action    String   @db.VarChar(64)
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model Announcement {
+  id        String   @id
+  bodyZh    String   @db.VarChar(2000)
+  bodyEn    String   @db.VarChar(2000)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
