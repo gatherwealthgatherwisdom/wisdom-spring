@@ -1,5 +1,5 @@
 import { ApiError } from "@spring/api-client";
-import type { MessageView } from "@spring/shared";
+import { ErrorCode, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
@@ -26,8 +26,11 @@ export function ChatScreen({ navigation, route }: Props) {
   const conversationId = route.params?.conversationId;
   const mode = route.params?.mode ?? "chat";
   const seeded = useRef(false);
+  const account = usePrefs((state) => state.user);
   const [draft, setDraft] = useState("");
   const [banner, setBanner] = useState<string | null>(null);
+  const [guestBlocked, setGuestBlocked] = useState(false);
+  const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
   const stream = useStream();
   const history = useQuery({
     queryKey: ["messages", conversationId],
@@ -43,11 +46,22 @@ export function ChatScreen({ navigation, route }: Props) {
       ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
       : null;
 
+  async function refreshAccount() {
+    const me = await spring.me();
+    usePrefs.getState().setUser(me.user);
+    queryClient.setQueryData(["me"], me);
+  }
+
+  function noteGuest(code: string | undefined) {
+    setGuestBlocked(code === ErrorCode.QUOTA_GUEST);
+    void refreshAccount().catch(() => undefined);
+  }
+
   async function send(content: string) {
     const trimmed = content.trim();
     if (!trimmed || stream.status === "streaming") return;
-    setDraft("");
     setBanner(null);
+    setGuestBlocked(false);
     const controller = new AbortController();
     stream.begin(controller);
     try {
@@ -69,6 +83,7 @@ export function ChatScreen({ navigation, route }: Props) {
         },
         {
           onMeta: (event) => {
+            setDraft("");
             stream.meta(event.conversationId, event.messageId, event.requestedModel);
             if (!conversationId) navigation.setParams({ conversationId: event.conversationId });
           },
@@ -77,11 +92,12 @@ export function ChatScreen({ navigation, route }: Props) {
             stream.done(event.servedModel, event.fallbackUsed);
             void queryClient.invalidateQueries({ queryKey: ["messages"] });
             void queryClient.invalidateQueries({ queryKey: ["conversations"] });
-            void queryClient.invalidateQueries({ queryKey: ["me"] });
+            void refreshAccount().catch(() => undefined);
           },
           onError: (event) => {
             stream.fail(event.message);
             setBanner(event.message);
+            noteGuest(event.code);
           },
         },
         controller.signal,
@@ -91,6 +107,7 @@ export function ChatScreen({ navigation, route }: Props) {
       const message = error instanceof ApiError ? error.message : text.placeholder;
       stream.fail(message);
       setBanner(message);
+      noteGuest(error instanceof ApiError ? error.code : undefined);
     }
   }
 
@@ -108,16 +125,22 @@ export function ChatScreen({ navigation, route }: Props) {
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
             void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+            void refreshAccount().catch(() => undefined);
           },
           onError: (event) => {
             stream.fail(event.message);
             setBanner(event.message);
+            noteGuest(event.code);
           },
         },
         controller.signal,
       );
     } catch (error) {
-      if (!controller.signal.aborted) setBanner(error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。");
+      if (controller.signal.aborted) return;
+      const message = error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。";
+      stream.fail(message);
+      setBanner(message);
+      noteGuest(error instanceof ApiError ? error.code : undefined);
     }
   }
 
@@ -143,7 +166,12 @@ export function ChatScreen({ navigation, route }: Props) {
           <Text style={{ color: colors.ink, fontSize: 18 }}>{text.app}</Text>
           <View style={{ width: 48 }} />
         </View>
-        <QuotaBanner message={banner} />
+        {trialLeft !== null ? <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.trialLeft(trialLeft)}</Text> : null}
+        <QuotaBanner
+          message={banner}
+          action={guestBlocked ? text.completeRegistration : null}
+          onAction={() => navigation.navigate("Register")}
+        />
         <View style={{ flex: 1 }}>
           <MessageList
             messages={messages}
@@ -170,7 +198,10 @@ export function ChatScreen({ navigation, route }: Props) {
           onChange={setDraft}
           onSend={() => void send(draft)}
           onStop={stop}
-          onAttach={() => setBanner(text.attachLater)}
+          onAttach={() => {
+            setGuestBlocked(false);
+            setBanner(text.attachLater);
+          }}
           onMic={() => {
             const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
             if (!heard) setBanner(text.voiceMissing);

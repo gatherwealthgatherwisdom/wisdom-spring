@@ -1,6 +1,7 @@
 import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthScreen } from "../features/auth/AuthScreen";
+import { CompleteRegistrationScreen } from "../features/auth/CompleteRegistrationScreen";
 import { ChatScreen } from "../features/chat/ChatScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { usePalette } from "../shared/theme";
@@ -33,6 +34,7 @@ export function RootNavigation() {
           <>
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="Register" component={CompleteRegistrationScreen} />
           </>
         ) : (
           <Stack.Screen name="Auth" component={AuthScreen} />

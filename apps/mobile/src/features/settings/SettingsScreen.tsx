@@ -1,7 +1,10 @@
 import { Locale } from "@spring/shared";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
@@ -15,9 +18,14 @@ export function SettingsScreen() {
   const setAppearance = usePrefs((state) => state.setAppearance);
   const setLocale = usePrefs((state) => state.setLocale);
   const clear = usePrefs((state) => state.clear);
+  const navigation = useNavigation<NavigationProp<MainTabParamList>>();
+  const sessionUser = usePrefs((state) => state.user);
   const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me() });
+  const user = me.data?.user ?? sessionUser;
   const quota = me.data?.quota;
   const remaining = quota ? Math.max(0, quota.dailyLimit - quota.dailyUsed) : null;
+  const trialRemaining = user && user.registered === false ? Math.max(0, user.guestLimit - user.guestUses) : null;
+  const guest = trialRemaining !== null;
 
   async function chooseLocale(next: "zh-HK" | "en") {
     setLocale(next);
@@ -29,8 +37,21 @@ export function SettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
       <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino", marginBottom: 8 }}>{text.mine}</Text>
       <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginBottom: 16 }} />
-      <Text style={{ color: colors.muted }}>{text.quota}</Text>
-      <Text style={{ color: colors.ink, fontSize: 28, marginBottom: 18 }}>{remaining ?? "—"}</Text>
+      {guest ? (
+        <>
+          <Text style={{ color: colors.muted }}>{text.trialTitle}</Text>
+          <Text style={{ color: colors.ink, fontSize: 28, marginBottom: 8 }}>{text.trialLeft(trialRemaining ?? 0)}</Text>
+          {user?.phone ? <Text style={{ color: colors.muted, marginBottom: 8 }}>{user.phone}</Text> : null}
+          <Pressable onPress={() => openRegister(navigation)} style={{ marginBottom: 18 }}>
+            <Text style={{ color: colors.violet }}>{text.completeRegistration}</Text>
+          </Pressable>
+        </>
+      ) : (
+        <>
+          <Text style={{ color: colors.muted }}>{text.quota}</Text>
+          <Text style={{ color: colors.ink, fontSize: 28, marginBottom: 18 }}>{remaining ?? "—"}</Text>
+        </>
+      )}
       <Text style={{ color: colors.ink, marginBottom: 8 }}>{text.language}</Text>
       <Row colors={colors} labels={[["zh-HK", "繁中"], ["en", "English"]]} selected={locale} onPress={(value) => void chooseLocale(value as "zh-HK" | "en")} />
       <Text style={{ color: colors.ink, marginVertical: 8 }}>{text.appearance}</Text>

@@ -33,6 +33,7 @@ export type AppStackParamList = {
   Auth: undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Chat: ChatParams | undefined;
+  Register: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -40,6 +41,11 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function openChat(navigation: NavigationProp<MainTabParamList>, params: ChatParams): void {
   const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   parent?.navigate("Chat", params);
+}
+
+export function openRegister(navigation: NavigationProp<MainTabParamList>): void {
+  const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
+  parent?.navigate("Register");
 }
 
 export function MainTabs() {
