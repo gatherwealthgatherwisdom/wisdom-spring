@@ -104,6 +104,11 @@ model Conversation {
   user          User               @relation(fields: [userId], references: [id])
   title         String?            @db.VarChar(80)
   status        ConversationStatus @default(ACTIVE)
+  mode          String             @default("chat") @db.VarChar(16)
+  templateId    String?            @db.VarChar(32)
+  sourceLang    String?            @db.VarChar(16)
+  targetLang    String?            @db.VarChar(16)
+  imageStyle    String?            @db.VarChar(32)
   pinnedAt      DateTime?
   lastMessageAt DateTime           @default(now())
   createdAt     DateTime           @default(now())
@@ -154,8 +159,9 @@ model ModelCatalog {
   name            String   @db.VarChar(255)
   author          String   @db.VarChar(64)
   contextLength   Int
-  inputModalities Json
-  pricing         Json
+  inputModalities  Json
+  outputModalities Json?
+  pricing          Json
   isFreeRoute     Boolean  @default(false)
   raw             Json
   syncedAt        DateTime

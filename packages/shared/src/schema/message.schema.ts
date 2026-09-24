@@ -3,6 +3,7 @@ import { ErrorCode } from "../enums/error-code";
 import { MessageRole } from "../enums/message-role";
 import { MessageStatus } from "../enums/message-status";
 import { LIMITS } from "../constants/limits";
+import { ConversationModeSchema } from "./conversation.schema";
 import { PaginationQuerySchema } from "./pagination.schema";
 
 export const SendMessageRequestSchema = z.object({
@@ -13,6 +14,15 @@ export const SendMessageRequestSchema = z.object({
     .max(LIMITS.attachmentsMax)
     .default([]),
   clientMessageId: z.string().uuid(),
+  mode: ConversationModeSchema.optional(),
+  templateId: z.string().max(32).optional(),
+  sourceLang: z.string().max(16).optional(),
+  targetLang: z.string().max(16).optional(),
+  imageStyle: z.string().max(32).optional(),
+});
+
+export const CapabilitiesSchema = z.object({
+  image: z.boolean(),
 });
 
 export const MessageViewSchema = z.object({

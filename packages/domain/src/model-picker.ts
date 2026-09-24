@@ -23,12 +23,14 @@ export interface PickerCandidate {
   contextLength: number;
   supportsText: boolean;
   supportsVision: boolean;
+  supportsImageOutput: boolean;
 }
 
 export interface PickInput {
   planTier: PlanTier;
   capability: ModelCapability;
   excludeSlugs: string[];
+  requireImageOutput?: boolean;
 }
 
 export interface ModelPicker {

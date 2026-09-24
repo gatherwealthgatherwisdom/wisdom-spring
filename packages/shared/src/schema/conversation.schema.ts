@@ -1,11 +1,19 @@
 import { z } from "zod";
+import { CONVERSATION_MODES } from "../constants/tools";
 import { ConversationStatus } from "../enums/conversation-status";
 import { PaginationQuerySchema } from "./pagination.schema";
+
+export const ConversationModeSchema = z.enum(CONVERSATION_MODES);
 
 export const ConversationViewSchema = z.object({
   id: z.string().ulid(),
   title: z.string().nullable(),
   status: z.nativeEnum(ConversationStatus),
+  mode: ConversationModeSchema,
+  templateId: z.string().nullable(),
+  sourceLang: z.string().nullable(),
+  targetLang: z.string().nullable(),
+  imageStyle: z.string().nullable(),
   pinnedAt: z.string().nullable(),
   lastMessageAt: z.string(),
   createdAt: z.string(),
