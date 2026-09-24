@@ -24,6 +24,23 @@ export const copy = {
     archive: "封存",
     remove: "刪除",
     inbox: "對話",
+    write: "寫作",
+    translate: "翻譯",
+    image: "圖像",
+    mine: "我的",
+    attachLater: "檔案同圖片上傳下一輪先接。",
+    voiceMissing: "呢部機暫時未開語音輸入。",
+    listen: "朗讀",
+    noImageModel: "暫時未有可用圖像模型。",
+    original: "原文",
+    translated: "譯文",
+    start: "開始",
+    cards: {
+      email: "寫一封電郵",
+      translate: "翻譯呢段",
+      image: "畫一幅",
+      resume: "繼續上次",
+    },
   },
   en: {
     app: "Wisdom Spring",
@@ -50,8 +67,25 @@ export const copy = {
     archive: "Archive",
     remove: "Delete",
     inbox: "Chats",
+    write: "Write",
+    translate: "Translate",
+    image: "Image",
+    mine: "Me",
+    attachLater: "Files and photo upload come later.",
+    voiceMissing: "Voice input is not available on this device.",
+    listen: "Read aloud",
+    noImageModel: "No image model is available yet.",
+    original: "Original",
+    translated: "Translation",
+    start: "Start",
+    cards: {
+      email: "Write an email",
+      translate: "Translate this",
+      image: "Draw a picture",
+      resume: "Continue the last chat",
+    },
   },
 } as const;
 
 export type LocaleKey = keyof typeof copy;
-export type Copy = (typeof copy)["zh-HK"];
+export type Copy = (typeof copy)[LocaleKey];

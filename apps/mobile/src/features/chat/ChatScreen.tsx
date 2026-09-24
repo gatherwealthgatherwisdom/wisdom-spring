@@ -1,7 +1,7 @@
 import { ApiError } from "@spring/api-client";
 import type { MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -9,6 +9,7 @@ import { createClientMessageId, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useStream } from "../../shared/lib/stream";
+import { speak, startDictation } from "../../shared/lib/voice";
 import { useColors } from "../../shared/theme";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { Composer } from "./Composer";
@@ -23,6 +24,8 @@ export function ChatScreen({ navigation, route }: Props) {
   const text = copy[locale];
   const queryClient = useQueryClient();
   const conversationId = route.params?.conversationId;
+  const mode = route.params?.mode ?? "chat";
+  const seeded = useRef(false);
   const [draft, setDraft] = useState("");
   const [banner, setBanner] = useState<string | null>(null);
   const stream = useStream();
@@ -48,8 +51,22 @@ export function ChatScreen({ navigation, route }: Props) {
     const controller = new AbortController();
     stream.begin(controller);
     try {
+      const params = route.params;
       await spring.sendMessage(
-        { content: trimmed, attachments: [], clientMessageId: createClientMessageId(), ...(conversationId ? { conversationId } : {}) },
+        {
+          content: trimmed,
+          attachments: [],
+          clientMessageId: createClientMessageId(),
+          ...(conversationId
+            ? { conversationId }
+            : {
+                ...(params?.mode ? { mode: params.mode } : {}),
+                ...(params?.templateId ? { templateId: params.templateId } : {}),
+                ...(params?.sourceLang ? { sourceLang: params.sourceLang } : {}),
+                ...(params?.targetLang ? { targetLang: params.targetLang } : {}),
+                ...(params?.imageStyle ? { imageStyle: params.imageStyle } : {}),
+              }),
+        },
         {
           onMeta: (event) => {
             stream.meta(event.conversationId, event.messageId, event.requestedModel);
@@ -104,6 +121,13 @@ export function ChatScreen({ navigation, route }: Props) {
     }
   }
 
+  useEffect(() => {
+    const seed = route.params?.seed;
+    if (!seed || seeded.current || conversationId) return;
+    seeded.current = true;
+    void send(seed);
+  }, [conversationId, route.params?.seed]);
+
   function stop() {
     const messageId = stream.messageId;
     stream.controller?.abort();
@@ -115,7 +139,7 @@ export function ChatScreen({ navigation, route }: Props) {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView style={{ flex: 1, padding: 16 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-          <Pressable onPress={() => navigation.goBack()}><Text style={{ color: colors.violet }}>{text.inbox}</Text></Pressable>
+          <Pressable onPress={() => navigation.goBack()}><Text style={{ color: colors.ink }}>{text.inbox}</Text></Pressable>
           <Text style={{ color: colors.ink, fontSize: 18 }}>{text.app}</Text>
           <View style={{ width: 48 }} />
         </View>
@@ -124,10 +148,18 @@ export function ChatScreen({ navigation, route }: Props) {
           <MessageList
             messages={messages}
             draft={streamingHere || showDraft ? showDraft : null}
-            locale={locale}
+            text={text}
+            mode={mode}
             regenerateLabel={text.regenerate}
-            onPickPrompt={(prompt) => void send(prompt)}
+            listenLabel={text.listen}
+            onCard={(card) => {
+              if (card === "email") navigation.navigate("Chat", { mode: "write", templateId: "email" });
+              if (card === "translate") navigation.navigate("Main", { screen: "Translate" });
+              if (card === "image") navigation.navigate("Main", { screen: "Image" });
+              if (card === "resume") navigation.goBack();
+            }}
             onRegenerate={(id) => void regenerate(id)}
+            onListen={(content) => speak(content, locale)}
           />
         </View>
         <Composer
@@ -138,6 +170,11 @@ export function ChatScreen({ navigation, route }: Props) {
           onChange={setDraft}
           onSend={() => void send(draft)}
           onStop={stop}
+          onAttach={() => setBanner(text.attachLater)}
+          onMic={() => {
+            const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
+            if (!heard) setBanner(text.voiceMissing);
+          }}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

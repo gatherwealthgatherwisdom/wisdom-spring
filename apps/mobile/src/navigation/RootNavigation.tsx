@@ -2,18 +2,11 @@ import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AuthScreen } from "../features/auth/AuthScreen";
 import { ChatScreen } from "../features/chat/ChatScreen";
-import { InboxScreen } from "../features/inbox/InboxScreen";
-import { SettingsScreen } from "../features/settings/SettingsScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { usePalette } from "../shared/theme";
+import { MainTabs, type AppStackParamList } from "./MainTabs";
 
-
-export type AppStackParamList = {
-  Auth: undefined;
-  Inbox: undefined;
-  Chat: { conversationId?: string };
-  Settings: undefined;
-};
+export type { AppStackParamList, ChatParams } from "./MainTabs";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -29,7 +22,7 @@ export function RootNavigation() {
       background: palette.bg,
       card: palette.card,
       text: palette.ink,
-      primary: palette.violet,
+      primary: palette.gold,
       border: palette.line,
     },
   };
@@ -38,9 +31,8 @@ export function RootNavigation() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {token ? (
           <>
-            <Stack.Screen name="Inbox" component={InboxScreen} />
+            <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         ) : (
           <Stack.Screen name="Auth" component={AuthScreen} />

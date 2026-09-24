@@ -1,17 +1,13 @@
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Locale } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 
-type Props = NativeStackScreenProps<AppStackParamList, "Settings">;
-
-export function SettingsScreen({ navigation }: Props) {
+export function SettingsScreen() {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -31,8 +27,8 @@ export function SettingsScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-      <Pressable onPress={() => navigation.goBack()}><Text style={{ color: colors.violet }}>{text.inbox}</Text></Pressable>
-      <Text style={{ fontSize: 32, color: colors.ink, marginVertical: 12 }}>{text.settings}</Text>
+      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino", marginBottom: 8 }}>{text.mine}</Text>
+      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginBottom: 16 }} />
       <Text style={{ color: colors.muted }}>{text.quota}</Text>
       <Text style={{ color: colors.ink, fontSize: 28, marginBottom: 18 }}>{remaining ?? "—"}</Text>
       <Text style={{ color: colors.ink, marginBottom: 8 }}>{text.language}</Text>

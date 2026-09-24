@@ -9,6 +9,8 @@ export function Composer({
   onChange,
   onSend,
   onStop,
+  onAttach,
+  onMic,
 }: {
   value: string;
   placeholder: string;
@@ -17,10 +19,15 @@ export function Composer({
   onChange: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
+  onAttach: () => void;
+  onMic: () => void;
 }) {
   const colors = useColors();
   return (
     <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end", paddingTop: 8 }}>
+      <Pressable onPress={onAttach} style={{ width: 36, height: 46, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: colors.ink, fontSize: 22 }}>+</Text>
+      </Pressable>
       <TextInput
         value={value}
         onChangeText={onChange}
@@ -46,9 +53,14 @@ export function Composer({
           <Text style={{ color: colors.bg }}>{stopLabel}</Text>
         </Pressable>
       ) : (
-        <Pressable onPress={onSend} style={{ backgroundColor: colors.violet, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 }}>
-          <Text style={{ color: "#F6F1E8" }}>↑</Text>
-        </Pressable>
+        <>
+          <Pressable onPress={onMic} style={{ width: 36, height: 46, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: colors.ink }}>♪</Text>
+          </Pressable>
+          <Pressable onPress={onSend} style={{ backgroundColor: colors.ink, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 }}>
+            <Text style={{ color: colors.bg }}>↑</Text>
+          </Pressable>
+        </>
       )}
     </View>
   );
