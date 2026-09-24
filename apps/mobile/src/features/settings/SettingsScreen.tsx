@@ -4,7 +4,7 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { openRegister, type MainTabParamList } from "../../navigation/MainTabs";
+import { openAuth, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
@@ -19,8 +19,9 @@ export function SettingsScreen() {
   const setLocale = usePrefs((state) => state.setLocale);
   const clear = usePrefs((state) => state.clear);
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
+  const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const sessionUser = usePrefs((state) => state.user);
-  const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me() });
+  const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
   const user = me.data?.user ?? sessionUser;
   const quota = me.data?.quota;
   const remaining = quota ? Math.max(0, quota.dailyLimit - quota.dailyUsed) : null;
@@ -29,6 +30,7 @@ export function SettingsScreen() {
 
   async function chooseLocale(next: "zh-HK" | "en") {
     setLocale(next);
+    if (!usePrefs.getState().accessToken) return;
     const updated = await spring.updateMe({ locale: next === "en" ? Locale.EN : Locale.ZH_HK });
     usePrefs.getState().setUser(updated.user);
   }
@@ -37,7 +39,14 @@ export function SettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
       <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino", marginBottom: 8 }}>{text.mine}</Text>
       <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginBottom: 16 }} />
-      {guest ? (
+      {!signedIn ? (
+        <>
+          <Text style={{ color: colors.ink, marginBottom: 16 }}>{text.signInHint}</Text>
+          <Pressable onPress={() => openAuth(navigation)} style={{ backgroundColor: colors.violet, borderRadius: 16, padding: 14, alignItems: "center", marginBottom: 18 }}>
+            <Text style={{ color: "#F6F1E8" }}>{text.login}</Text>
+          </Pressable>
+        </>
+      ) : guest ? (
         <>
           <Text style={{ color: colors.muted }}>{text.trialTitle}</Text>
           <Text style={{ color: colors.ink, fontSize: 28, marginBottom: 8 }}>{text.trialLeft(trialRemaining ?? 0)}</Text>
@@ -61,15 +70,19 @@ export function SettingsScreen() {
         selected={appearance}
         onPress={(value) => setAppearance(value as Appearance)}
       />
-      <Pressable onPress={() => { void spring.logout(true).catch(() => undefined); clear(); }} style={{ marginTop: 28 }}>
-        <Text style={{ color: colors.violet }}>{text.logout}</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => { void spring.deleteMe().then(() => clear()).catch(() => undefined); }}
-        style={{ marginTop: 16 }}
-      >
-        <Text style={{ color: colors.danger }}>{text.deleteAccount}</Text>
-      </Pressable>
+      {signedIn ? (
+        <>
+          <Pressable onPress={() => { void spring.logout(true).catch(() => undefined); clear(); }} style={{ marginTop: 28 }}>
+            <Text style={{ color: colors.violet }}>{text.logout}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => { void spring.deleteMe().then(() => clear()).catch(() => undefined); }}
+            style={{ marginTop: 16 }}
+          >
+            <Text style={{ color: colors.danger }}>{text.deleteAccount}</Text>
+          </Pressable>
+        </>
+      ) : null}
     </SafeAreaView>
   );
 }

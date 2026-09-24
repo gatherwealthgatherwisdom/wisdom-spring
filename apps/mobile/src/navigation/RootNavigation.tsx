@@ -12,7 +12,6 @@ export type { AppStackParamList, ChatParams } from "./MainTabs";
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export function RootNavigation() {
-  const token = usePrefs((state) => state.accessToken);
   const ready = usePrefs((state) => state.ready);
   const palette = usePalette();
   if (!ready) return null;
@@ -29,16 +28,11 @@ export function RootNavigation() {
   };
   return (
     <NavigationContainer theme={theme}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {token ? (
-          <>
-            <Stack.Screen name="Main" component={MainTabs} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="Register" component={CompleteRegistrationScreen} />
-          </>
-        ) : (
-          <Stack.Screen name="Auth" component={AuthScreen} />
-        )}
+      <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Main" component={MainTabs} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="Register" component={CompleteRegistrationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -48,6 +48,11 @@ export function openRegister(navigation: NavigationProp<MainTabParamList>): void
   parent?.navigate("Register");
 }
 
+export function openAuth(navigation: NavigationProp<MainTabParamList>): void {
+  const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
+  parent?.navigate("Auth");
+}
+
 export function MainTabs() {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);

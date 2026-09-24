@@ -21,8 +21,13 @@ export function InboxScreen({ navigation }: Props) {
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const [q, setQ] = useState("");
+  const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const queryClient = useQueryClient();
-  const list = useQuery({ queryKey: ["conversations", q], queryFn: () => spring.conversations(q ? { q } : undefined) });
+  const list = useQuery({
+    queryKey: ["conversations", q],
+    queryFn: () => spring.conversations(q ? { q } : undefined),
+    enabled: signedIn,
+  });
   const notes = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
 
   return (

@@ -3,12 +3,16 @@ import { normalizeHkMobile } from "@spring/shared";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 
-export function AuthScreen() {
+type Props = NativeStackScreenProps<AppStackParamList, "Auth">;
+
+export function AuthScreen({ navigation }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -46,6 +50,7 @@ export function AuthScreen() {
     try {
       const session = await spring.verifyPhone({ phone, code: code.trim() });
       setSession(session);
+      if (navigation.canGoBack()) navigation.goBack();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "登入資料不正確。");
     } finally {
@@ -56,6 +61,11 @@ export function AuthScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center" }}>
       <View style={{ width: "100%", maxWidth: 420, alignSelf: "center", padding: 24 }}>
+      {navigation.canGoBack() ? (
+        <Pressable onPress={() => navigation.goBack()} style={{ marginBottom: 16 }}>
+          <Text style={{ color: colors.ink }}>{text.back}</Text>
+        </Pressable>
+      ) : null}
       <Text style={{ fontSize: 48, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
       <Text style={{ color: colors.gold, marginBottom: 8 }}>{text.splash}</Text>
       <Text style={{ color: colors.muted, marginBottom: 24 }}>中盈紫達集團</Text>

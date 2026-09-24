@@ -26,6 +26,8 @@ export function ChatScreen({ navigation, route }: Props) {
   const conversationId = route.params?.conversationId;
   const mode = route.params?.mode ?? "chat";
   const seeded = useRef(false);
+  const token = usePrefs((state) => state.accessToken);
+  const askedToSignIn = useRef(false);
   const account = usePrefs((state) => state.user);
   const [draft, setDraft] = useState("");
   const [banner, setBanner] = useState<string | null>(null);
@@ -60,6 +62,10 @@ export function ChatScreen({ navigation, route }: Props) {
   async function send(content: string) {
     const trimmed = content.trim();
     if (!trimmed || stream.status === "streaming") return;
+    if (!usePrefs.getState().accessToken) {
+      navigation.navigate("Auth");
+      return;
+    }
     setBanner(null);
     setGuestBlocked(false);
     const controller = new AbortController();
@@ -113,6 +119,10 @@ export function ChatScreen({ navigation, route }: Props) {
 
   async function regenerate(messageId: string) {
     if (stream.status === "streaming") return;
+    if (!usePrefs.getState().accessToken) {
+      navigation.navigate("Auth");
+      return;
+    }
     const controller = new AbortController();
     stream.begin(controller);
     if (conversationId) stream.meta(conversationId, messageId, "");
@@ -147,9 +157,16 @@ export function ChatScreen({ navigation, route }: Props) {
   useEffect(() => {
     const seed = route.params?.seed;
     if (!seed || seeded.current || conversationId) return;
+    if (!token) {
+      if (!askedToSignIn.current) {
+        askedToSignIn.current = true;
+        navigation.navigate("Auth");
+      }
+      return;
+    }
     seeded.current = true;
     void send(seed);
-  }, [conversationId, route.params?.seed]);
+  }, [conversationId, route.params?.seed, token, navigation]);
 
   function stop() {
     const messageId = stream.messageId;

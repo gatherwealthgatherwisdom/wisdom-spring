@@ -18,7 +18,8 @@ export function ImageScreen({ navigation }: Props) {
   const text = copy[locale];
   const [styleId, setStyleId] = useState(IMAGE_STYLES[0]?.id ?? "ink");
   const [prompt, setPrompt] = useState("");
-  const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities() });
+  const signedIn = usePrefs((state) => Boolean(state.accessToken));
+  const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
       <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino" }}>{text.image}</Text>
