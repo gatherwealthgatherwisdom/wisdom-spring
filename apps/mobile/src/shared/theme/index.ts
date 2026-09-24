@@ -6,6 +6,8 @@ export interface Palette {
   bg: string;
   ink: string;
   card: string;
+  accent: string;
+  onAccent: string;
   violet: string;
   gold: string;
   line: string;
@@ -16,28 +18,32 @@ export interface Palette {
 }
 
 export const light: Palette = {
-  bg: "#F6F1E8",
-  ink: "#1B1424",
-  card: "#FFF9F1",
-  violet: "#5B3A7A",
-  gold: "#C4A35A",
-  line: "#E4D9C8",
-  muted: "#6D6278",
-  user: "#5B3A7A",
-  userText: "#F6F1E8",
-  danger: "#8C3A3A",
+  bg: "#F7F6F3",
+  ink: "#1C1B19",
+  card: "#FFFFFF",
+  accent: "#1F6B4A",
+  onAccent: "#F7F6F3",
+  violet: "#1F6B4A",
+  gold: "#1F6B4A",
+  line: "#E4E1DA",
+  muted: "#6F6B64",
+  user: "#1F6B4A",
+  userText: "#F7F6F3",
+  danger: "#8C3A32",
 };
 
 export const dark: Palette = {
-  bg: "#1B1424",
-  ink: "#F6F1E8",
-  card: "#2A2233",
-  violet: "#C4A35A",
-  gold: "#C4A35A",
-  line: "#3D3348",
-  muted: "#C8B8A4",
-  user: "#5B3A7A",
-  userText: "#F6F1E8",
+  bg: "#141311",
+  ink: "#F4F1EB",
+  card: "#211F1C",
+  accent: "#3D9B6E",
+  onAccent: "#F7F6F3",
+  violet: "#3D9B6E",
+  gold: "#3D9B6E",
+  line: "#34312C",
+  muted: "#A39E96",
+  user: "#1F6B4A",
+  userText: "#F7F6F3",
   danger: "#E7B2B2",
 };
 

@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import type { NavigationProp, NavigatorScreenParams } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Text, View } from "react-native";
+import { Icon, type IconName } from "../shared/ui/Icon";
 import { ImageScreen } from "../features/image/ImageScreen";
 import { InboxScreen } from "../features/inbox/InboxScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
@@ -61,24 +61,23 @@ export function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, height: 62 },
-        tabBarActiveTintColor: colors.ink,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, paddingTop: 4 },
+        tabBarLabelStyle: { fontSize: 12, marginTop: -2 },
       }}
     >
-      <Tab.Screen name="Inbox" component={InboxScreen} options={{ tabBarLabel: ({ focused }) => label(text.inbox, focused, colors) }} />
-      <Tab.Screen name="Write" component={WriteScreen} options={{ tabBarLabel: ({ focused }) => label(text.write, focused, colors) }} />
-      <Tab.Screen name="Translate" component={TranslateScreen} options={{ tabBarLabel: ({ focused }) => label(text.translate, focused, colors) }} />
-      <Tab.Screen name="Image" component={ImageScreen} options={{ tabBarLabel: ({ focused }) => label(text.image, focused, colors) }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: ({ focused }) => label(text.mine, focused, colors) }} />
+      <Tab.Screen name="Inbox" component={InboxScreen} options={{ title: text.inbox, tabBarIcon: tabIcon("chatbubble-outline", "chatbubble") }} />
+      <Tab.Screen name="Write" component={WriteScreen} options={{ title: text.write, tabBarIcon: tabIcon("create-outline", "create") }} />
+      <Tab.Screen name="Translate" component={TranslateScreen} options={{ title: text.translate, tabBarIcon: tabIcon("language-outline", "language") }} />
+      <Tab.Screen name="Image" component={ImageScreen} options={{ title: text.image, tabBarIcon: tabIcon("image-outline", "image") }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: text.mine, tabBarIcon: tabIcon("person-outline", "person") }} />
     </Tab.Navigator>
   );
 }
 
-function label(title: string, focused: boolean, colors: { ink: string; muted: string; gold: string }) {
-  return (
-    <View style={{ borderBottomWidth: focused ? 2 : 0, borderBottomColor: colors.gold, paddingBottom: 4 }}>
-      <Text style={{ color: focused ? colors.ink : colors.muted, fontSize: 13 }}>{title}</Text>
-    </View>
+function tabIcon(idle: IconName, active: IconName) {
+  return ({ color, focused }: { color: string; focused: boolean }) => (
+    <Icon name={focused ? active : idle} color={color} size={22} />
   );
 }

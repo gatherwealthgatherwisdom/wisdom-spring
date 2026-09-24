@@ -88,12 +88,12 @@ function TranslatePair({
   return (
     <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
       <View style={{ padding: 12, backgroundColor: colors.card }}>
-        <Text style={{ color: colors.gold, marginBottom: 4 }}>{originalLabel}</Text>
+        <Text style={{ color: colors.muted, marginBottom: 4 }}>{originalLabel}</Text>
         <Text style={{ color: colors.ink, lineHeight: 22 }}>{original}</Text>
       </View>
-      <View style={{ height: 1, backgroundColor: colors.gold }} />
+      <View style={{ height: 1, backgroundColor: colors.line }} />
       <View style={{ padding: 12 }}>
-        <Text style={{ color: colors.gold, marginBottom: 4 }}>{translatedLabel}</Text>
+        <Text style={{ color: colors.muted, marginBottom: 4 }}>{translatedLabel}</Text>
         <Text style={{ color: colors.ink, lineHeight: 22 }}>{translation}{streaming ? " ▍" : ""}</Text>
       </View>
     </View>

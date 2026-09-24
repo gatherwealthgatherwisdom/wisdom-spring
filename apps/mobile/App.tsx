@@ -16,7 +16,7 @@ function Shell() {
   }, [hydrate]);
   return (
     <ThemeProvider value={palette}>
-      <StatusBar style={palette.bg === "#1B1424" ? "light" : "dark"} />
+      <StatusBar style={palette.bg === "#141311" ? "light" : "dark"} />
       <RootNavigation />
     </ThemeProvider>
   );

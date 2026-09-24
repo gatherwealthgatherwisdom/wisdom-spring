@@ -18,8 +18,7 @@ export function EmptyHero({
   ] as const;
   return (
     <View style={{ paddingVertical: 24, gap: 12 }}>
-      <Text style={{ fontSize: 34, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
-      <View style={{ height: 2, width: 42, backgroundColor: colors.gold }} />
+      <Text style={{ fontSize: 28, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
       <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.splash}</Text>
       {cards.map(([id, label]) => (
         <Pressable key={id} onPress={() => onCard(id)} style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 14, padding: 16 }}>

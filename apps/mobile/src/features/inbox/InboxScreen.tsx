@@ -9,6 +9,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 function cardStyle(colors: { card: string; line: string }) {
   return { backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 };
@@ -32,8 +33,7 @@ export function InboxScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 16 }}>
-      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
-      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginVertical: 10 }} />
+      <ScreenHeader title="智泉" />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         <Pressable onPress={() => openChat(navigation, { mode: "write", templateId: "email" })} style={cardStyle(colors)}><Text style={{ color: colors.ink }}>{text.cards.email}</Text></Pressable>
         <Pressable onPress={() => navigation.navigate("Translate")} style={cardStyle(colors)}><Text style={{ color: colors.ink }}>{text.cards.translate}</Text></Pressable>
@@ -44,9 +44,9 @@ export function InboxScreen({ navigation }: Props) {
           {locale === "en" ? item.bodyEn : item.bodyZh}
         </Text>
       ))}
-      <TextInput value={q} onChangeText={setQ} placeholder={text.search} placeholderTextColor={colors.muted} style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 12, padding: 10, color: colors.ink, marginBottom: 8 }} />
-      <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ backgroundColor: colors.ink, borderRadius: 14, padding: 12, marginBottom: 12 }}>
-        <Text style={{ color: colors.bg, textAlign: "center" }}>{text.newChat}</Text>
+      <TextInput value={q} onChangeText={setQ} placeholder={text.search} placeholderTextColor={colors.muted} style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, padding: 12, color: colors.ink, marginBottom: 8 }} />
+      <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ backgroundColor: colors.accent, borderRadius: 14, padding: 12, marginBottom: 12 }}>
+        <Text style={{ color: colors.onAccent, textAlign: "center" }}>{text.newChat}</Text>
       </Pressable>
       <FlatList
         data={list.data?.items ?? []}

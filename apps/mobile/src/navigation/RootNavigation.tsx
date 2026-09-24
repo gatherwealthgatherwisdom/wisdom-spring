@@ -16,13 +16,13 @@ export function RootNavigation() {
   const palette = usePalette();
   if (!ready) return null;
   const theme = {
-    ...(palette.bg === "#1B1424" ? DarkTheme : DefaultTheme),
+    ...(palette.bg === "#141311" ? DarkTheme : DefaultTheme),
     colors: {
-      ...(palette.bg === "#1B1424" ? DarkTheme.colors : DefaultTheme.colors),
+      ...(palette.bg === "#141311" ? DarkTheme.colors : DefaultTheme.colors),
       background: palette.bg,
       card: palette.card,
       text: palette.ink,
-      primary: palette.gold,
+      primary: palette.accent,
       border: palette.line,
     },
   };

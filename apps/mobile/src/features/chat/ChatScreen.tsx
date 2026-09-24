@@ -11,6 +11,7 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { useStream } from "../../shared/lib/stream";
 import { speak, startDictation } from "../../shared/lib/voice";
 import { useColors } from "../../shared/theme";
+import { Icon } from "../../shared/ui/Icon";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { Composer } from "./Composer";
 import { MessageList } from "./MessageList";
@@ -178,12 +179,14 @@ export function ChatScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView style={{ flex: 1, padding: 16 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-          <Pressable onPress={() => navigation.goBack()}><Text style={{ color: colors.ink }}>{text.inbox}</Text></Pressable>
-          <Text style={{ color: colors.ink, fontSize: 18 }}>{text.app}</Text>
-          <View style={{ width: 48 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 40, marginBottom: 4 }}>
+          <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.inbox} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="chevron-back" color={colors.ink} />
+          </Pressable>
+          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
+          <View style={{ width: 40 }} />
         </View>
-        {trialLeft !== null ? <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.trialLeft(trialLeft)}</Text> : null}
+        {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
         <QuotaBanner
           message={banner}
           action={guestBlocked ? text.completeRegistration : null}

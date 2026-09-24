@@ -9,6 +9,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Image">;
 
@@ -22,15 +23,14 @@ export function ImageScreen({ navigation }: Props) {
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino" }}>{text.image}</Text>
-      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginVertical: 12 }} />
+      <ScreenHeader title={text.image} />
       {caps.data && !caps.data.image ? <Text style={{ color: colors.ink, marginBottom: 12 }}>{text.noImageModel}</Text> : null}
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         {IMAGE_STYLES.map((style) => (
           <Pressable
             key={style.id}
             onPress={() => setStyleId(style.id)}
-            style={{ borderWidth: 1, borderColor: styleId === style.id ? colors.gold : colors.line, backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}
+            style={{ borderWidth: 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 }}
           >
             <Text style={{ color: colors.ink }}>{locale === "en" ? style.en : style.zh}</Text>
           </Pressable>
@@ -49,9 +49,9 @@ export function ImageScreen({ navigation }: Props) {
           openChat(navigation, { mode: "image", imageStyle: styleId, seed: prompt.trim() });
           setPrompt("");
         }}
-        style={{ marginTop: 14, backgroundColor: colors.ink, borderRadius: 16, padding: 14, alignItems: "center", opacity: caps.data?.image === false ? 0.4 : 1 }}
+        style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: caps.data?.image === false ? 0.4 : 1 }}
       >
-        <Text style={{ color: colors.bg }}>{text.start}</Text>
+        <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
     </SafeAreaView>
   );

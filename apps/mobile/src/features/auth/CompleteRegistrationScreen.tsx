@@ -9,6 +9,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { Icon } from "../../shared/ui/Icon";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Register">;
 
@@ -41,11 +42,12 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ width: "100%", maxWidth: 420, alignSelf: "center", padding: 24 }}>
-      <Pressable onPress={() => navigation.goBack()} style={{ marginBottom: 16 }}>
-        <Text style={{ color: colors.ink }}>{text.mine}</Text>
-      </Pressable>
-      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino" }}>{text.completeRegistration}</Text>
-      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginVertical: 16 }} />
+      <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40, marginBottom: 16 }}>
+        <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.back} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+          <Icon name="chevron-back" color={colors.ink} />
+        </Pressable>
+        <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.completeRegistration}</Text>
+      </View>
       <Text style={{ color: colors.muted, marginBottom: 16 }}>{phone}</Text>
       <TextInput
         value={name}
@@ -66,9 +68,9 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
       <Pressable
         disabled={busy}
         onPress={() => void confirm()}
-        style={{ backgroundColor: colors.violet, borderRadius: 16, padding: 14, alignItems: "center", opacity: busy ? 0.7 : 1 }}
+        style={{ backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: busy ? 0.7 : 1 }}
       >
-        <Text style={{ color: "#F6F1E8" }}>{text.confirm}</Text>
+        <Text style={{ color: colors.onAccent }}>{text.confirm}</Text>
       </Pressable>
       </View>
     </SafeAreaView>

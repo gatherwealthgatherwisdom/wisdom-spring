@@ -9,6 +9,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { Icon } from "../../shared/ui/Icon";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Auth">;
 
@@ -62,12 +63,12 @@ export function AuthScreen({ navigation }: Props) {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center" }}>
       <View style={{ width: "100%", maxWidth: 420, alignSelf: "center", padding: 24 }}>
       {navigation.canGoBack() ? (
-        <Pressable onPress={() => navigation.goBack()} style={{ marginBottom: 16 }}>
-          <Text style={{ color: colors.ink }}>{text.back}</Text>
+        <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.back} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+          <Icon name="chevron-back" color={colors.ink} />
         </Pressable>
       ) : null}
-      <Text style={{ fontSize: 48, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
-      <Text style={{ color: colors.gold, marginBottom: 8 }}>{text.splash}</Text>
+      <Text style={{ fontSize: 40, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
+      <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.splash}</Text>
       <Text style={{ color: colors.muted, marginBottom: 24 }}>中盈紫達集團</Text>
       {step === "phone" ? (
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
@@ -101,9 +102,9 @@ export function AuthScreen({ navigation }: Props) {
       <Pressable
         disabled={busy}
         onPress={() => void (step === "phone" ? requestCode() : verify())}
-        style={{ backgroundColor: colors.violet, borderRadius: 16, padding: 14, alignItems: "center", opacity: busy ? 0.7 : 1 }}
+        style={{ backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: busy ? 0.7 : 1 }}
       >
-        <Text style={{ color: "#F6F1E8" }}>{step === "phone" ? text.getCode : text.login}</Text>
+        <Text style={{ color: colors.onAccent }}>{step === "phone" ? text.getCode : text.login}</Text>
       </Pressable>
       {step === "code" ? (
         <Pressable
@@ -113,7 +114,7 @@ export function AuthScreen({ navigation }: Props) {
           }}
           style={{ marginTop: 16 }}
         >
-          <Text style={{ color: colors.violet, textAlign: "center" }}>{text.changeNumber}</Text>
+          <Text style={{ color: colors.accent, textAlign: "center" }}>{text.changeNumber}</Text>
         </Pressable>
       ) : null}
       </View>

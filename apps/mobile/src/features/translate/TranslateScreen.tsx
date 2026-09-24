@@ -7,6 +7,7 @@ import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Translate">;
 
@@ -19,8 +20,7 @@ export function TranslateScreen({ navigation }: Props) {
   const [body, setBody] = useState("");
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino" }}>{text.translate}</Text>
-      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginVertical: 12 }} />
+      <ScreenHeader title={text.translate} />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
         {TRANSLATE_LANGUAGES.map((language) => (
           <Pressable key={`s-${language.id}`} onPress={() => setSourceLang(language.id)} style={chip(colors, sourceLang === language.id)}>
@@ -50,18 +50,18 @@ export function TranslateScreen({ navigation }: Props) {
           openChat(navigation, { mode: "translate", sourceLang, targetLang, seed: body.trim() });
           setBody("");
         }}
-        style={{ marginTop: 14, backgroundColor: colors.ink, borderRadius: 16, padding: 14, alignItems: "center" }}
+        style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}
       >
-        <Text style={{ color: colors.bg }}>{text.start}</Text>
+        <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
     </SafeAreaView>
   );
 }
 
-function chip(colors: { card: string; line: string; gold: string }, selected: boolean) {
+function chip(colors: { card: string; line: string; accent: string }, selected: boolean) {
   return {
     borderWidth: 1,
-    borderColor: selected ? colors.gold : colors.line,
+    borderColor: selected ? colors.accent : colors.line,
     backgroundColor: colors.card,
     borderRadius: 999,
     paddingHorizontal: 10,

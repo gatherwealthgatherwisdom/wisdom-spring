@@ -13,7 +13,7 @@ export function QuotaBanner({
   const colors = useColors();
   if (!message) return null;
   return (
-    <View style={{ backgroundColor: colors.card, borderColor: colors.gold, borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 8 }}>
+    <View style={{ backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 8 }}>
       <Text style={{ color: colors.ink }}>{message}</Text>
       {action ? (
         <Pressable onPress={onAction} style={{ marginTop: 8 }}>

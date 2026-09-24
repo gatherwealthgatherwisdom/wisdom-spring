@@ -9,6 +9,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 export function SettingsScreen() {
   const colors = useColors();
@@ -37,13 +38,12 @@ export function SettingsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-      <Text style={{ fontSize: 32, color: colors.ink, fontFamily: "Palatino", marginBottom: 8 }}>{text.mine}</Text>
-      <View style={{ height: 2, width: 48, backgroundColor: colors.gold, marginBottom: 16 }} />
+      <ScreenHeader title={text.mine} />
       {!signedIn ? (
         <>
           <Text style={{ color: colors.ink, marginBottom: 16 }}>{text.signInHint}</Text>
           <Pressable onPress={() => openAuth(navigation)} style={{ backgroundColor: colors.violet, borderRadius: 16, padding: 14, alignItems: "center", marginBottom: 18 }}>
-            <Text style={{ color: "#F6F1E8" }}>{text.login}</Text>
+            <Text style={{ color: colors.onAccent }}>{text.login}</Text>
           </Pressable>
         </>
       ) : guest ? (
