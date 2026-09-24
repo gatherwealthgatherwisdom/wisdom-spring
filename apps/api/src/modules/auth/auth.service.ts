@@ -49,6 +49,7 @@ export class AuthService {
             role,
             displayName: input.displayName ?? null,
             locale: input.locale ?? Locale.ZH_HK,
+            registeredAt: existing.registeredAt ?? new Date(),
           },
         })
       : await this.prisma.user.create({
@@ -59,6 +60,7 @@ export class AuthService {
             role,
             displayName: input.displayName,
             locale: input.locale ?? Locale.ZH_HK,
+            registeredAt: new Date(),
           },
         });
     return this.issue(user);

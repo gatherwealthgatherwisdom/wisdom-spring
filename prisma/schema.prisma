@@ -66,12 +66,27 @@ model User {
   planTier      PlanTier       @default(FREE)
   locale        String         @default("zh-HK") @db.VarChar(16)
   displayName   String?        @db.VarChar(80)
+  phone         String?        @unique @db.VarChar(16)
+  registeredAt  DateTime?
+  guestUses     Int            @default(0)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   conversations Conversation[]
   usage         UsageLedger[]
   refreshTokens RefreshToken[]
   oauthAccounts OAuthAccount[]
+}
+
+model PhoneCode {
+  id        String    @id
+  phone     String    @db.VarChar(16)
+  codeHash  String    @db.VarChar(64)
+  expiresAt DateTime
+  attempts  Int       @default(0)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([phone, createdAt])
 }
 
 model OAuthAccount {

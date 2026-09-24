@@ -40,6 +40,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
             OR: [
               { email: { contains: query.q } },
               { displayName: { contains: query.q } },
+              { phone: { contains: query.q } },
             ],
           }
         : {},

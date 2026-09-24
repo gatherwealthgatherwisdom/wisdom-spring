@@ -9,6 +9,7 @@ const STATUS: Record<ErrorCode, number> = {
   [ErrorCode.FORBIDDEN]: 403,
   [ErrorCode.QUOTA_DAILY_MESSAGE]: 429,
   [ErrorCode.QUOTA_MONTHLY_COST]: 402,
+  [ErrorCode.QUOTA_GUEST]: 429,
   [ErrorCode.MODEL_POOL_EMPTY]: 503,
   [ErrorCode.UPSTREAM_REGION_BLOCKED]: 502,
   [ErrorCode.UPSTREAM_RATE_LIMITED]: 429,

@@ -15,6 +15,9 @@ import type {
   LogoutRequestSchema,
   MeResponseSchema,
   OAuthRequestSchema,
+  PhoneCodeRequestSchema,
+  PhoneRegisterRequestSchema,
+  PhoneVerifyRequestSchema,
   QuotaSnapshotSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
@@ -50,6 +53,9 @@ export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 export type LogoutRequest = z.infer<typeof LogoutRequestSchema>;
 export type OAuthRequest = z.infer<typeof OAuthRequestSchema>;
+export type PhoneCodeRequest = z.infer<typeof PhoneCodeRequestSchema>;
+export type PhoneVerifyRequest = z.infer<typeof PhoneVerifyRequestSchema>;
+export type PhoneRegisterRequest = z.infer<typeof PhoneRegisterRequestSchema>;
 export type UpdateMeRequest = z.infer<typeof UpdateMeRequestSchema>;
 export type UserPublic = z.infer<typeof UserPublicSchema>;
 export type QuotaSnapshot = z.infer<typeof QuotaSnapshotSchema>;

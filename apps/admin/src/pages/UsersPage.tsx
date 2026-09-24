@@ -42,7 +42,7 @@ function UserRow({
 }) {
   return (
     <tr>
-      <td>{user.email ?? "—"}</td>
+      <td>{user.email ?? user.phone ?? "—"}</td>
       <td>{user.displayName ?? "—"}</td>
       <td>
         <select value={user.planTier} onChange={(event) => onChange({ planTier: event.target.value as PlanTier })}>

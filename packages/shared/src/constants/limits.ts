@@ -7,6 +7,7 @@ export const LIMITS = {
   reserveOutputTokens: 4096,
   fallbacksMax: 2,
   sendRetryOnRegionBlock: 1,
+  guestTrialMessages: 5,
   freeDailyMessages: 20,
   plusDailyMessages: 200,
   internalDailyMessages: 2_000,

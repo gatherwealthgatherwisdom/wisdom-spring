@@ -65,6 +65,7 @@ export class OAuthService {
               role,
               displayName,
               locale: Locale.ZH_HK,
+              registeredAt: new Date(),
             },
           });
     await this.prisma.oAuthAccount.create({

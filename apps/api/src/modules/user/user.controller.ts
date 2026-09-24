@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { ModelCapability, UpdateMeRequestSchema } from "@spring/shared";
 import { isEligible } from "../catalog/application/draw-model";
 import { requireUser } from "../../http/auth-guard";
-import { toPublic } from "../auth/acting-user";
+import { toActingUser, toPublic } from "../auth/acting-user";
 
 export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/me", async (request) => {
@@ -21,8 +21,8 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
       },
     });
-    const acting = { ...user, displayName: updated.displayName, locale: updated.locale };
-    const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date());
+    const acting = toActingUser(updated);
+    const quota = await app.ctx.quota.snapshot(acting.id, acting.planTier, new Date());
     return { user: toPublic(acting), quota };
   });
 

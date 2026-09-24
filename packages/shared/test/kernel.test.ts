@@ -3,6 +3,7 @@ import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
 import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
+import { normalizeHkMobile } from "../src/lib/phone";
 import { decimalToScaled, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 
@@ -70,5 +71,21 @@ describe("SendMessageRequestSchema", () => {
 describe("copy", () => {
   it("uses the Hong Kong quota line", () => {
     expect(messageFor(ErrorCode.QUOTA_DAILY_MESSAGE)).toBe("今日對話次數已用完。");
+    expect(messageFor(ErrorCode.QUOTA_GUEST)).toBe("試用 5 次已用完。完成註冊後可以繼續用。");
+  });
+});
+
+describe("Hong Kong mobile numbers", () => {
+  it("keeps an 8-digit mobile and accepts a +852 prefix", () => {
+    expect(normalizeHkMobile("91234567")).toBe("+85291234567");
+    expect(normalizeHkMobile("+852 9123 4567")).toBe("+85291234567");
+    expect(normalizeHkMobile("85291234567")).toBe("+85291234567");
+    expect(normalizeHkMobile("85234567")).toBe("+85285234567");
+  });
+
+  it("rejects numbers outside the Hong Kong mobile range", () => {
+    expect(normalizeHkMobile("31234567")).toBeNull();
+    expect(normalizeHkMobile("9123456")).toBeNull();
+    expect(normalizeHkMobile("85231234567")).toBeNull();
   });
 });

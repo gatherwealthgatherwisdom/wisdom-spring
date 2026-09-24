@@ -35,6 +35,7 @@ function fakeClient(): OpenRouterClient & { calls: number } {
 }
 
 async function reset(prisma: PrismaClient): Promise<void> {
+  await prisma.phoneCode.deleteMany();
   await prisma.usageLedger.deleteMany();
   await prisma.adminAuditLog.deleteMany();
   await prisma.clientMessage.deleteMany();
@@ -97,6 +98,7 @@ describe("POST /v1/messages", () => {
       payload: { email, password: "spring-pass-1" },
     });
     expect(registered.statusCode).toBe(201);
+    expect(registered.json().user.registered).toBe(true);
     const token = registered.json().accessToken as string;
     const body = { content: "講下智慧之泉", clientMessageId: randomUUID() };
     const first = await app.inject({
