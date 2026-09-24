@@ -3,6 +3,7 @@ import { AppError, ErrorCode, createId, messageFor, type SendMessageRequest } fr
 import type { SseSink } from "../../../http/sse";
 import type { QuotaService } from "../../billing/application/quota.service";
 import type { ActingUser } from "../../auth/acting-user";
+import { chargeGuest, prepareCharge } from "./charge-generation";
 import { runGeneration, type GenerationDeps } from "./generation";
 
 export type PreparedSend =
@@ -37,14 +38,14 @@ export class SendMessageService {
     }
 
     const now = this.generation.now();
-    await this.quota.assertCanSend({ userId: user.id, planTier: user.planTier, now });
-    await this.quota.consumeDaily(user.id, user.planTier, now);
+    const charge = await prepareCharge(this.prisma, this.quota, user.id, user.planTier, now);
 
     const conversationId = input.conversationId ?? createId();
     const userMessageId = createId();
     const assistantMessageId = createId();
     try {
       await this.prisma.$transaction(async (tx) => {
+        if (charge === "guest") await chargeGuest(tx, user.id);
         if (!input.conversationId) {
           await tx.conversation.create({
             data: {
@@ -93,7 +94,7 @@ export class SendMessageService {
         });
       });
     } catch (error) {
-      await this.quota.releaseDaily(user.id, now);
+      if (charge === "plan") await this.quota.releaseDaily(user.id, now);
       if (isUnique(error)) {
         const row = await this.prisma.clientMessage.findUnique({
           where: { userId_clientMessageId: { userId: user.id, clientMessageId: input.clientMessageId } },

@@ -3,7 +3,10 @@ import { AppError, ErrorCode, createId } from "@spring/shared";
 import type { SseSink } from "../../../http/sse";
 import type { QuotaService } from "../../billing/application/quota.service";
 import type { ActingUser } from "../../auth/acting-user";
+import { chargeGuest, prepareCharge } from "./charge-generation";
 import { runGeneration, type GenerationDeps } from "./generation";
+
+export type PreparedRegenerate = { conversationId: string; assistantMessageId: string };
 
 export class RegenerateMessageService {
   constructor(
@@ -12,7 +15,7 @@ export class RegenerateMessageService {
     private readonly generation: GenerationDeps,
   ) {}
 
-  async execute(user: ActingUser, messageId: string, sink: SseSink): Promise<void> {
+  async prepare(user: ActingUser, messageId: string): Promise<PreparedRegenerate> {
     const message = await this.prisma.message.findFirst({
       where: {
         id: messageId,
@@ -24,13 +27,13 @@ export class RegenerateMessageService {
     if (message.status === "STREAMING") throw new AppError(ErrorCode.CONFLICT, "生成進行中。");
 
     const now = this.generation.now();
-    await this.quota.assertCanSend({ userId: user.id, planTier: user.planTier, now });
-    await this.quota.consumeDaily(user.id, user.planTier, now);
+    const charge = await prepareCharge(this.prisma, this.quota, user.id, user.planTier, now);
     const assistantMessageId = createId();
     try {
-      await this.prisma.$transaction([
-        this.prisma.message.update({ where: { id: message.id }, data: { status: "SUPERSEDED" } }),
-        this.prisma.message.create({
+      await this.prisma.$transaction(async (tx) => {
+        if (charge === "guest") await chargeGuest(tx, user.id);
+        await tx.message.update({ where: { id: message.id }, data: { status: "SUPERSEDED" } });
+        await tx.message.create({
           data: {
             id: assistantMessageId,
             conversationId: message.conversationId,
@@ -39,24 +42,27 @@ export class RegenerateMessageService {
             content: "",
             parentMessageId: message.id,
           },
-        }),
-        this.prisma.conversation.update({
+        });
+        await tx.conversation.update({
           where: { id: message.conversationId },
           data: { lastMessageAt: now },
-        }),
-      ]);
+        });
+      });
     } catch (error) {
-      await this.quota.releaseDaily(user.id, now);
+      if (charge === "plan") await this.quota.releaseDaily(user.id, now);
       throw error;
     }
+    return { conversationId: message.conversationId, assistantMessageId };
+  }
 
+  async continue(user: ActingUser, prepared: PreparedRegenerate, sink: SseSink): Promise<void> {
     await runGeneration(
       this.generation,
       {
         userId: user.id,
         planTier: user.planTier,
-        conversationId: message.conversationId,
-        assistantMessageId,
+        conversationId: prepared.conversationId,
+        assistantMessageId: prepared.assistantMessageId,
       },
       sink,
     );

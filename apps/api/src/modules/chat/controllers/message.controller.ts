@@ -46,6 +46,7 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
   app.post("/v1/messages/:id/regenerate", sendLimit(), async (request, reply) => {
     const user = await requireUser(request, app.ctx.auth);
     const { id } = request.params as { id: string };
-    await stream(request, reply, (sink) => app.ctx.regenerate.execute(user, id, sink));
+    const prepared = await app.ctx.regenerate.prepare(user, id);
+    await stream(request, reply, (sink) => app.ctx.regenerate.continue(user, prepared, sink));
   });
 }

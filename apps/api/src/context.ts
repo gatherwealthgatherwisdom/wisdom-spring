@@ -20,11 +20,14 @@ import { FetchOpenRouterClient, type OpenRouterClient } from "./modules/catalog/
 import { PrismaModelPoolReader } from "./modules/catalog/infra/pool.repository";
 import { AuthService } from "./modules/auth/auth.service";
 import { OAuthService } from "./modules/auth/oauth";
+import { PhoneAuthService } from "./modules/auth/phone-auth.service";
+import { LogSmsSender, type SmsSender } from "./modules/auth/sms-sender";
 
 export interface AppContext {
   prisma: PrismaClient;
   redis: Redis;
   auth: AuthService;
+  phone: PhoneAuthService;
   oauth: OAuthService;
   quota: QuotaService;
   sendMessage: SendMessageService;
@@ -42,6 +45,7 @@ export interface AppContext {
 export async function createContext(options?: {
   openrouter?: OpenRouterClient;
   titles?: TitleEnqueuer;
+  sms?: SmsSender;
 }): Promise<AppContext> {
   const prisma = getPrisma();
   const redis = createRedis();
@@ -79,6 +83,7 @@ export async function createContext(options?: {
     prisma,
     redis,
     auth,
+    phone: new PhoneAuthService(prisma, auth, options?.sms ?? new LogSmsSender(env), env),
     oauth: new OAuthService(prisma, auth, env),
     quota,
     sendMessage: new SendMessageService(prisma, quota, generation),

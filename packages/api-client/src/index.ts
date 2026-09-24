@@ -7,6 +7,9 @@ import type {
   FeatureFlagView,
   LoginRequest,
   MeResponse,
+  PhoneCodeRequest,
+  PhoneRegisterRequest,
+  PhoneVerifyRequest,
   MessageView,
   ModelPoolView,
   Page,
@@ -69,6 +72,18 @@ export class SpringClient {
 
   login(body: LoginRequest): Promise<AuthResponse> {
     return this.authPost("/v1/auth/login", body);
+  }
+
+  requestPhoneCode(body: PhoneCodeRequest): Promise<{ ok: true }> {
+    return this.request("/v1/auth/phone/request", { method: "POST", body: JSON.stringify(body) }, false);
+  }
+
+  verifyPhone(body: PhoneVerifyRequest): Promise<AuthResponse> {
+    return this.authPost("/v1/auth/phone/verify", body);
+  }
+
+  completePhoneRegistration(body: PhoneRegisterRequest): Promise<MeResponse> {
+    return this.request("/v1/auth/register/phone", { method: "POST", body: JSON.stringify(body) });
   }
 
   logout(all = false): Promise<{ ok: true }> {
