@@ -184,7 +184,19 @@ export function ChatScreen({ navigation, route }: Props) {
             <Icon name="chevron-back" color={colors.ink} />
           </Pressable>
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
-          <View style={{ width: 40 }} />
+          <Pressable
+            accessibilityLabel={text.newChat}
+            onPress={() => {
+              stream.reset();
+              setDraft("");
+              setBanner(null);
+              setGuestBlocked(false);
+              navigation.replace("Chat", { mode: "chat" });
+            }}
+            style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+          >
+            <Icon name="create-outline" color={colors.ink} />
+          </Pressable>
         </View>
         {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
         <QuotaBanner

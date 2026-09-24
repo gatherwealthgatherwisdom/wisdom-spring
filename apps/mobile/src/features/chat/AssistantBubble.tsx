@@ -1,7 +1,22 @@
+import * as Clipboard from "expo-clipboard";
 import { Image, Pressable, Text, View } from "react-native";
 import { useColors } from "../../shared/theme";
+import { Icon } from "../../shared/ui/Icon";
 import { ModelBadge } from "./ModelBadge";
 import { StreamingCursor } from "./StreamingCursor";
+
+function action(colors: { card: string; line: string }) {
+  return {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+}
 
 function splitImage(content: string): { text: string; uri: string | null } {
   const match = content.match(/!\[[^\]]*\]\(([^)]+)\)/);
@@ -19,6 +34,7 @@ export function AssistantBubble({
   regenerateLabel,
   listenLabel,
   onListen,
+  copyLabel,
 }: {
   content: string;
   requestedModel: string | null;
@@ -29,6 +45,7 @@ export function AssistantBubble({
   regenerateLabel: string;
   listenLabel?: string;
   onListen?: () => void;
+  copyLabel?: string;
 }) {
   const colors = useColors();
   const image = splitImage(content);
@@ -46,16 +63,19 @@ export function AssistantBubble({
       ) : streaming ? (
         <StreamingCursor />
       ) : null}
-      {!streaming ? (
-        <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+      {!streaming && image.text ? (
+        <View style={{ flexDirection: "row", gap: 4, marginTop: 8 }}>
+          <Pressable accessibilityLabel={copyLabel} onPress={() => void Clipboard.setStringAsync(image.text)} style={action(colors)}>
+            <Icon name="copy-outline" color={colors.muted} size={18} />
+          </Pressable>
           {onListen ? (
-            <Pressable onPress={onListen}>
-              <Text style={{ color: colors.gold, fontSize: 13 }}>{listenLabel}</Text>
+            <Pressable accessibilityLabel={listenLabel} onPress={onListen} style={action(colors)}>
+              <Icon name="volume-medium-outline" color={colors.muted} size={18} />
             </Pressable>
           ) : null}
           {onRegenerate ? (
-            <Pressable onPress={onRegenerate}>
-              <Text style={{ color: colors.ink, fontSize: 13 }}>{regenerateLabel}</Text>
+            <Pressable accessibilityLabel={regenerateLabel} onPress={onRegenerate} style={action(colors)}>
+              <Icon name="refresh-outline" color={colors.muted} size={18} />
             </Pressable>
           ) : null}
         </View>

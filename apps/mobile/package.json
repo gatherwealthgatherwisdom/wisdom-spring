@@ -12,6 +12,7 @@
     "@spring/shared": "workspace:^",
     "@tanstack/react-query": "^5.85.5",
     "expo": "~57.0.24",
+    "expo-clipboard": "~57.0.2",
     "expo-speech": "^57.0.3",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",

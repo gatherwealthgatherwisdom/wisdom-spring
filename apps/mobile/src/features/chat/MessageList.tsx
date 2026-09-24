@@ -62,6 +62,7 @@ export function MessageList({
             streaming={streaming}
             regenerateLabel={regenerateLabel}
             listenLabel={listenLabel}
+            copyLabel={text.copy}
             onListen={streaming ? undefined : () => onListen(item.content)}
             onRegenerate={streaming || mode === "image" ? undefined : () => onRegenerate(item.id)}
           />

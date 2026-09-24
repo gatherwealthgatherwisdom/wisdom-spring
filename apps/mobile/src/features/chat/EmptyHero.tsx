@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
 import { useColors } from "../../shared/theme";
+import { Icon, type IconName } from "../../shared/ui/Icon";
 
 export function EmptyHero({
   text,
@@ -11,20 +12,23 @@ export function EmptyHero({
 }) {
   const colors = useColors();
   const cards = [
-    ["email", text.cards.email],
-    ["translate", text.cards.translate],
-    ["image", text.cards.image],
-    ["resume", text.cards.resume],
+    ["email", text.cards.email, "mail-outline"],
+    ["translate", text.cards.translate, "language-outline"],
+    ["image", text.cards.image, "image-outline"],
+    ["resume", text.cards.resume, "chatbubble-outline"],
   ] as const;
   return (
-    <View style={{ paddingVertical: 24, gap: 12 }}>
+    <View style={{ paddingVertical: 24 }}>
       <Text style={{ fontSize: 28, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
-      <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.splash}</Text>
-      {cards.map(([id, label]) => (
-        <Pressable key={id} onPress={() => onCard(id)} style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 14, padding: 16 }}>
-          <Text style={{ color: colors.ink, fontSize: 16 }}>{label}</Text>
-        </Pressable>
-      ))}
+      <Text style={{ color: colors.muted, marginBottom: 16 }}>{text.splash}</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {cards.map(([id, label, icon]) => (
+          <Pressable key={id} onPress={() => onCard(id)} style={{ width: "47%", borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 16, padding: 14, gap: 8 }}>
+            <Icon name={icon} color={colors.accent} size={20} />
+            <Text style={{ color: colors.ink, fontSize: 15 }}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
