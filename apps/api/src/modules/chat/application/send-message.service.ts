@@ -47,7 +47,16 @@ export class SendMessageService {
       await this.prisma.$transaction(async (tx) => {
         if (!input.conversationId) {
           await tx.conversation.create({
-            data: { id: conversationId, userId: user.id, lastMessageAt: now },
+            data: {
+              id: conversationId,
+              userId: user.id,
+              lastMessageAt: now,
+              mode: input.mode ?? "chat",
+              templateId: input.templateId,
+              sourceLang: input.sourceLang,
+              targetLang: input.targetLang,
+              imageStyle: input.imageStyle,
+            },
           });
         }
         await tx.message.create({

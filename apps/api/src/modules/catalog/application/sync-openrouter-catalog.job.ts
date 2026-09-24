@@ -2,6 +2,14 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { isAllowlisted, modelAuthor } from "@spring/shared";
 import type { OpenRouterClient, OpenRouterModel } from "../infra/openrouter.client";
 
+function outputModalitiesOf(model: OpenRouterModel): string[] {
+  const listed = model.architecture?.output_modalities?.filter((item) => item.length > 0) ?? [];
+  if (listed.length > 0) return listed;
+  const modality = model.architecture?.modality ?? "";
+  if (modality.includes("->") && modality.split("->")[1]?.includes("image")) return ["image"];
+  return ["text"];
+}
+
 function modalitiesOf(model: OpenRouterModel): string[] {
   const listed = model.architecture?.input_modalities?.filter((item) => item.length > 0) ?? [];
   if (listed.length > 0) return listed;
@@ -27,6 +35,7 @@ export class SyncOpenRouterCatalogJob {
       const slug = model.id.trim();
       if (!slug || slug.length > 191) continue;
       const modalities = modalitiesOf(model);
+      const outputs = outputModalitiesOf(model);
       await this.prisma.modelCatalog.upsert({
         where: { slug },
         create: {
@@ -35,6 +44,7 @@ export class SyncOpenRouterCatalogJob {
           author: modelAuthor(slug).slice(0, 64) || "unknown",
           contextLength: model.context_length && model.context_length > 0 ? model.context_length : 8192,
           inputModalities: modalities,
+          outputModalities: outputs,
           pricing: jsonValue(model.pricing ?? {}),
           isFreeRoute: slug.endsWith(":free"),
           raw: jsonValue(model),
@@ -45,6 +55,7 @@ export class SyncOpenRouterCatalogJob {
           author: modelAuthor(slug).slice(0, 64) || "unknown",
           contextLength: model.context_length && model.context_length > 0 ? model.context_length : 8192,
           inputModalities: modalities,
+          outputModalities: outputs,
           pricing: jsonValue(model.pricing ?? {}),
           isFreeRoute: slug.endsWith(":free"),
           raw: jsonValue(model),

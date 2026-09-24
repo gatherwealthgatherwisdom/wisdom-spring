@@ -11,6 +11,7 @@ export interface OpenRouterModel {
   context_length?: number;
   architecture?: {
     input_modalities?: string[];
+    output_modalities?: string[];
     modality?: string;
   };
   pricing?: {
@@ -39,12 +40,13 @@ export interface CompleteChatInput {
   messages: ChatMessage[];
   maxTokens?: number;
   signal?: AbortSignal;
+  image?: boolean;
 }
 
 export interface OpenRouterClient {
   listModels(): Promise<OpenRouterModel[]>;
   streamChat(input: StreamChatInput): AsyncIterable<SpringStreamEvent>;
-  completeChat(input: CompleteChatInput): Promise<{ text: string; model: string }>;
+  completeChat(input: CompleteChatInput): Promise<{ text: string; model: string; images: string[] }>;
 }
 
 export class FetchOpenRouterClient implements OpenRouterClient {
@@ -109,7 +111,7 @@ export class FetchOpenRouterClient implements OpenRouterClient {
     yield* parseOpenRouterSse(decodeBody(response.body));
   }
 
-  async completeChat(input: CompleteChatInput): Promise<{ text: string; model: string }> {
+  async completeChat(input: CompleteChatInput): Promise<{ text: string; model: string; images: string[] }> {
     this.assertKey();
     const response = await this.fetchImpl(`${OPENROUTER.baseUrl}/chat/completions`, {
       method: "POST",
@@ -118,9 +120,10 @@ export class FetchOpenRouterClient implements OpenRouterClient {
       body: JSON.stringify({
         model: input.model,
         messages: input.messages,
-        max_tokens: input.maxTokens ?? OPENROUTER.probeMaxTokens,
+        max_tokens: input.maxTokens ?? (input.image ? 1024 : OPENROUTER.probeMaxTokens),
         stream: false,
         user: "spring-system",
+        ...(input.image ? { modalities: ["image", "text"] } : {}),
         provider: {
           allow_fallbacks: true,
           ignore: ["openai", "anthropic"],
@@ -136,14 +139,46 @@ export class FetchOpenRouterClient implements OpenRouterClient {
     }
     const record = parsed as {
       model?: unknown;
-      choices?: Array<{ message?: { content?: unknown } }>;
+      choices?: Array<{ message?: unknown }>;
     };
-    const text = record.choices?.[0]?.message?.content;
+    const message = record.choices?.[0]?.message;
+    const text = message && typeof message === "object" && "content" in message && typeof message.content === "string" ? message.content : "";
     return {
-      text: typeof text === "string" ? text : "",
+      text,
       model: typeof record.model === "string" ? record.model : input.model,
+      images: extractImageUrls(message),
     };
   }
+}
+
+export function extractImageUrls(message: unknown): string[] {
+  if (!message || typeof message !== "object") return [];
+  const record = message as { content?: unknown; images?: unknown };
+  const found: string[] = [];
+  if (Array.isArray(record.images)) {
+    for (const image of record.images) {
+      const url = imageUrl(image);
+      if (url) found.push(url);
+    }
+  }
+  if (Array.isArray(record.content)) {
+    for (const part of record.content) {
+      const url = imageUrl(part);
+      if (url) found.push(url);
+    }
+  }
+  if (typeof record.content === "string" && /^https?:\/\/\S+$/.test(record.content.trim())) {
+    found.push(record.content.trim());
+  }
+  return found;
+}
+
+function imageUrl(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as { image_url?: { url?: unknown }; url?: unknown };
+  if (typeof record.image_url?.url === "string") return record.image_url.url;
+  if (typeof record.url === "string") return record.url;
+  return null;
 }
 
 async function* decodeBody(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {

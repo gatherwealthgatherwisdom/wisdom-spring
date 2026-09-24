@@ -51,6 +51,7 @@ export class PrismaModelPoolReader implements ModelPoolReader {
       const catalog = bySlug.get(pool.slug);
       if (!catalog) continue;
       const modalities = stringList(catalog.inputModalities);
+      const outputs = stringList(catalog.outputModalities);
       const pricing = pricingOf(catalog.pricing);
       candidates.push({
         slug: pool.slug,
@@ -69,6 +70,7 @@ export class PrismaModelPoolReader implements ModelPoolReader {
         contextLength: catalog.contextLength > 0 ? catalog.contextLength : 8192,
         supportsText: modalities.length === 0 || modalities.includes("text"),
         supportsVision: modalities.includes("image"),
+        supportsImageOutput: outputs.includes("image"),
       });
     }
     return candidates;

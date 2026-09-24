@@ -18,7 +18,8 @@ export function isEligible(row: PickerCandidate, input: PickInput): boolean {
   }
   if (planRank(row.minPlanTier) > planRank(input.planTier)) return false;
   if (input.capability === ModelCapability.VISION && !row.supportsVision) return false;
-  if (input.capability === ModelCapability.TEXT && !row.supportsText) return false;
+  if (input.requireImageOutput && !row.supportsImageOutput) return false;
+  if (input.capability === ModelCapability.TEXT && !input.requireImageOutput && !row.supportsText) return false;
 
   const limits = limitsFor(input.planTier);
   if (limits.maxPromptUsdMicrosPerMillion !== null && limits.maxCompletionUsdMicrosPerMillion !== null) {

@@ -5,7 +5,6 @@ import {
   ErrorCode,
   LIMITS,
   ModelCapability,
-  SYSTEM_PROMPT,
   createId,
   estimateCostMicros,
   messageFor,
@@ -13,9 +12,10 @@ import {
   usdToMicros,
   type PlanTier,
 } from "@spring/shared";
+import { systemPromptFor, withImageStyle } from "./mode-prompt";
 import type { SseSink } from "../../../http/sse";
 import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
-import { UpstreamError, type StreamUsage } from "../../catalog/infra/openrouter-stream.parser";
+import { UpstreamError, type SpringStreamEvent, type StreamUsage } from "../../catalog/infra/openrouter-stream.parser";
 import type { AbortRegistry } from "./abort-registry";
 
 export interface TitleEnqueuer {
@@ -80,9 +80,20 @@ export async function runGeneration(
     select: { requestedModel: true },
   });
   let excludeSlugs = previous.flatMap((row) => (row.requestedModel ? [row.requestedModel] : []));
+  const conversation = await deps.prisma.conversation.findUnique({ where: { id: input.conversationId } });
+  const modeFields = {
+    mode: conversation?.mode ?? "chat",
+    templateId: conversation?.templateId ?? null,
+    sourceLang: conversation?.sourceLang ?? null,
+    targetLang: conversation?.targetLang ?? null,
+    imageStyle: conversation?.imageStyle ?? null,
+  };
   const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => ({
     role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
-    content: row.content,
+    content:
+      modeFields.mode === "image" && row.role === "USER"
+        ? withImageStyle(row.content, modeFields.imageStyle)
+        : row.content,
   }));
 
   const controller = new AbortController();
@@ -105,6 +116,7 @@ export async function runGeneration(
         planTier: input.planTier,
         capability: ModelCapability.TEXT,
         excludeSlugs,
+        requireImageOutput: modeFields.mode === "image",
       });
       requestedSlug = pick.primary;
       pickPrimary = pick.primary;
@@ -115,7 +127,7 @@ export async function runGeneration(
         [
           {
             role: "system",
-            content: `${SYSTEM_PROMPT}\n今輪請求模型：${pick.primary}。只有使用者問及模型身份時先可以提及。`,
+            content: systemPromptFor(modeFields, pick.primary),
           },
           ...turns,
         ],
@@ -139,7 +151,22 @@ export async function runGeneration(
         let usage: StreamUsage = { promptTokens: 0, completionTokens: 0 };
         let sawDone = false;
         let ticks = 0;
-        for await (const event of deps.openrouter.streamChat({
+        if (modeFields.mode === "image") {
+          const image = await deps.openrouter.completeChat({
+            model: pick.primary,
+            messages: trimmed,
+            signal: controller.signal,
+            image: true,
+          });
+          const url = image.images[0];
+          if (!url) throw new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, "image missing", 502);
+          text = image.text ? `${image.text}\n![image](${url})` : `![image](${url})`;
+          sawDelta = true;
+          sink.send("delta", { text });
+          served = image.model || served;
+          sawDone = true;
+        }
+        for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({
           model: pick.primary,
           models: pick.fallbacks,
           messages: trimmed,
@@ -313,4 +340,8 @@ export async function runGeneration(
     sink.signal.removeEventListener("abort", onClientAbort);
     deps.aborts.clear(input.assistantMessageId);
   }
+}
+
+async function* emptyStream(): AsyncGenerator<SpringStreamEvent> {
+  // Image turns use a single completion instead of the text stream.
 }

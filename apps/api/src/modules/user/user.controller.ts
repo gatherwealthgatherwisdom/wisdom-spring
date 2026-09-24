@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { UpdateMeRequestSchema } from "@spring/shared";
+import { ModelCapability, UpdateMeRequestSchema } from "@spring/shared";
+import { isEligible } from "../catalog/application/draw-model";
 import { requireUser } from "../../http/auth-guard";
 import { toPublic } from "../auth/acting-user";
 
@@ -38,6 +39,20 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       }),
     ]);
     return { ok: true };
+  });
+
+  app.get("/v1/capabilities", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const rows = await app.ctx.reader.listPickerCandidates();
+    const image = rows.some((row) =>
+      isEligible(row, {
+        planTier: user.planTier,
+        capability: ModelCapability.TEXT,
+        excludeSlugs: [],
+        requireImageOutput: true,
+      }),
+    );
+    return { image };
   });
 
   app.get("/v1/announcements", async () => {

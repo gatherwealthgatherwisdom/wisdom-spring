@@ -28,6 +28,7 @@ function row(partial: Partial<PickerCandidate> & Pick<PickerCandidate, "slug">):
     contextLength: 8192,
     supportsText: true,
     supportsVision: false,
+    supportsImageOutput: false,
     ...partial,
   };
 }
@@ -98,6 +99,21 @@ describe("drawModel", () => {
       expect(error).toBeInstanceOf(AppError);
       expect((error as AppError).code).toBe(ErrorCode.MODEL_POOL_EMPTY);
     }
+  });
+
+  it("draws an image model only when the turn asks for an image", () => {
+    const rows = [
+      row({ slug: "deepseek/chat" }),
+      row({ slug: "qwen/image", supportsImageOutput: true }),
+    ];
+    const text = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero);
+    expect(text.primary).toBe("deepseek/chat");
+    const image = drawModel(
+      rows,
+      { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [], requireImageOutput: true },
+      zero,
+    );
+    expect(image.primary).toBe("qwen/image");
   });
 
   it("keeps FREE on free routes and cheap models", () => {

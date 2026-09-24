@@ -115,6 +115,10 @@ export class SpringClient {
     return this.request(`/v1/conversations/${conversationId}/messages?limit=100`);
   }
 
+  capabilities(): Promise<{ image: boolean }> {
+    return this.request("/v1/capabilities");
+  }
+
   sendMessage(body: SendMessageRequest, handlers: StreamHandlers, signal?: AbortSignal): Promise<void> {
     return this.stream("/v1/messages", body, handlers, signal);
   }
