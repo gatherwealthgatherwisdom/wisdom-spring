@@ -35,6 +35,7 @@ export function AssistantBubble({
   listenLabel,
   onListen,
   copyLabel,
+  timeLabel,
 }: {
   content: string;
   requestedModel: string | null;
@@ -46,11 +47,17 @@ export function AssistantBubble({
   listenLabel?: string;
   onListen?: () => void;
   copyLabel?: string;
+  createdAt?: string;
+  timeLabel?: string;
 }) {
   const colors = useColors();
   const image = splitImage(content);
   return (
     <View style={{ marginVertical: 8, maxWidth: "92%" }}>
+      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+        <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
+        {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
+      </View>
       <ModelBadge requestedModel={requestedModel} servedModel={servedModel} fallbackUsed={fallbackUsed} />
       {image.uri ? (
         <Image source={{ uri: image.uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />

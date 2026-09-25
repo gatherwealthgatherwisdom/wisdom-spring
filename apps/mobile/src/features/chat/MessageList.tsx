@@ -1,6 +1,8 @@
 import type { MessageView } from "@spring/shared";
 import { FlatList, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
+import { usePrefs } from "../../shared/lib/prefs";
+import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
 import { AssistantBubble } from "./AssistantBubble";
 import { EmptyHero } from "./EmptyHero";
@@ -27,6 +29,7 @@ export function MessageList({
   onRegenerate: (messageId: string) => void;
   onListen: (content: string) => void;
 }) {
+  const locale = usePrefs((state) => state.locale);
   const data = draft ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" }] : messages;
   if (data.length === 0) return <EmptyHero text={text} onCard={onCard} />;
   return (
@@ -63,6 +66,7 @@ export function MessageList({
             regenerateLabel={regenerateLabel}
             listenLabel={listenLabel}
             copyLabel={text.copy}
+            timeLabel={"createdAt" in item ? formatWhen(item.createdAt, locale) : undefined}
             onListen={streaming ? undefined : () => onListen(item.content)}
             onRegenerate={streaming || mode === "image" ? undefined : () => onRegenerate(item.id)}
           />

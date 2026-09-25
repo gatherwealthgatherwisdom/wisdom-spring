@@ -40,6 +40,12 @@ export function ChatScreen({ navigation, route }: Props) {
     queryFn: () => spring.messages(conversationId ?? ""),
     enabled: Boolean(conversationId),
   });
+  const chats = useQuery({
+    queryKey: ["conversations", ""],
+    queryFn: () => spring.conversations(),
+    enabled: Boolean(token),
+  });
+  const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
 
   const messages: MessageView[] = (history.data?.items ?? []).filter((item) => item.status !== "SUPERSEDED");
   const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
@@ -183,7 +189,7 @@ export function ChatScreen({ navigation, route }: Props) {
           <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.inbox} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
             <Icon name="chevron-back" color={colors.ink} />
           </Pressable>
-          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
+          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 20 }} numberOfLines={1}>{chatTitle}</Text>
           <Pressable
             accessibilityLabel={text.newChat}
             onPress={() => {
