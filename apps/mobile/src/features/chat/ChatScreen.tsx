@@ -1,4 +1,5 @@
 import { ApiError } from "@spring/api-client";
+import * as Clipboard from "expo-clipboard";
 import { ErrorCode, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -189,7 +190,17 @@ export function ChatScreen({ navigation, route }: Props) {
           <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.inbox} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
             <Icon name="chevron-back" color={colors.ink} />
           </Pressable>
-          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 20 }} numberOfLines={1}>{chatTitle}</Text>
+          <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 20 }} numberOfLines={1}>{chatTitle}</Text>
+          <Pressable
+            accessibilityLabel={text.copy}
+            onPress={() => {
+              const last = [...messages].reverse().find((item) => item.role === "ASSISTANT");
+              if (last?.content) void Clipboard.setStringAsync(last.content);
+            }}
+            style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+          >
+            <Icon name="share-outline" color={colors.ink} />
+          </Pressable>
           <Pressable
             accessibilityLabel={text.newChat}
             onPress={() => {
@@ -241,6 +252,10 @@ export function ChatScreen({ navigation, route }: Props) {
             setBanner(text.attachLater);
           }}
           onMic={() => {
+            const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
+            if (!heard) setBanner(text.voiceMissing);
+          }}
+          onCall={() => {
             const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
             if (!heard) setBanner(text.voiceMissing);
           }}

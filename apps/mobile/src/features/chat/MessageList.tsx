@@ -39,7 +39,7 @@ export function MessageList({
       renderItem={({ item, index }) => {
         if (item.role === "USER") {
           if (mode === "translate") return null;
-          return <UserBubble content={item.content} />;
+          return <UserBubble content={item.content} timeLabel={"createdAt" in item ? formatWhen(item.createdAt, locale) : undefined} />;
         }
         if (item.role !== "ASSISTANT") return null;
         const streaming = item.id === "draft";

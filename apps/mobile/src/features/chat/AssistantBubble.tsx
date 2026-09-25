@@ -54,7 +54,10 @@ export function AssistantBubble({
   const image = splitImage(content);
   return (
     <View style={{ marginVertical: 8, maxWidth: "92%" }}>
-      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
+          <Icon name="water-outline" color={colors.accent} size={16} />
+        </View>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
