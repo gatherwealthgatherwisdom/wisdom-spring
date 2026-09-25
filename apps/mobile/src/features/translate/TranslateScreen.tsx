@@ -1,13 +1,16 @@
 import { TRANSLATE_LANGUAGES } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
+import { RecentRow } from "../../shared/ui/RecentRow";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Translate">;
@@ -20,12 +23,16 @@ export function TranslateScreen({ navigation }: Props) {
   const [targetLang, setTargetLang] = useState("en");
   const [side, setSide] = useState<"source" | "target">("source");
   const [body, setBody] = useState("");
+  const signedIn = usePrefs((state) => Boolean(state.accessToken));
+  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const recent = (chats.data?.items ?? []).filter((item) => item.mode === "translate").slice(0, 5);
   const name = (id: string) => {
     const language = TRANSLATE_LANGUAGES.find((item) => item.id === id);
     return locale === "en" ? language?.en : language?.zh;
   };
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
       <ScreenHeader title={text.translate} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Pressable onPress={() => setSide("source")} style={sideBox(colors, side === "source")}>
@@ -64,8 +71,13 @@ export function TranslateScreen({ navigation }: Props) {
         multiline
         placeholder={text.original}
         placeholderTextColor={colors.muted}
-        style={{ flex: 1, minHeight: 160, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, color: colors.ink, borderRadius: 16, padding: 14, fontSize: 16 }}
+        style={{ minHeight: 140, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, color: colors.ink, borderRadius: 16, padding: 14, fontSize: 16 }}
       />
+      <Text style={{ color: colors.muted, marginTop: 6, marginBottom: 12 }}>{text.chars(body.length)}</Text>
+      <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.recentTranslate}</Text>
+      {recent.length === 0 ? <RecentRow modeLabel={text.translate} locale={locale} empty={text.emptyTranslate} /> : recent.map((item) => (
+        <RecentRow key={item.id} item={item} modeLabel={text.translate} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "translate" })} />
+      ))}
       <Pressable
         onPress={() => {
           if (!body.trim()) return;
@@ -76,6 +88,7 @@ export function TranslateScreen({ navigation }: Props) {
       >
         <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
