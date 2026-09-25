@@ -41,14 +41,15 @@ export function ImageScreen({ navigation }: Props) {
       {caps.data && !caps.data.image ? (
         <Text style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 12 }}>{text.noImageModel}</Text>
       ) : null}
-      <View style={{ gap: 10 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {IMAGE_STYLES.map((style) => (
           <Pressable
             key={style.id}
             onPress={() => setStyleId(style.id)}
-            style={{ minHeight: 88, borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: colors.card, borderRadius: 16, padding: 16, justifyContent: "center" }}
+            style={{ width: "47%", minHeight: 160, borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: colors.card, borderRadius: 16, padding: 14, justifyContent: "flex-end" }}
           >
-            <Text style={{ color: colors.ink, fontSize: 18 }}>{locale === "en" ? style.en : style.zh}</Text>
+            <View style={{ height: 72, borderRadius: 12, backgroundColor: style.id === "night" ? "#1C1B19" : style.id === "paper" ? "#C4B39A" : "#3E5346", marginBottom: 10 }} />
+            <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? style.en : style.zh}</Text>
             <Text style={{ color: colors.muted, marginTop: 4 }}>{styleNote(style.id, locale)}</Text>
           </Pressable>
         ))}
