@@ -41,6 +41,11 @@ export function SettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
       <ScreenHeader title={text.mine} />
+      <View style={{ alignItems: "center", marginBottom: 16 }}>
+        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+          <Icon name="person-outline" color={colors.ink} size={32} />
+        </View>
+      </View>
       <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, marginBottom: 18 }}>
         {!signedIn ? (
           <>
