@@ -1,17 +1,19 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AppStackParamList, MainTabParamList } from "../../navigation/MainTabs";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
-import { HEROES, RECOS, TOOLS } from "./catalog";
+import { HEROES, RECOS, TOOLS, type CardItem } from "./catalog";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Discover">;
-const PAGE_W = Dimensions.get("window").width - 40;
+const SCREEN_W = Dimensions.get("window").width;
+const HERO_W = SCREEN_W * 0.62;
+const PAGE_W = SCREEN_W - 72;
 
 export function DiscoverScreen({ navigation }: Props) {
   const colors = useColors();
@@ -20,31 +22,47 @@ export function DiscoverScreen({ navigation }: Props) {
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   const [page, setPage] = useState(0);
   const pages = [0, 1, 2];
+  const featured = RECOS.slice(0, 2);
+  const rest = RECOS.slice(2);
+
   function onToolsScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    const next = Math.round(event.nativeEvent.contentOffset.x / PAGE_W);
-    setPage(next);
+    setPage(Math.round(event.nativeEvent.contentOffset.x / PAGE_W));
   }
+
+  function openTool(id: string) {
+    stack?.navigate("Tool", { id });
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-        <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginBottom: 16 }}>{text.discover}</Text>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginHorizontal: 20, marginBottom: 16 }}>{text.discover}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, marginBottom: 18 }}>
           {HEROES.map((hero) => (
-            <Pressable key={hero.id} onPress={() => stack?.navigate("AllTools")} style={{ width: PAGE_W / 2 + 8, minHeight: 120, marginRight: 10, backgroundColor: hero.tone, borderRadius: 16, padding: 14, justifyContent: "flex-end" }}>
-              <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{locale === "en" ? hero.en : hero.zh}</Text>
-              <Text style={{ color: "#F7F6F3", marginTop: 6 }}>{text.viewAll}</Text>
+            <Pressable key={hero.id} onPress={() => stack?.navigate("AllTools")} style={{ width: HERO_W, height: 150, backgroundColor: hero.tone, borderRadius: 16, overflow: "hidden" }}>
+              <View style={{ flex: 1, padding: 12, flexDirection: "row", justifyContent: "flex-end" }}>
+                <View style={{ width: 46, height: 30, borderRadius: 6, backgroundColor: "#FFFFFF22", marginRight: 8, marginTop: 8 }} />
+                <View style={{ width: 28, height: 48, borderRadius: 6, backgroundColor: "#FFFFFF33", marginTop: 4 }} />
+              </View>
+              <View style={{ padding: 14 }}>
+                <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{locale === "en" ? hero.en : hero.zh}</Text>
+                <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{text.viewAll}</Text>
+              </View>
             </Pressable>
           ))}
         </ScrollView>
-        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 18 }}>
-          <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 14 }}>{text.tools}</Text>
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onToolsScroll}>
+        <View style={{ marginHorizontal: 20, backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 18 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
+            <Text style={{ color: colors.ink, fontSize: 18 }}>{text.tools}</Text>
+            <Pressable onPress={() => stack?.navigate("AllTools")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
+          </View>
+          <ScrollView horizontal pagingEnabled decelerationRate="fast" showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onToolsScroll}>
             {pages.map((index) => (
-              <View key={index} style={{ width: PAGE_W - 8, flexDirection: "row", flexWrap: "wrap" }}>
+              <View key={index} style={{ width: PAGE_W, flexDirection: "row", flexWrap: "wrap" }}>
                 {TOOLS.filter((tool) => tool.page === index).map((tool) => (
-                  <Pressable key={tool.id} onPress={() => stack?.navigate("Tool", { id: tool.id })} style={{ width: "25%", alignItems: "center", marginBottom: 16, gap: 6 }}>
-                    <Icon name={tool.icon} color={colors.accent} size={24} />
-                    <Text style={{ color: colors.ink, fontSize: 11, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
+                  <Pressable key={tool.id} onPress={() => openTool(tool.id)} style={{ width: "25%", alignItems: "center", marginBottom: 18, gap: 8 }}>
+                    <Icon name={tool.icon} color={colors.accent} size={28} />
+                    <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -56,18 +74,31 @@ export function DiscoverScreen({ navigation }: Props) {
             ))}
           </View>
         </View>
-        <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 12 }}>{text.recommended}</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {RECOS.map((card) => (
-            <Pressable key={card.id} onPress={() => stack?.navigate("Tool", { id: "rewrite" })} style={{ width: "47%", minHeight: 140, backgroundColor: card.tone, borderRadius: 16, padding: 14, justifyContent: "space-between" }}>
-              <View>
-                <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{locale === "en" ? card.en : card.zh}</Text>
-                <Text style={{ color: "#F7F6F3CC", marginTop: 6, fontSize: 12 }}>{locale === "en" ? card.blurbEn : card.blurbZh}</Text>
-              </View>
-            </Pressable>
+        <Text style={{ color: colors.ink, fontSize: 18, marginHorizontal: 20, marginBottom: 12 }}>{text.recommended}</Text>
+        <View style={{ paddingHorizontal: 20, flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {featured.map((card) => (
+            <RecoCard key={card.id} card={card} locale={locale} tall onPress={() => openTool(card.toolId ?? "rewrite")} />
+          ))}
+          {rest.map((card) => (
+            <RecoCard key={card.id} card={card} locale={locale} onPress={() => openTool(card.toolId ?? "rewrite")} />
           ))}
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function RecoCard({ card, locale, tall, onPress }: { card: CardItem; locale: "zh-HK" | "en"; tall?: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ width: "47%", minHeight: tall ? 188 : 148, backgroundColor: card.tone, borderRadius: 16, overflow: "hidden" }}>
+      <View style={{ height: tall ? 72 : 48, padding: 12, flexDirection: "row", justifyContent: "flex-end" }}>
+        <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#FFFFFF22" }} />
+        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#FFFFFF33", marginLeft: -10, marginTop: 12 }} />
+      </View>
+      <View style={{ padding: 14, paddingTop: 0 }}>
+        <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{locale === "en" ? card.en : card.zh}</Text>
+        <Text style={{ color: "#F7F6F3CC", marginTop: 6, fontSize: 12 }}>{locale === "en" ? card.blurbEn : card.blurbZh}</Text>
+      </View>
+    </Pressable>
   );
 }

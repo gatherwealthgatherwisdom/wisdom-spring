@@ -19,6 +19,7 @@ export type CardItem = {
   blurbZh: string;
   blurbEn: string;
   tone: string;
+  toolId?: string;
 };
 
 export const TOOLS: ToolItem[] = [
@@ -37,6 +38,7 @@ export const TOOLS: ToolItem[] = [
   { id: "detect", zh: "文風檢查", en: "Style check", icon: "search-circle-outline", blurbZh: "示範畫面。唔會聲稱可以避開偵測。", blurbEn: "A sample screen. It does not claim to hide detection.", page: 1 },
   { id: "summary", zh: "摘要", en: "Summary", icon: "book-outline", blurbZh: "把長文收短。", blurbEn: "Shorten a long text.", page: 1 },
   { id: "webchat", zh: "網頁聊天", en: "Page chat", icon: "globe-outline", blurbZh: "示範畫面。唔會標「來自網頁」。", blurbEn: "A sample screen. It will not claim web results.", page: 1 },
+  { id: "email", zh: "電郵", en: "Email", icon: "mail-outline", blurbZh: "穩重有禮的短電郵。", blurbEn: "A short, polite email.", page: 1, mode: "write", templateId: "email" },
   { id: "more", zh: "使其更多", en: "Make more", icon: "images-outline", blurbZh: "用同一風格再寫一版。", blurbEn: "Write another version in the same style.", page: 2, mode: "write", templateId: "rewrite" },
   { id: "cantonese", zh: "廣東話", en: "Cantonese", icon: "chatbubbles-outline", blurbZh: "改成香港廣東話。", blurbEn: "Turn it into Hong Kong Cantonese.", page: 2, mode: "write", templateId: "cantonese" },
   { id: "translate", zh: "翻譯", en: "Translate", icon: "language-outline", blurbZh: "由一種語言譯去另一種。", blurbEn: "Translate from one language to another.", page: 2, mode: "translate" },
@@ -61,18 +63,18 @@ export const HEROES: CardItem[] = [
 ];
 
 export const RECOS: CardItem[] = [
-  { id: "voice-in", zh: "語音輸入", en: "Voice in", blurbZh: "用咪講，智泉寫低。", blurbEn: "Speak, Wisdom Spring writes.", tone: "#2E4A40" },
-  { id: "voice-chat", zh: "語音聊天", en: "Voice chat", blurbZh: "用朗讀聽返。", blurbEn: "Hear the reply read aloud.", tone: "#5C4638" },
-  { id: "calendar", zh: "行程草稿", en: "Day draft", blurbZh: "用對話排一日。", blurbEn: "Plan a day in chat.", tone: "#3A3F5C" },
-  { id: "look", zh: "睇圖", en: "Look", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A3A52" },
-  { id: "solver", zh: "解答", en: "Solve", blurbZh: "逐步拆題。", blurbEn: "Solve it in steps.", tone: "#3A2E58" },
-  { id: "natural", zh: "自然寫作", en: "Natural writing", blurbZh: "寫得似日常說話。", blurbEn: "Write the way people speak.", tone: "#2E4A38" },
-  { id: "check", zh: "文風檢查", en: "Style check", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A4A4A" },
-  { id: "read", zh: "快速閱讀", en: "Fast read", blurbZh: "收短長文。", blurbEn: "Shorten a long text.", tone: "#4A3A4A" },
-  { id: "biz-card", zh: "商務助手", en: "Business aide", blurbZh: "外展同覆信。", blurbEn: "Outreach and replies.", tone: "#2C4A5C" },
-  { id: "grammar", zh: "語法檢查", en: "Grammar", blurbZh: "改病句。", blurbEn: "Fix broken sentences.", tone: "#3A4A5C" },
-  { id: "cite", zh: "引用草稿", en: "Citation draft", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A4A3A" },
-  { id: "post", zh: "內容創作", en: "Posts", blurbZh: "短帖草稿。", blurbEn: "A short post draft.", tone: "#3A5C4A" },
+  { id: "voice-in", zh: "語音輸入", en: "Voice in", blurbZh: "用咪講，智泉寫低。", blurbEn: "Speak, Wisdom Spring writes.", tone: "#2E4A40", toolId: "voice" },
+  { id: "voice-chat", zh: "語音聊天", en: "Voice chat", blurbZh: "用朗讀聽返。", blurbEn: "Hear the reply read aloud.", tone: "#5C4638", toolId: "voice" },
+  { id: "calendar", zh: "行程草稿", en: "Day draft", blurbZh: "用對話排一日。", blurbEn: "Plan a day in chat.", tone: "#3A3F5C", toolId: "bot" },
+  { id: "look", zh: "睇圖", en: "Look", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A3A52", toolId: "photo" },
+  { id: "solver", zh: "解答", en: "Solve", blurbZh: "逐步拆題。", blurbEn: "Solve it in steps.", tone: "#3A2E58", toolId: "solve" },
+  { id: "natural", zh: "自然寫作", en: "Natural writing", blurbZh: "寫得似日常說話。", blurbEn: "Write the way people speak.", tone: "#2E4A38", toolId: "plain" },
+  { id: "check", zh: "文風檢查", en: "Style check", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A4A4A", toolId: "detect" },
+  { id: "read", zh: "快速閱讀", en: "Fast read", blurbZh: "收短長文。", blurbEn: "Shorten a long text.", tone: "#4A3A4A", toolId: "summary" },
+  { id: "biz-card", zh: "商務助手", en: "Business aide", blurbZh: "外展同覆信。", blurbEn: "Outreach and replies.", tone: "#2C4A5C", toolId: "email" },
+  { id: "grammar", zh: "語法檢查", en: "Grammar", blurbZh: "改病句。", blurbEn: "Fix broken sentences.", tone: "#3A4A5C", toolId: "rewrite" },
+  { id: "cite", zh: "引用草稿", en: "Citation draft", blurbZh: "示範畫面。", blurbEn: "A sample screen.", tone: "#4A4A3A", toolId: "summary" },
+  { id: "post", zh: "內容創作", en: "Posts", blurbZh: "短帖草稿。", blurbEn: "A short post draft.", tone: "#3A5C4A", toolId: "more" },
 ];
 
 export const POOL_LABELS = ["智泉 · DeepSeek", "智泉 · Qwen", "智泉 · Gemma"];
