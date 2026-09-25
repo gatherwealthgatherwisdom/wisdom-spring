@@ -2,7 +2,7 @@ import { IMAGE_STYLES } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Icon } from "../../shared/ui/Icon";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -10,6 +10,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { RecentRow } from "../../shared/ui/RecentRow";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 function styleNote(id: string, locale: "zh-HK" | "en") {
@@ -31,25 +32,33 @@ export function ImageScreen({ navigation }: Props) {
   const [prompt, setPrompt] = useState("");
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
+  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const recent = (chats.data?.items ?? []).filter((item) => item.mode === "image").slice(0, 5);
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
       <ScreenHeader title={text.image} />
       {caps.data && !caps.data.image ? (
         <Text style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 12 }}>{text.noImageModel}</Text>
       ) : null}
-      <View style={{ gap: 10, flex: 1 }}>
+      <View style={{ gap: 10 }}>
         {IMAGE_STYLES.map((style) => (
           <Pressable
             key={style.id}
             onPress={() => setStyleId(style.id)}
-            style={{ borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: colors.card, borderRadius: 16, padding: 16 }}
+            style={{ minHeight: 88, borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: colors.card, borderRadius: 16, padding: 16, justifyContent: "center" }}
           >
             <Text style={{ color: colors.ink, fontSize: 18 }}>{locale === "en" ? style.en : style.zh}</Text>
             <Text style={{ color: colors.muted, marginTop: 4 }}>{styleNote(style.id, locale)}</Text>
           </Pressable>
         ))}
       </View>
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, marginTop: 12, padding: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
+      <Text style={{ color: colors.muted, marginTop: 16, marginBottom: 8 }}>{text.recentImage}</Text>
+      {recent.length === 0 ? <RecentRow modeLabel={text.image} locale={locale} empty={text.emptyImage} /> : recent.map((item) => (
+        <RecentRow key={item.id} item={item} modeLabel={text.image} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "image" })} />
+      ))}
+      </ScrollView>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 8, marginHorizontal: 20, marginBottom: 16, padding: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
         <TextInput
           value={prompt}
           onChangeText={setPrompt}
