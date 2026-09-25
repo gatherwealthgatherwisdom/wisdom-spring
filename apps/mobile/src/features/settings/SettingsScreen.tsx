@@ -52,9 +52,14 @@ export function SettingsScreen() {
         ) : (
           <>
             {user?.phone ? <Text style={{ color: colors.ink, fontSize: 18 }}>{user.phone}</Text> : <Text style={{ color: colors.ink, fontSize: 18 }}>{text.account}</Text>}
-            <Text style={{ color: colors.muted, marginTop: 4, marginBottom: 10 }}>
+            <Text style={{ color: colors.muted, marginTop: 4, marginBottom: 8 }}>
               {guest ? text.trialLeft(trialRemaining ?? 0) : `${text.quota} ${remaining ?? "—"}`}
             </Text>
+            <UsageBar
+              used={guest ? user?.guestUses ?? 0 : quota?.dailyUsed ?? 0}
+              limit={guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20}
+              colors={colors}
+            />
             {guest ? (
               <Pressable onPress={() => openRegister(navigation)}>
                 <Text style={{ color: colors.accent }}>{text.completeRegistration}</Text>
@@ -72,6 +77,13 @@ export function SettingsScreen() {
         <SettingLine icon="sunny-outline" label={text.light} selected={appearance === "light"} colors={colors} onPress={() => setAppearance("light")} />
         <SettingLine icon="moon-outline" label={text.dark} selected={appearance === "dark"} colors={colors} onPress={() => setAppearance("dark")} />
       </Group>
+      <Group title={text.about} colors={colors}>
+        <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 18 }}>智泉</Text>
+          <Text style={{ color: colors.muted, marginTop: 4 }}>{text.splash}</Text>
+          <Text style={{ color: colors.muted, marginTop: 4 }}>{text.company}</Text>
+        </View>
+      </Group>
       {signedIn ? (
         <Group title={text.account} colors={colors}>
           <SettingLine icon="log-out-outline" label={text.logout} colors={colors} onPress={() => { void spring.logout(true).catch(() => undefined); clear(); }} />
@@ -79,6 +91,15 @@ export function SettingsScreen() {
         </Group>
       ) : null}
     </SafeAreaView>
+  );
+}
+
+function UsageBar({ used, limit, colors }: { used: number; limit: number; colors: { accent: string; line: string } }) {
+  const width = limit <= 0 ? 0 : Math.min(100, Math.round((used / limit) * 100));
+  return (
+    <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.line, overflow: "hidden", marginBottom: 10 }}>
+      <View style={{ width: `${width}%`, height: 6, backgroundColor: colors.accent }} />
+    </View>
   );
 }
 
