@@ -1,9 +1,10 @@
 import { Locale } from "@spring/shared";
+import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { openAuth, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
@@ -20,6 +21,8 @@ export function SettingsScreen() {
   const appearance = usePrefs((state) => state.appearance);
   const setAppearance = usePrefs((state) => state.setAppearance);
   const setLocale = usePrefs((state) => state.setLocale);
+  const speakNotify = usePrefs((state) => state.speakNotify);
+  const setSpeakNotify = usePrefs((state) => state.setSpeakNotify);
   const clear = usePrefs((state) => state.clear);
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
@@ -39,6 +42,8 @@ export function SettingsScreen() {
   }
 
   const display = user?.displayName?.trim() || text.app;
+  const used = guest ? user?.guestUses ?? 0 : quota?.dailyUsed ?? 0;
+  const limit = guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -49,7 +54,14 @@ export function SettingsScreen() {
           <Icon name="person-outline" color={colors.ink} size={36} />
         </View>
         <Text style={{ color: colors.ink, fontSize: 20, fontFamily: "Palatino" }}>{signedIn ? display : text.app}</Text>
-        <Text style={{ color: colors.muted, marginTop: 4 }}>{signedIn ? user?.phone ?? text.account : text.signedOut}</Text>
+        <Pressable onPress={() => { if (user?.phone) void Clipboard.setStringAsync(user.phone); }}>
+          <Text style={{ color: colors.muted, marginTop: 4 }}>{signedIn ? user?.phone ?? text.account : text.signedOut}</Text>
+        </Pressable>
+        {signedIn ? (
+          <View style={{ marginTop: 8, borderWidth: 1, borderColor: colors.accent, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ color: colors.accent, fontSize: 12 }}>{guest ? text.trialPlan : text.freePlan}</Text>
+          </View>
+        ) : null}
       </View>
       <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, marginBottom: 18 }}>
         {!signedIn ? (
@@ -63,13 +75,9 @@ export function SettingsScreen() {
           <>
             {user?.phone ? <Text style={{ color: colors.ink, fontSize: 18 }}>{user.phone}</Text> : <Text style={{ color: colors.ink, fontSize: 18 }}>{text.account}</Text>}
             <Text style={{ color: colors.muted, marginTop: 4, marginBottom: 8 }}>
-              {guest ? text.trialLeft(trialRemaining ?? 0) : `${text.quota} ${remaining ?? "—"}`}
+              {text.usedOf(used, limit)}
             </Text>
-            <UsageBar
-              used={guest ? user?.guestUses ?? 0 : quota?.dailyUsed ?? 0}
-              limit={guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20}
-              colors={colors}
-            />
+            <UsageBar used={used} limit={limit} colors={colors} />
             {guest ? (
               <Pressable onPress={() => openRegister(navigation)}>
                 <Text style={{ color: colors.accent }}>{text.completeRegistration}</Text>
@@ -81,6 +89,14 @@ export function SettingsScreen() {
       <Group title={text.shortcuts} colors={colors}>
         <SettingLine icon="chatbubble-outline" label={text.lastChat} colors={colors} chevron onPress={() => navigation.navigate("Inbox")} />
         <SettingLine icon="compass-outline" label={text.discover} colors={colors} chevron onPress={() => navigation.navigate("Discover")} />
+        <SettingLine icon="image-outline" label={text.image} colors={colors} chevron onPress={() => navigation.navigate("Image")} />
+      </Group>
+      <Group title={text.notify} colors={colors}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 }}>
+          <Icon name="volume-medium-outline" color={colors.accent} size={20} />
+          <Text style={{ flex: 1, color: colors.ink, fontSize: 16, marginLeft: 12 }}>{text.speakNotify}</Text>
+          <Switch value={speakNotify} onValueChange={setSpeakNotify} trackColor={{ true: colors.accent, false: colors.line }} />
+        </View>
       </Group>
       <Group title={text.language} colors={colors}>
         <SettingLine icon="language-outline" label="繁中" selected={locale === "zh-HK"} colors={colors} onPress={() => void chooseLocale("zh-HK")} />
@@ -96,6 +112,7 @@ export function SettingsScreen() {
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 18 }}>智泉</Text>
           <Text style={{ color: colors.muted, marginTop: 4 }}>{text.splash}</Text>
           <Text style={{ color: colors.muted, marginTop: 4 }}>{text.company}</Text>
+          <Text style={{ color: colors.muted, marginTop: 8 }}>{text.version} 1.0.0</Text>
         </View>
       </Group>
       {signedIn ? (

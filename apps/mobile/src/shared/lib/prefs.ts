@@ -12,6 +12,7 @@ interface Persisted {
   user: UserPublic | null;
   appearance: Appearance;
   locale: "zh-HK" | "en";
+  speakNotify: boolean;
 }
 
 interface Prefs extends Persisted {
@@ -22,6 +23,7 @@ interface Prefs extends Persisted {
   setUser: (user: UserPublic) => void;
   setAppearance: (appearance: Appearance) => void;
   setLocale: (locale: "zh-HK" | "en") => void;
+  setSpeakNotify: (speakNotify: boolean) => void;
   clear: () => void;
 }
 
@@ -31,6 +33,7 @@ const empty: Persisted = {
   user: null,
   appearance: "system",
   locale: "zh-HK",
+  speakNotify: true,
 };
 
 async function save(state: Persisted): Promise<void> {
@@ -72,6 +75,10 @@ export const usePrefs = create<Prefs>((set, get) => ({
   },
   setLocale(locale) {
     set({ locale });
+    void save(get());
+  },
+  setSpeakNotify(speakNotify) {
+    set({ speakNotify });
     void save(get());
   },
   clear() {
