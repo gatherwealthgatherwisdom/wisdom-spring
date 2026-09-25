@@ -1,47 +1,18 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { FlatList, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ConversationStatus } from "@spring/shared";
+import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
+import { PoolSheet } from "../discover/PoolSheet";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
-import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
-import { Icon, type IconName } from "../../shared/ui/Icon";
-import { ScreenHeader } from "../../shared/ui/ScreenHeader";
-
-function modeLabel(mode: string | undefined, text: { inbox: string; write: string; translate: string; image: string }) {
-  if (mode === "write") return text.write;
-  if (mode === "translate") return text.translate;
-  if (mode === "image") return text.image;
-  return text.inbox;
-}
-
-function iconButton(colors: { line: string }) {
-  return { width: 32, height: 32, alignItems: "center" as const, justifyContent: "center" as const, borderRadius: 16, borderWidth: 1, borderColor: colors.line };
-}
-
-function ToolTile({
-  colors,
-  icon,
-  title,
-  onPress,
-}: {
-  colors: { card: string; line: string; ink: string; accent: string };
-  icon: IconName;
-  title: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={{ width: 92, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 8, alignItems: "center", gap: 8 }}>
-      <Icon name={icon} color={colors.accent} size={22} />
-      <Text style={{ color: colors.ink, fontSize: 13 }}>{title}</Text>
-    </Pressable>
-  );
-}
+import { Icon } from "../../shared/ui/Icon";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Inbox">;
 
@@ -49,73 +20,127 @@ export function InboxScreen({ navigation }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
-  const [q, setQ] = useState("");
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
-  const queryClient = useQueryClient();
-  const list = useQuery({
-    queryKey: ["conversations", q],
-    queryFn: () => spring.conversations(q ? { q } : undefined),
-    enabled: signedIn,
-  });
-  const notes = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
-  const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
-  const user = me.data?.user ?? usePrefs.getState().user;
-  const quota = me.data?.quota;
-  const trial = user?.registered === false ? Math.max(0, user.guestLimit - user.guestUses) : null;
-  const remaining = quota ? Math.max(0, quota.dailyLimit - quota.dailyUsed) : null;
+  const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
+  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const last = chats.data?.items[0];
+  const [poolOpen, setPoolOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const homeTools = TOOLS.filter((tool) => tool.page === 0).slice(0, 4);
+
+  function sendHome() {
+    const seed = draft.trim();
+    setDraft("");
+    openChat(navigation, seed ? { mode: "chat", seed } : { mode: "chat" });
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-        <View style={{ flex: 1 }}>
-          <ScreenHeader title={text.hello} />
-          <Text style={{ color: colors.muted, marginTop: -12 }}>{text.splash}</Text>
-        </View>
-        <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, marginTop: 4 }}>
-          <Text style={{ color: colors.accent, fontSize: 12 }}>
-            {trial !== null ? text.trialLeft(trial) : remaining !== null ? `${text.quota} ${remaining}` : text.app}
-          </Text>
-        </View>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingBottom: 12, alignItems: "flex-start" }}>
-        <ToolTile colors={colors} icon="mail-outline" title={locale === "en" ? "Email" : "電郵"} onPress={() => openChat(navigation, { mode: "write", templateId: "email" })} />
-        <ToolTile colors={colors} icon="refresh-outline" title={locale === "en" ? "Rewrite" : "改寫"} onPress={() => openChat(navigation, { mode: "write", templateId: "rewrite" })} />
-        <ToolTile colors={colors} icon="language-outline" title={text.translate} onPress={() => navigation.navigate("Translate")} />
-        <ToolTile colors={colors} icon="image-outline" title={text.image} onPress={() => navigation.navigate("Image")} />
-      </ScrollView>
-      {(notes.data?.items ?? []).slice(0, 1).map((item) => (
-        <Text key={item.id} style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 10, marginBottom: 10 }}>
-          {locale === "en" ? item.bodyEn : item.bodyZh}
-        </Text>
-      ))}
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-        <TextInput value={q} onChangeText={setQ} placeholder={text.search} placeholderTextColor={colors.muted} style={{ flex: 1, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, padding: 12, color: colors.ink }} />
-        <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 14, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: colors.onAccent }}>{text.newChat}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4 }}>
+        <Pressable onPress={() => navigation.navigate("Discover")} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+          <Icon name="menu-outline" color={colors.ink} size={26} />
+        </Pressable>
+        <Pressable onPress={() => navigation.navigate("Settings")} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center" }}>
+          <Icon name="person-outline" color={colors.ink} size={18} />
         </Pressable>
       </View>
-      <Text style={{ color: colors.ink, fontSize: 16, marginBottom: 8 }}>{text.recent}</Text>
-      <FlatList
-        data={list.data?.items ?? []}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Pressable onPress={() => openChat(navigation, { conversationId: item.id, mode: item.mode })} style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 14, padding: 14, marginBottom: 8 }}>
-            <Text style={{ color: colors.ink, fontSize: 16 }}>{item.title || text.newChat}</Text>
-            <Text style={{ color: colors.muted, marginTop: 4 }}>{modeLabel(item.mode, text)} · {formatWhen(item.lastMessageAt, locale)}</Text>
-            <View style={{ flexDirection: "row", gap: 4, marginTop: 8 }}>
-              <Pressable accessibilityLabel={text.pin} onPress={() => void spring.updateConversation(item.id, { pinned: !item.pinnedAt }).then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }))} style={iconButton(colors)}>
-                <Icon name={item.pinnedAt ? "pin" : "pin-outline"} color={colors.accent} size={18} />
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
+        <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 132, marginBottom: 14, justifyContent: "space-between" }}>
+          <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? "Use Wisdom Spring on every device" : "在所有設備上使用智泉"}</Text>
+          <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
+            <Text style={{ color: colors.ink }}>{text.explore}</Text>
+          </View>
+        </Pressable>
+        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 14 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
+            <Text style={{ color: colors.ink, fontSize: 18 }}>{text.tools}</Text>
+            <Pressable onPress={() => stack?.navigate("AllTools")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
+          </View>
+          <View style={{ flexDirection: "row" }}>
+            {homeTools.map((tool) => (
+              <Pressable key={tool.id} onPress={() => stack?.navigate("Tool", { id: tool.id })} style={{ flex: 1, alignItems: "center", gap: 8 }}>
+                <Icon name={tool.icon} color={colors.accent} size={26} />
+                <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
               </Pressable>
-              <Pressable accessibilityLabel={text.archive} onPress={() => void spring.updateConversation(item.id, { status: ConversationStatus.ARCHIVED }).then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }))} style={iconButton(colors)}>
-                <Icon name="archive-outline" color={colors.muted} size={18} />
+            ))}
+          </View>
+        </View>
+        <View style={{ marginBottom: 14 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+            <Text style={{ color: colors.ink, fontSize: 18 }}>{text.image}</Text>
+            <Pressable onPress={() => navigation.navigate("Image")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
+          </View>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {DRAW_CARDS.map((card) => (
+              <Pressable key={card.id} onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ flex: 1, minHeight: 150, backgroundColor: card.tone, borderRadius: 16, padding: 12, justifyContent: "flex-end" }}>
+                <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
+                  <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
+                </View>
+                <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? card.en : card.zh}</Text>
               </Pressable>
-              <Pressable accessibilityLabel={text.remove} onPress={() => void spring.deleteConversation(item.id).then(() => queryClient.invalidateQueries({ queryKey: ["conversations"] }))} style={iconButton(colors)}>
-                <Icon name="trash-outline" color={colors.danger} size={18} />
-              </Pressable>
-            </View>
+            ))}
+          </View>
+        </View>
+        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+            <Text style={{ color: colors.ink, fontSize: 18 }}>{text.bots}</Text>
+            <Pressable onPress={() => stack?.navigate("AllBots")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
+          </View>
+          {BOTS.map((bot) => (
+            <Pressable key={bot.id} onPress={() => stack?.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", gap: 12, paddingVertical: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.line, alignItems: "center", justifyContent: "center" }}>
+                <Icon name="globe-outline" color={colors.muted} size={20} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.ink }}>{locale === "en" ? bot.en : bot.zh}</Text>
+                <Text style={{ color: colors.muted, marginTop: 2 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <Pressable onPress={() => openChat(navigation, last ? { conversationId: last.id, mode: last.mode } : { mode: "chat" })} style={chip(colors)}>
+            <Icon name="time-outline" color={colors.ink} size={16} />
+            <Text style={{ color: colors.ink }}>{text.lastChat}</Text>
           </Pressable>
-        )}
-      />
+          <Pressable onPress={() => setPoolOpen(true)} style={chip(colors)}>
+            <Text style={{ color: colors.ink }}>{text.app}</Text>
+          </Pressable>
+        </ScrollView>
+        <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 28, paddingHorizontal: 8, paddingVertical: 6 }}>
+          <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="add" color={colors.ink} />
+          </Pressable>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={text.message}
+            placeholderTextColor={colors.muted}
+            onSubmitEditing={sendHome}
+            style={{ flex: 1, color: colors.ink, paddingVertical: 8 }}
+          />
+          <Pressable onPress={sendHome} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="mic-outline" color={colors.ink} />
+          </Pressable>
+        </View>
+      </View>
+      <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
     </SafeAreaView>
   );
+}
+
+function chip(colors: { card: string; line: string }) {
+  return {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  };
 }

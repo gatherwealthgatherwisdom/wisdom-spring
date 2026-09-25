@@ -2,20 +2,18 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import type { NavigationProp, NavigatorScreenParams } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon, type IconName } from "../shared/ui/Icon";
+import { DiscoverScreen } from "../features/discover/DiscoverScreen";
 import { ImageScreen } from "../features/image/ImageScreen";
 import { InboxScreen } from "../features/inbox/InboxScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
-import { TranslateScreen } from "../features/translate/TranslateScreen";
-import { WriteScreen } from "../features/write/WriteScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
 import { useColors } from "../shared/theme";
 
 export type MainTabParamList = {
   Inbox: undefined;
-  Write: undefined;
-  Translate: undefined;
   Image: undefined;
+  Discover: undefined;
   Settings: undefined;
 };
 
@@ -34,6 +32,9 @@ export type AppStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Chat: ChatParams | undefined;
   Register: undefined;
+  Tool: { id: string };
+  AllTools: undefined;
+  AllBots: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -68,9 +69,8 @@ export function MainTabs() {
       }}
     >
       <Tab.Screen name="Inbox" component={InboxScreen} options={{ title: text.inbox, tabBarIcon: tabIcon("chatbubble-outline", "chatbubble") }} />
-      <Tab.Screen name="Write" component={WriteScreen} options={{ title: text.write, tabBarIcon: tabIcon("create-outline", "create") }} />
-      <Tab.Screen name="Translate" component={TranslateScreen} options={{ title: text.translate, tabBarIcon: tabIcon("language-outline", "language") }} />
       <Tab.Screen name="Image" component={ImageScreen} options={{ title: text.image, tabBarIcon: tabIcon("image-outline", "image") }} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ title: text.discover, tabBarIcon: tabIcon("compass-outline", "compass") }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: text.mine, tabBarIcon: tabIcon("person-outline", "person") }} />
     </Tab.Navigator>
   );

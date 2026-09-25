@@ -1,5 +1,5 @@
 import { TRANSLATE_LANGUAGES } from "@spring/shared";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -13,9 +13,7 @@ import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
-type Props = BottomTabScreenProps<MainTabParamList, "Translate">;
-
-export function TranslateScreen({ navigation }: Props) {
+export function TranslateScreen({ navigation }: { navigation: NavigationProp<MainTabParamList> }) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];

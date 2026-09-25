@@ -220,7 +220,7 @@ export function ChatScreen({ navigation, route }: Props) {
             listenLabel={text.listen}
             onCard={(card) => {
               if (card === "email") navigation.navigate("Chat", { mode: "write", templateId: "email" });
-              if (card === "translate") navigation.navigate("Main", { screen: "Translate" });
+              if (card === "translate") navigation.replace("Chat", { mode: "translate" });
               if (card === "image") navigation.navigate("Main", { screen: "Image" });
               if (card === "resume") navigation.goBack();
             }}

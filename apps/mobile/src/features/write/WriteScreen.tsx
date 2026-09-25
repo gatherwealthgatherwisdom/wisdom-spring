@@ -1,5 +1,5 @@
 import { WRITE_TEMPLATES } from "@spring/shared";
-import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -30,9 +30,7 @@ const TEMPLATE_NOTE: Record<string, { "zh-HK": string; en: string }> = {
   cantonese: { "zh-HK": "香港廣東話，語氣自然", en: "Natural Hong Kong Cantonese" },
 };
 
-type Props = BottomTabScreenProps<MainTabParamList, "Write">;
-
-export function WriteScreen({ navigation }: Props) {
+export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTabParamList> }) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
