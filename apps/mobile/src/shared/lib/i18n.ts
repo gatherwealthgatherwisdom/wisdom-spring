@@ -79,6 +79,8 @@ export const copy = {
     drawHero: "用水墨畫一幅",
     imageCreate: "圖像創作",
     styles: "風格",
+    shortcuts: "捷徑",
+    signedOut: "未登入",
     cards: {
       email: "寫一封電郵",
       translate: "翻譯呢段",
@@ -166,6 +168,8 @@ export const copy = {
     drawHero: "Paint it in ink",
     imageCreate: "Make an image",
     styles: "Styles",
+    shortcuts: "Shortcuts",
+    signedOut: "Not signed in",
     cards: {
       email: "Write an email",
       translate: "Translate this",

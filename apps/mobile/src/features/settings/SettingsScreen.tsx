@@ -3,7 +3,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { openAuth, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
@@ -38,13 +38,18 @@ export function SettingsScreen() {
     usePrefs.getState().setUser(updated.user);
   }
 
+  const display = user?.displayName?.trim() || text.app;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
       <ScreenHeader title={text.mine} />
-      <View style={{ alignItems: "center", marginBottom: 16 }}>
-        <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
-          <Icon name="person-outline" color={colors.ink} size={32} />
+      <View style={{ alignItems: "center", marginBottom: 18 }}>
+        <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+          <Icon name="person-outline" color={colors.ink} size={36} />
         </View>
+        <Text style={{ color: colors.ink, fontSize: 20, fontFamily: "Palatino" }}>{signedIn ? display : text.app}</Text>
+        <Text style={{ color: colors.muted, marginTop: 4 }}>{signedIn ? user?.phone ?? text.account : text.signedOut}</Text>
       </View>
       <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, marginBottom: 18 }}>
         {!signedIn ? (
@@ -73,6 +78,10 @@ export function SettingsScreen() {
           </>
         )}
       </View>
+      <Group title={text.shortcuts} colors={colors}>
+        <SettingLine icon="chatbubble-outline" label={text.lastChat} colors={colors} chevron onPress={() => navigation.navigate("Inbox")} />
+        <SettingLine icon="compass-outline" label={text.discover} colors={colors} chevron onPress={() => navigation.navigate("Discover")} />
+      </Group>
       <Group title={text.language} colors={colors}>
         <SettingLine icon="language-outline" label="繁中" selected={locale === "zh-HK"} colors={colors} onPress={() => void chooseLocale("zh-HK")} />
         <SettingLine icon="language-outline" label="English" selected={locale === "en"} colors={colors} onPress={() => void chooseLocale("en")} />
@@ -95,6 +104,7 @@ export function SettingsScreen() {
           <SettingLine icon="trash-outline" label={text.deleteAccount} danger colors={colors} onPress={() => { void spring.deleteMe().then(() => clear()).catch(() => undefined); }} />
         </Group>
       ) : null}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -122,6 +132,7 @@ function SettingLine({
   label,
   selected,
   danger,
+  chevron,
   colors,
   onPress,
 }: {
@@ -129,14 +140,16 @@ function SettingLine({
   label: string;
   selected?: boolean;
   danger?: boolean;
+  chevron?: boolean;
   colors: { ink: string; accent: string; danger: string; line: string };
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 14, borderTopWidth: 0, borderBottomWidth: 0 }}>
+    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
       <Icon name={icon} color={danger ? colors.danger : colors.accent} size={20} />
       <Text style={{ flex: 1, color: danger ? colors.danger : colors.ink, fontSize: 16 }}>{label}</Text>
       {selected ? <Icon name="checkmark" color={colors.accent} size={18} /> : null}
+      {chevron ? <Icon name="chevron-forward" color={colors.line} size={18} /> : null}
     </Pressable>
   );
 }
