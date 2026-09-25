@@ -76,6 +76,9 @@ export const copy = {
     poolHint: "每一句由智泉抽選，唔使揀模型。",
     sample: "示範畫面",
     explore: "立即探索",
+    drawHero: "用水墨畫一幅",
+    imageCreate: "圖像創作",
+    styles: "風格",
     cards: {
       email: "寫一封電郵",
       translate: "翻譯呢段",
@@ -160,6 +163,9 @@ export const copy = {
     poolHint: "Each turn is drawn by Wisdom Spring. There is no model menu.",
     sample: "Sample screen",
     explore: "Explore now",
+    drawHero: "Paint it in ink",
+    imageCreate: "Make an image",
+    styles: "Styles",
     cards: {
       email: "Write an email",
       translate: "Translate this",
