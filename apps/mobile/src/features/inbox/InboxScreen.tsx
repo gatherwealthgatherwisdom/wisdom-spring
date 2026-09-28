@@ -46,8 +46,9 @@ export function InboxScreen({ navigation }: Props) {
           <Icon name="person-outline" color={colors.ink} size={18} />
         </Pressable>
       </View>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
-        <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 140, marginBottom: 14, flexDirection: "row", overflow: "hidden" }}>
+      <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 136 }}>
+        <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 124, marginBottom: 14, flexDirection: "row", overflow: "hidden" }}>
           <View style={{ flex: 1, justifyContent: "space-between" }}>
             <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? "Use Wisdom Spring on every device" : "在所有設備上使用智泉"}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 }}>
@@ -81,7 +82,7 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {DRAW_CARDS.map((card) => (
-              <Pressable key={card.id} onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ flex: 1, minHeight: 158, backgroundColor: card.tone, borderRadius: 16, padding: 12, justifyContent: "flex-end", overflow: "hidden" }}>
+              <Pressable key={card.id} onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ flex: 1, minHeight: 132, backgroundColor: card.tone, borderRadius: 16, padding: 12, justifyContent: "flex-end", overflow: "hidden" }}>
                 <View style={{ position: "absolute", top: 16, left: 16, width: 64, height: 80, borderRadius: 8, backgroundColor: "#FFFFFF22" }} />
                 <View style={{ position: "absolute", top: 28, left: 36, width: 64, height: 80, borderRadius: 8, backgroundColor: "#FFFFFF33" }} />
                 <View style={{ position: "absolute", top: 18, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: "#F7F6F3AA" }} />
@@ -93,7 +94,7 @@ export function InboxScreen({ navigation }: Props) {
             ))}
           </View>
         </View>
-        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12 }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 4 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.bots}</Text>
             <Pressable onPress={() => stack?.navigate("AllBots")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
@@ -112,7 +113,7 @@ export function InboxScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}>
+      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 10, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
         {attachOpen ? (
           <View style={{ flexDirection: "row", gap: 10 }}>
@@ -155,6 +156,7 @@ export function InboxScreen({ navigation }: Props) {
             <Icon name="call-outline" color={colors.ink} />
           </Pressable>
         </View>
+      </View>
       </View>
       <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
     </SafeAreaView>
