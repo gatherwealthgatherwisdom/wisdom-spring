@@ -5,7 +5,8 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
-import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import { DrawerMenu } from "./DrawerMenu";
+import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
@@ -21,9 +22,12 @@ export function InboxScreen({ navigation }: Props) {
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
+  const user = usePrefs((state) => state.user);
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
   const last = chats.data?.items[0];
+  const initial = user?.displayName?.trim().charAt(0) ?? "";
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [poolOpen, setPoolOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [attachOpen, setAttachOpen] = useState(false);
@@ -39,11 +43,22 @@ export function InboxScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4 }}>
-        <Pressable onPress={() => navigation.navigate("Discover")} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+        <Pressable accessibilityLabel={text.chatsMenu} onPress={() => setDrawerOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Icon name="menu-outline" color={colors.ink} size={26} />
         </Pressable>
-        <Pressable onPress={() => navigation.navigate("Settings")} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center" }}>
-          <Icon name="person-outline" color={colors.ink} size={18} />
+        <Pressable
+          accessibilityLabel={signedIn ? text.mine : text.login}
+          onPress={() => {
+            if (signedIn) navigation.navigate("Settings");
+            else openAuth(navigation);
+          }}
+          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: signedIn ? colors.accent : colors.line, alignItems: "center", justifyContent: "center" }}
+        >
+          {signedIn && initial ? (
+            <Text style={{ color: colors.ink, fontSize: 15 }}>{initial}</Text>
+          ) : (
+            <Icon name="person-outline" color={colors.ink} size={18} />
+          )}
         </Pressable>
       </View>
       <View style={{ flex: 1 }}>
@@ -158,6 +173,7 @@ export function InboxScreen({ navigation }: Props) {
         </View>
       </View>
       </View>
+      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} navigation={navigation} />
       <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
     </SafeAreaView>
   );
