@@ -24,6 +24,8 @@ export * from "./constants/brand";
 export * from "./constants/allowlist";
 export * from "./constants/messages";
 export * from "./constants/tools";
+export * from "./constants/catalog";
+export * from "./schema/catalog.schema";
 export * from "./lib/id";
 export * from "./lib/phone";
 export * from "./lib/money";

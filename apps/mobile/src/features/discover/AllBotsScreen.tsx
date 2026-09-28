@@ -20,7 +20,17 @@ export function AllBotsScreen({ navigation }: Props) {
       <ScreenHeader title={text.bots} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {BOTS.map((bot) => (
-          <Pressable key={bot.id} onPress={() => navigation.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+          <Pressable
+            key={bot.id}
+            onPress={() =>
+              navigation.navigate("Chat", {
+                mode: "chat",
+                templateId: bot.id,
+                seed: locale === "en" ? bot.blurbEn : bot.blurbZh,
+              })
+            }
+            style={{ flexDirection: "row", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}
+          >
             <Cover source={bot.art} style={{ width: 52, height: 52, borderRadius: 26 }} dim={0} />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? bot.en : bot.zh}</Text>

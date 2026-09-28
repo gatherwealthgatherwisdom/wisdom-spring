@@ -1,6 +1,8 @@
 import type {
   AdminUpdateUserRequest,
   AnnouncementView,
+  CatalogAidesResponse,
+  CatalogToolsResponse,
   AuditLogView,
   AuthResponse,
   ConversationView,
@@ -108,6 +110,14 @@ export class SpringClient {
 
   announcements(): Promise<PageOf<AnnouncementView>> {
     return this.request("/v1/announcements");
+  }
+
+  catalogTools(): Promise<CatalogToolsResponse> {
+    return this.request("/v1/catalog/tools");
+  }
+
+  catalogAides(): Promise<CatalogAidesResponse> {
+    return this.request("/v1/catalog/aides");
   }
 
   conversations(query?: { q?: string; cursor?: string }): Promise<PageOf<ConversationView>> {

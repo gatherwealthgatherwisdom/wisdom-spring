@@ -1,4 +1,4 @@
-import { SYSTEM_PROMPT, imageStyle, writeTemplate } from "@spring/shared";
+import { SYSTEM_PROMPT, imageStyle, toolInstruction, writeTemplate } from "@spring/shared";
 
 export interface ConversationModeFields {
   mode: string;
@@ -10,6 +10,8 @@ export interface ConversationModeFields {
 
 export function systemPromptFor(conversation: ConversationModeFields, requestedModel: string): string {
   const identity = `${SYSTEM_PROMPT}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時先可以提及。`;
+  const extra = toolInstruction(conversation.templateId);
+  if (extra) return `${identity}\n${extra}`;
   if (conversation.mode === "write") {
     const template = writeTemplate(conversation.templateId);
     return `${identity}\n${template?.instruction ?? "幫用戶寫作，語氣穩重、清楚。"}`;

@@ -5,6 +5,7 @@ import { messageFor } from "../src/constants/messages";
 import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
+import { SPRING_AIDES, SPRING_TOOLS, toolInstruction } from "../src/constants/catalog";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 
 describe("money", () => {
@@ -72,6 +73,21 @@ describe("copy", () => {
   it("uses the Hong Kong quota line", () => {
     expect(messageFor(ErrorCode.QUOTA_DAILY_MESSAGE)).toBe("今日對話次數已用完。");
     expect(messageFor(ErrorCode.QUOTA_GUEST)).toBe("試用 5 次已用完。完成註冊後可以繼續用。");
+  });
+});
+
+describe("tool catalog", () => {
+  it("marks rewrite live and search as a sample", () => {
+    expect(SPRING_TOOLS.find((item) => item.id === "rewrite")?.live).toBe(true);
+    expect(SPRING_TOOLS.find((item) => item.id === "search")?.live).toBe(false);
+    expect(SPRING_TOOLS.find((item) => item.id === "webchat")?.live).toBe(false);
+  });
+
+  it("exposes aide instructions without claiming web results", () => {
+    expect(SPRING_AIDES).toHaveLength(3);
+    expect(toolInstruction("biz")).toMatch(/商務/);
+    expect(toolInstruction("solve")).toMatch(/步驟/);
+    expect(toolInstruction("detect")).toMatch(/唔好聲稱/);
   });
 });
 

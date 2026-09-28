@@ -40,6 +40,12 @@ import type {
   SseMetaSchema,
 } from "../schema/message.schema";
 import type {
+  CatalogAideViewSchema,
+  CatalogAidesResponseSchema,
+  CatalogToolViewSchema,
+  CatalogToolsResponseSchema,
+} from "../schema/catalog.schema";
+import type {
   ModelPoolViewSchema,
   SimulateDrawRequestSchema,
   SimulateDrawResponseSchema,
@@ -84,3 +90,7 @@ export type AnnouncementView = z.infer<typeof AnnouncementViewSchema>;
 export type UpsertAnnouncementRequest = z.infer<typeof UpsertAnnouncementSchema>;
 export type AuditLogView = z.infer<typeof AuditLogViewSchema>;
 export type UsageReport = z.infer<typeof UsageReportSchema>;
+export type CatalogToolView = z.infer<typeof CatalogToolViewSchema>;
+export type CatalogAideView = z.infer<typeof CatalogAideViewSchema>;
+export type CatalogToolsResponse = z.infer<typeof CatalogToolsResponseSchema>;
+export type CatalogAidesResponse = z.infer<typeof CatalogAidesResponseSchema>;

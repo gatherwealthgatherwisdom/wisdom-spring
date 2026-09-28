@@ -111,7 +111,17 @@ export function InboxScreen({ navigation }: Props) {
             <Pressable onPress={() => stack?.navigate("AllBots")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
           {BOTS.map((bot) => (
-            <Pressable key={bot.id} onPress={() => stack?.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}>
+            <Pressable
+              key={bot.id}
+              onPress={() =>
+                stack?.navigate("Chat", {
+                  mode: "chat",
+                  templateId: bot.id,
+                  seed: locale === "en" ? bot.blurbEn : bot.blurbZh,
+                })
+              }
+              style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}
+            >
               <Cover source={bot.art} style={{ width: 48, height: 48, borderRadius: 24 }} dim={0} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.ink }}>{locale === "en" ? bot.en : bot.zh}</Text>
