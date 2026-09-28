@@ -165,7 +165,6 @@ export function AuthScreen({ navigation }: Props) {
                     }}
                   />
                 </View>
-                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{text.digitsOf(digits.length, maxLocal)}</Text>
               </>
             ) : (
               <>
