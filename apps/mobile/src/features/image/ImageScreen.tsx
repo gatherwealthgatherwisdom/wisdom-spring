@@ -5,12 +5,13 @@ import { useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
-import { DRAW_CARDS } from "../discover/catalog";
+import { DRAW_CARDS, HERO_ART, STYLE_ART } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 
@@ -21,12 +22,6 @@ function styleNote(id: string, locale: "zh-HK" | "en") {
     night: { "zh-HK": "夜色裡一點暖光", en: "A night scene with one warm light" },
   };
   return notes[id]?.[locale] ?? "";
-}
-
-function styleTone(id: string): string {
-  if (id === "night") return "#1C1B19";
-  if (id === "paper") return "#C4B39A";
-  return "#3E5346";
 }
 
 type Props = BottomTabScreenProps<MainTabParamList, "Image">;
@@ -63,19 +58,21 @@ export function ImageScreen({ navigation }: Props) {
         {caps.data && !caps.data.image ? (
           <Text style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 12 }}>{text.noImageModel}</Text>
         ) : null}
-        <Pressable onPress={() => send(text.drawHero, "ink")} style={{ backgroundColor: colors.ink, borderRadius: 16, minHeight: 140, padding: 16, marginBottom: 14, justifyContent: "space-between" }}>
-          <Text style={{ color: colors.bg, fontSize: 20 }}>{text.drawHero}</Text>
-          <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
-            <Text style={{ color: colors.ink }}>{text.start}</Text>
-          </View>
-        </Pressable>
+        <Cover source={HERO_ART.drawHero} style={{ borderRadius: 16, minHeight: 140, marginBottom: 14 }} dim={0.4}>
+          <Pressable onPress={() => send(text.drawHero, "ink")} style={{ minHeight: 140, padding: 16, justifyContent: "space-between" }}>
+            <Text style={{ color: colors.bg, fontSize: 20 }}>{text.drawHero}</Text>
+            <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
+              <Text style={{ color: colors.ink }}>{text.start}</Text>
+            </View>
+          </Pressable>
+        </Cover>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-          <UseCard title={text.imageCreate} tone="#2F4A3C" onPress={() => { setStyleId("ink"); setPrompt(text.imageCreate); }} />
+          <UseCard title={text.imageCreate} art={HERO_ART.drawCreate} onPress={() => { setStyleId("ink"); setPrompt(text.imageCreate); }} />
           {DRAW_CARDS.map((card) => (
             <UseCard
               key={card.id}
               title={locale === "en" ? card.en : card.zh}
-              tone={card.tone}
+              art={card.art}
               onPress={() => {
                 const next = card.id === "portrait" ? "paper" : "ink";
                 setStyleId(next);
@@ -90,10 +87,14 @@ export function ImageScreen({ navigation }: Props) {
             <Pressable
               key={style.id}
               onPress={() => setStyleId(style.id)}
-              style={{ width: 140, minHeight: 120, borderRadius: 16, borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line, backgroundColor: styleTone(style.id), padding: 12, justifyContent: "flex-end" }}
+              style={{ width: 140, minHeight: 120, borderRadius: 16, overflow: "hidden", borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line }}
             >
-              <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? style.en : style.zh}</Text>
-              <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{styleNote(style.id, locale)}</Text>
+              <Cover source={STYLE_ART[style.id] ?? HERO_ART.drawHero} style={{ flex: 1, minHeight: 116 }} dim={0.35}>
+                <View style={{ flex: 1, minHeight: 116, padding: 12, justifyContent: "flex-end" }}>
+                  <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? style.en : style.zh}</Text>
+                  <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{styleNote(style.id, locale)}</Text>
+                </View>
+              </Cover>
             </Pressable>
           ))}
         </ScrollView>
@@ -131,15 +132,15 @@ export function ImageScreen({ navigation }: Props) {
   );
 }
 
-function UseCard({ title, tone, onPress }: { title: string; tone: string; onPress: () => void }) {
+function UseCard({ title, art, onPress }: { title: string; art: import("react-native").ImageSourcePropType; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ width: "47%", minHeight: 150, backgroundColor: tone, borderRadius: 16, padding: 12, justifyContent: "flex-end", overflow: "hidden" }}>
-      <View style={{ position: "absolute", top: 16, left: 14, width: 56, height: 70, borderRadius: 8, backgroundColor: "#FFFFFF22" }} />
-      <View style={{ position: "absolute", top: 28, left: 32, width: 56, height: 70, borderRadius: 8, backgroundColor: "#FFFFFF33" }} />
-      <View style={{ alignSelf: "flex-end", backgroundColor: "#1F6B4A", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
-        <Text style={{ color: "#F7F6F3", fontSize: 11 }}>New</Text>
-      </View>
-      <Text style={{ color: "#F7F6F3" }}>{title}</Text>
-    </Pressable>
+    <Cover source={art} style={{ width: "47%", minHeight: 150, borderRadius: 16 }} dim={0.3}>
+      <Pressable onPress={onPress} style={{ minHeight: 150, padding: 12, justifyContent: "flex-end" }}>
+        <View style={{ alignSelf: "flex-end", backgroundColor: "#1F6B4A", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
+          <Text style={{ color: "#F7F6F3", fontSize: 11 }}>New</Text>
+        </View>
+        <Text style={{ color: "#F7F6F3" }}>{title}</Text>
+      </Pressable>
+    </Cover>
   );
 }

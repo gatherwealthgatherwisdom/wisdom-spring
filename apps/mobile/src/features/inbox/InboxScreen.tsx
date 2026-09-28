@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
-import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
+import { BOTS, DRAW_CARDS, HEROES, TOOLS } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
 import { DrawerMenu } from "./DrawerMenu";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -14,6 +14,7 @@ import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Inbox">;
@@ -64,19 +65,14 @@ export function InboxScreen({ navigation }: Props) {
       </View>
       <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
-        <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 124, marginBottom: 14, flexDirection: "row", overflow: "hidden" }}>
-          <View style={{ flex: 1, justifyContent: "space-between" }}>
-            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? "Use Wisdom Spring on every device" : "在所有設備上使用智泉"}</Text>
+        <Cover source={HEROES[0].art} style={{ borderRadius: 16, minHeight: 124, marginBottom: 14 }} dim={0.42}>
+          <Pressable onPress={() => navigation.navigate("Discover")} style={{ minHeight: 124, padding: 16, justifyContent: "space-between" }}>
+            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? HEROES[0].en : HEROES[0].zh}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 }}>
               <Text style={{ color: colors.ink }}>{text.explore}</Text>
             </View>
-          </View>
-          <View style={{ width: 108, justifyContent: "center", alignItems: "flex-end" }}>
-            <View style={{ width: 54, height: 36, borderRadius: 6, backgroundColor: "#3A3A38", marginBottom: -8, marginRight: 18 }} />
-            <View style={{ width: 72, height: 46, borderRadius: 8, backgroundColor: "#5A5956", marginBottom: -10, zIndex: 1 }} />
-            <View style={{ width: 28, height: 48, borderRadius: 6, backgroundColor: "#2A2A28", position: "absolute", right: 4, bottom: 8 }} />
-          </View>
-        </Pressable>
+          </Pressable>
+        </Cover>
         <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 14 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.tools}</Text>
@@ -98,15 +94,14 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {DRAW_CARDS.map((card) => (
-              <Pressable key={card.id} onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ flex: 1, minHeight: 132, backgroundColor: card.tone, borderRadius: 16, padding: 12, justifyContent: "flex-end", overflow: "hidden" }}>
-                <View style={{ position: "absolute", top: 16, left: 16, width: 64, height: 80, borderRadius: 8, backgroundColor: "#FFFFFF22" }} />
-                <View style={{ position: "absolute", top: 28, left: 36, width: 64, height: 80, borderRadius: 8, backgroundColor: "#FFFFFF33" }} />
-                <View style={{ position: "absolute", top: 18, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: "#F7F6F3AA" }} />
-                <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
-                  <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
-                </View>
-                <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? card.en : card.zh}</Text>
-              </Pressable>
+              <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 132, borderRadius: 16 }} dim={0.28}>
+                <Pressable onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ minHeight: 132, padding: 12, justifyContent: "flex-end" }}>
+                  <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
+                    <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
+                  </View>
+                  <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? card.en : card.zh}</Text>
+                </Pressable>
+              </Cover>
             ))}
           </View>
         </View>
@@ -117,14 +112,12 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           {BOTS.map((bot) => (
             <Pressable key={bot.id} onPress={() => stack?.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.line, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="globe-outline" color={colors.muted} size={20} />
-              </View>
+              <Cover source={bot.art} style={{ width: 40, height: 40, borderRadius: 20 }} dim={0.08} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.ink }}>{locale === "en" ? bot.en : bot.zh}</Text>
                 <Text style={{ color: colors.muted, marginTop: 2 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>
               </View>
-              <Icon name="globe-outline" color={colors.line} size={22} />
+              <Icon name="chevron-forward" color={colors.line} size={18} />
             </Pressable>
           ))}
         </View>

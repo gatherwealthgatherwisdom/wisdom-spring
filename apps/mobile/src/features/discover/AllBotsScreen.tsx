@@ -4,7 +4,7 @@ import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
-import { Icon } from "../../shared/ui/Icon";
+import { Cover } from "../../shared/ui/Cover";
 import { Screen } from "../../shared/ui/Screen";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import { BOTS } from "./catalog";
@@ -21,9 +21,7 @@ export function AllBotsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {BOTS.map((bot) => (
           <Pressable key={bot.id} onPress={() => navigation.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bot.tone, alignItems: "center", justifyContent: "center" }}>
-              <Icon name="globe-outline" color="#F7F6F3" size={20} />
-            </View>
+            <Cover source={bot.art} style={{ width: 44, height: 44, borderRadius: 22 }} dim={0.08} />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? bot.en : bot.zh}</Text>
               <Text style={{ color: colors.muted, marginTop: 4 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>

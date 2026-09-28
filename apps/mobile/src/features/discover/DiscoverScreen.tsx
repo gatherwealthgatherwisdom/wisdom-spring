@@ -7,6 +7,7 @@ import type { AppStackParamList, MainTabParamList } from "../../navigation/MainT
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
+import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
 import { HEROES, RECOS, TOOLS, type CardItem } from "./catalog";
 
@@ -39,16 +40,12 @@ export function DiscoverScreen({ navigation }: Props) {
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginHorizontal: 20, marginBottom: 16 }}>{text.discover}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, marginBottom: 18 }}>
           {HEROES.map((hero) => (
-            <Pressable key={hero.id} onPress={() => stack?.navigate("AllTools")} style={{ width: HERO_W, height: 150, backgroundColor: hero.tone, borderRadius: 16, overflow: "hidden" }}>
-              <View style={{ flex: 1, padding: 12, flexDirection: "row", justifyContent: "flex-end" }}>
-                <View style={{ width: 46, height: 30, borderRadius: 6, backgroundColor: "#FFFFFF22", marginRight: 8, marginTop: 8 }} />
-                <View style={{ width: 28, height: 48, borderRadius: 6, backgroundColor: "#FFFFFF33", marginTop: 4 }} />
-              </View>
-              <View style={{ padding: 14 }}>
+            <Cover key={hero.id} source={hero.art} style={{ width: HERO_W, height: 150, borderRadius: 16 }} dim={0.4}>
+              <Pressable onPress={() => stack?.navigate("AllTools")} style={{ flex: 1, justifyContent: "flex-end", padding: 14 }}>
                 <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{locale === "en" ? hero.en : hero.zh}</Text>
                 <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{text.viewAll}</Text>
-              </View>
-            </Pressable>
+              </Pressable>
+            </Cover>
           ))}
         </ScrollView>
         <View style={{ marginHorizontal: 20, backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 18 }}>
@@ -90,15 +87,11 @@ export function DiscoverScreen({ navigation }: Props) {
 
 function RecoCard({ card, locale, tall, onPress }: { card: CardItem; locale: "zh-HK" | "en"; tall?: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ width: "47%", minHeight: tall ? 188 : 148, backgroundColor: card.tone, borderRadius: 16, overflow: "hidden" }}>
-      <View style={{ height: tall ? 72 : 48, padding: 12, flexDirection: "row", justifyContent: "flex-end" }}>
-        <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#FFFFFF22" }} />
-        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#FFFFFF33", marginLeft: -10, marginTop: 12 }} />
-      </View>
-      <View style={{ padding: 14, paddingTop: 0 }}>
+    <Cover source={card.art} style={{ width: "47%", minHeight: tall ? 188 : 148, borderRadius: 16 }} dim={0.45}>
+      <Pressable onPress={onPress} style={{ flex: 1, minHeight: tall ? 188 : 148, justifyContent: "flex-end", padding: 14 }}>
         <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{locale === "en" ? card.en : card.zh}</Text>
         <Text style={{ color: "#F7F6F3CC", marginTop: 6, fontSize: 12 }}>{locale === "en" ? card.blurbEn : card.blurbZh}</Text>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Cover>
   );
 }
