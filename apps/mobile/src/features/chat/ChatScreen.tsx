@@ -4,7 +4,7 @@ import { ErrorCode, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -244,7 +244,7 @@ export function ChatScreen({ navigation, route }: Props) {
             onListen={(content) => speak(content, locale)}
           />
         </View>
-        <KeyboardStickyView>
+        <KeyboardDock>
           <Composer
             value={draft}
             placeholder={text.placeholder}
@@ -266,7 +266,7 @@ export function ChatScreen({ navigation, route }: Props) {
               if (!heard) setBanner(text.voiceMissing);
             }}
           />
-        </KeyboardStickyView>
+        </KeyboardDock>
       </View>
     </Screen>
   );

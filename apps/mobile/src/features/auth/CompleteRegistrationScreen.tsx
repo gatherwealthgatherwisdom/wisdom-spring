@@ -1,8 +1,7 @@
 import { ApiError } from "@spring/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
@@ -42,7 +41,7 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
         <ScreenHeader title={text.completeRegistration} onBack={() => navigation.goBack()} accessibilityBack={text.back} />
 
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>

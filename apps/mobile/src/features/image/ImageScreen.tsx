@@ -3,7 +3,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { DRAW_CARDS } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -106,7 +106,7 @@ export function ImageScreen({ navigation }: Props) {
           ))
         )}
       </ScrollView>
-      <KeyboardStickyView>
+      <KeyboardDock tabBar>
       <View style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
         <Pressable style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
           <Icon name="add" color={colors.ink} />
@@ -126,7 +126,7 @@ export function ImageScreen({ navigation }: Props) {
           <Icon name="arrow-up" color={colors.onAccent} size={18} />
         </Pressable>
       </View>
-      </KeyboardStickyView>
+      </KeyboardDock>
     </Screen>
   );
 }

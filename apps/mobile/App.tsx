@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { RootNavigation } from "./src/navigation/RootNavigation";
 import { usePrefs } from "./src/shared/lib/prefs";
@@ -26,11 +25,9 @@ function Shell() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <KeyboardProvider>
-        <QueryClientProvider client={queryClient}>
-          <Shell />
-        </QueryClientProvider>
-      </KeyboardProvider>
+      <QueryClientProvider client={queryClient}>
+        <Shell />
+      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }

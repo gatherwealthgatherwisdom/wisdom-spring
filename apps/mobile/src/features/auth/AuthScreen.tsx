@@ -8,8 +8,7 @@ import {
   type DialCode,
 } from "@spring/shared";
 import { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, Text, TextInput, View } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
@@ -105,7 +104,7 @@ export function AuthScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
         <ScreenHeader title={text.login} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} accessibilityBack={text.back} />
 
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>

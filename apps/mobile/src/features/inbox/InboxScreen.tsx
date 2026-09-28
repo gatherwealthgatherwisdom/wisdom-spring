@@ -2,7 +2,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
+import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
@@ -129,7 +129,7 @@ export function InboxScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-      <KeyboardStickyView>
+      <KeyboardDock tabBar>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6, gap: 8, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
         {attachOpen ? (
@@ -174,7 +174,7 @@ export function InboxScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </View>
-      </KeyboardStickyView>
+      </KeyboardDock>
       </View>
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} navigation={navigation} />
       <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />

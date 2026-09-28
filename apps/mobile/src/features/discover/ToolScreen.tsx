@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { copy } from "../../shared/lib/i18n";
@@ -30,7 +29,7 @@ export function ToolScreen({ navigation, route }: Props) {
   const blurb = locale === "en" ? tool.blurbEn : tool.blurbZh;
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
       <ScreenHeader title={title} onBack={() => navigation.goBack()} />
       <View style={{ flex: 1, paddingHorizontal: 20 }}>
       <Text style={{ color: colors.muted, marginBottom: 16 }}>{blurb}</Text>
