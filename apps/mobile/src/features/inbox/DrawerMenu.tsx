@@ -4,7 +4,7 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy, type Copy } from "../../shared/lib/i18n";
@@ -23,6 +23,7 @@ export function DrawerMenu({
   navigation: NavigationProp<MainTabParamList>;
 }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
@@ -93,13 +94,13 @@ export function DrawerMenu({
   }
 
   return (
-    <Modal visible={open} animationType="fade" transparent onRequestClose={onClose}>
+    <Modal visible={open} animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
       <View style={{ flex: 1, flexDirection: "row" }}>
-        <SafeAreaView edges={["top", "bottom"]} style={{ width: "82%", backgroundColor: colors.bg }}>
-          <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 28 }}>{text.app}</Text>
-              <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+        <View style={{ width: "82%", backgroundColor: colors.bg, paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 8) }}>
+          <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40 }}>
+              <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
+              <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
                 <Icon name="close" color={colors.ink} size={22} />
               </Pressable>
             </View>
@@ -184,7 +185,7 @@ export function DrawerMenu({
               </View>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </View>
         <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066" }} />
       </View>
     </Modal>
