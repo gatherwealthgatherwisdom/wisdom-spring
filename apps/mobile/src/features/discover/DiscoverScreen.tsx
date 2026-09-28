@@ -34,7 +34,7 @@ export function DiscoverScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginHorizontal: 20, marginBottom: 16 }}>{text.discover}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, marginBottom: 18 }}>

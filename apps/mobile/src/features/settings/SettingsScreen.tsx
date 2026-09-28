@@ -46,7 +46,7 @@ export function SettingsScreen() {
   const limit = guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
       <ScreenHeader title={text.mine} />
       <View style={{ alignItems: "center", marginBottom: 18 }}>

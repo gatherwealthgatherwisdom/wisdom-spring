@@ -51,7 +51,7 @@ export function ImageScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8 }}>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34 }}>{text.image}</Text>
         <Pressable accessibilityLabel={text.recentImage} onPress={() => scroll.current?.scrollToEnd({ animated: true })} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
@@ -105,7 +105,7 @@ export function ImageScreen({ navigation }: Props) {
           ))
         )}
       </ScrollView>
-      <View style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
+      <View style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
         <Pressable style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
           <Icon name="add" color={colors.ink} />
         </Pressable>

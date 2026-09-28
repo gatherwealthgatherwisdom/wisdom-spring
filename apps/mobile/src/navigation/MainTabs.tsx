@@ -6,6 +6,7 @@ import { DiscoverScreen } from "../features/discover/DiscoverScreen";
 import { ImageScreen } from "../features/image/ImageScreen";
 import { InboxScreen } from "../features/inbox/InboxScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
 import { useColors } from "../shared/theme";
@@ -58,13 +59,22 @@ export function MainTabs() {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
+  const insets = useSafeAreaInsets();
+  const tabBottom = Math.max(insets.bottom, 8);
   return (
     <Tab.Navigator
+      safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { backgroundColor: colors.bg, borderTopColor: colors.line, paddingTop: 4 },
+        tabBarStyle: {
+          backgroundColor: colors.bg,
+          borderTopColor: colors.line,
+          paddingTop: 6,
+          paddingBottom: tabBottom,
+          height: 50 + tabBottom,
+        },
         tabBarLabelStyle: { fontSize: 12, marginTop: -2 },
       }}
     >

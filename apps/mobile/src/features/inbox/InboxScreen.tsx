@@ -37,7 +37,7 @@ export function InboxScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4 }}>
         <Pressable onPress={() => navigation.navigate("Discover")} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Icon name="menu-outline" color={colors.ink} size={26} />
@@ -47,7 +47,7 @@ export function InboxScreen({ navigation }: Props) {
         </Pressable>
       </View>
       <View style={{ flex: 1 }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 136 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 118 }}>
         <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 124, marginBottom: 14, flexDirection: "row", overflow: "hidden" }}>
           <View style={{ flex: 1, justifyContent: "space-between" }}>
             <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? "Use Wisdom Spring on every device" : "在所有設備上使用智泉"}</Text>
@@ -113,7 +113,7 @@ export function InboxScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 10, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
+      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6, gap: 8, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
         {attachOpen ? (
           <View style={{ flexDirection: "row", gap: 10 }}>
