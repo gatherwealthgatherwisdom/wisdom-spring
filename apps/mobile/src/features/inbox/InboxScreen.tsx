@@ -94,7 +94,7 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {DRAW_CARDS.map((card) => (
-              <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 132, borderRadius: 16 }} dim={0.28}>
+              <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 132, borderRadius: 16 }} dim={0.18}>
                 <Pressable onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ minHeight: 132, padding: 12, justifyContent: "flex-end" }}>
                   <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
                     <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
@@ -112,7 +112,7 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           {BOTS.map((bot) => (
             <Pressable key={bot.id} onPress={() => stack?.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}>
-              <Cover source={bot.art} style={{ width: 40, height: 40, borderRadius: 20 }} dim={0.08} />
+              <Cover source={bot.art} style={{ width: 48, height: 48, borderRadius: 24 }} dim={0} />
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.ink }}>{locale === "en" ? bot.en : bot.zh}</Text>
                 <Text style={{ color: colors.muted, marginTop: 2 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>

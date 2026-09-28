@@ -21,7 +21,7 @@ export function AllBotsScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {BOTS.map((bot) => (
           <Pressable key={bot.id} onPress={() => navigation.navigate("Tool", { id: "bot" })} style={{ flexDirection: "row", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
-            <Cover source={bot.art} style={{ width: 44, height: 44, borderRadius: 22 }} dim={0.08} />
+            <Cover source={bot.art} style={{ width: 52, height: 52, borderRadius: 26 }} dim={0} />
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? bot.en : bot.zh}</Text>
               <Text style={{ color: colors.muted, marginTop: 4 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>
