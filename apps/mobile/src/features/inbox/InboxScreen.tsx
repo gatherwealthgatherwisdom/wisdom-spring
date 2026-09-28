@@ -2,6 +2,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import { Screen } from "../../shared/ui/Screen";
 import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
@@ -62,7 +63,7 @@ export function InboxScreen({ navigation }: Props) {
         </Pressable>
       </View>
       <View style={{ flex: 1 }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 118 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
         <Pressable onPress={() => navigation.navigate("Discover")} style={{ backgroundColor: colors.ink, borderRadius: 16, padding: 16, minHeight: 124, marginBottom: 14, flexDirection: "row", overflow: "hidden" }}>
           <View style={{ flex: 1, justifyContent: "space-between" }}>
             <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? "Use Wisdom Spring on every device" : "在所有設備上使用智泉"}</Text>
@@ -128,7 +129,8 @@ export function InboxScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-      <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6, gap: 8, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
+      <KeyboardStickyView>
+      <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6, gap: 8, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
         {attachOpen ? (
           <View style={{ flexDirection: "row", gap: 10 }}>
@@ -172,6 +174,7 @@ export function InboxScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </View>
+      </KeyboardStickyView>
       </View>
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} navigation={navigation} />
       <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />

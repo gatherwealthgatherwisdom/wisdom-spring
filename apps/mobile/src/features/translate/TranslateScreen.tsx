@@ -3,6 +3,7 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Screen } from "../../shared/ui/Screen";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
@@ -30,7 +31,8 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
   };
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
       <ScreenHeader title={text.translate} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Pressable onPress={() => setSide("source")} style={sideBox(colors, side === "source")}>
@@ -87,6 +89,7 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
         <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

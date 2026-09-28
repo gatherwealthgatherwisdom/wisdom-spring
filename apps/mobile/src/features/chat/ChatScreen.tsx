@@ -3,7 +3,8 @@ import * as Clipboard from "expo-clipboard";
 import { ErrorCode, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -186,7 +187,7 @@ export function ChatScreen({ navigation, route }: Props) {
 
   return (
     <Screen>
-      <KeyboardAvoidingView style={{ flex: 1, paddingHorizontal: 16 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <View style={{ flex: 1, paddingHorizontal: 16 }}>
         <ScreenHeader
           title={chatTitle}
           onBack={() => navigation.goBack()}
@@ -243,28 +244,30 @@ export function ChatScreen({ navigation, route }: Props) {
             onListen={(content) => speak(content, locale)}
           />
         </View>
-        <Composer
-          value={draft}
-          placeholder={text.placeholder}
-          streaming={stream.status === "streaming"}
-          stopLabel={text.stop}
-          onChange={setDraft}
-          onSend={() => void send(draft)}
-          onStop={stop}
-          onAttach={() => {
-            setGuestBlocked(false);
-            setBanner(text.attachLater);
-          }}
-          onMic={() => {
-            const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
-            if (!heard) setBanner(text.voiceMissing);
-          }}
-          onCall={() => {
-            const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
-            if (!heard) setBanner(text.voiceMissing);
-          }}
-        />
-      </KeyboardAvoidingView>
+        <KeyboardStickyView>
+          <Composer
+            value={draft}
+            placeholder={text.placeholder}
+            streaming={stream.status === "streaming"}
+            stopLabel={text.stop}
+            onChange={setDraft}
+            onSend={() => void send(draft)}
+            onStop={stop}
+            onAttach={() => {
+              setGuestBlocked(false);
+              setBanner(text.attachLater);
+            }}
+            onMic={() => {
+              const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
+              if (!heard) setBanner(text.voiceMissing);
+            }}
+            onCall={() => {
+              const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
+              if (!heard) setBanner(text.voiceMissing);
+            }}
+          />
+        </KeyboardStickyView>
+      </View>
     </Screen>
   );
 }
