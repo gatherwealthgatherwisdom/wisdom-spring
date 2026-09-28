@@ -9,7 +9,7 @@ import {
 } from "@spring/shared";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHostInsets } from "../../shared/ui/hostInsets";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
@@ -266,7 +266,7 @@ function DialSheet({
   onPick: (dial: DialCode) => void;
 }) {
   const labels: Record<DialCode, string> = { "852": text.regionHk, "853": text.regionMo, "86": text.regionCn };
-  const insets = useSafeAreaInsets();
+  const insets = useHostInsets(open);
   return (
     <Modal visible={open} animationType="slide" transparent statusBarTranslucent onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>

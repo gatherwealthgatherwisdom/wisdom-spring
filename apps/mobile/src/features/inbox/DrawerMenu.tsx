@@ -4,7 +4,8 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy, type Copy } from "../../shared/lib/i18n";
@@ -23,7 +24,7 @@ export function DrawerMenu({
   navigation: NavigationProp<MainTabParamList>;
 }) {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const insets = useHostInsets(open);
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
@@ -95,8 +96,14 @@ export function DrawerMenu({
 
   return (
     <Modal visible={open} animationType="fade" transparent statusBarTranslucent onRequestClose={onClose}>
+      <SafeAreaProvider
+        initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets,
+        }}
+      >
       <View style={{ flex: 1, flexDirection: "row" }}>
-        <View style={{ width: "82%", backgroundColor: colors.bg, paddingTop: Math.max(insets.top, 12), paddingBottom: Math.max(insets.bottom, 8) }}>
+        <View style={{ width: "82%", backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40 }}>
               <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
@@ -188,6 +195,7 @@ export function DrawerMenu({
         </View>
         <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066" }} />
       </View>
+      </SafeAreaProvider>
     </Modal>
   );
 }

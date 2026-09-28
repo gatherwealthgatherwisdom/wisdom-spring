@@ -1,5 +1,5 @@
 import { Modal, Pressable, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHostInsets } from "../../shared/ui/hostInsets";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -7,7 +7,7 @@ import { POOL_LABELS } from "./catalog";
 
 export function PoolSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
+  const insets = useHostInsets(open);
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   return (
