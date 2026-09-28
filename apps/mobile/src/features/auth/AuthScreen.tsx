@@ -1,7 +1,7 @@
 import { ApiError } from "@spring/api-client";
 import { normalizeHkMobile } from "@spring/shared";
-import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
@@ -24,6 +24,25 @@ export function AuthScreen({ navigation }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const busyRef = useRef(false);
+  const codeField = useRef<TextInput>(null);
+  const phoneReady = Boolean(normalizeHkMobile(digits));
+  const codeReady = code.length === 6;
+  const canSubmit = !busy && (step === "phone" ? phoneReady : codeReady);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+
+  useEffect(() => {
+    if (step === "code") {
+      const timer = setTimeout(() => codeField.current?.focus(), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
 
   async function requestCode() {
     setError("");
@@ -32,104 +51,182 @@ export function AuthScreen({ navigation }: Props) {
       setError(text.phoneInvalid);
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     try {
       await spring.requestPhoneCode({ phone: normalized });
       setPhone(normalized);
       setCode("");
       setStep("code");
+      setCooldown(60);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : text.phoneInvalid);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
 
-  async function verify() {
+  async function verify(nextCode = code) {
+    if (busyRef.current || nextCode.length !== 6) return;
     setError("");
+    busyRef.current = true;
     setBusy(true);
     try {
-      const session = await spring.verifyPhone({ phone, code: code.trim() });
+      const session = await spring.verifyPhone({ phone, code: nextCode });
       setSession(session);
       if (navigation.canGoBack()) navigation.goBack();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "登入資料不正確。");
+      setError(caught instanceof ApiError ? caught.message : text.loginWrong);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center" }}>
-      <View style={{ width: "100%", maxWidth: 420, alignSelf: "center", padding: 24 }}>
-      {navigation.canGoBack() ? (
-        <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.back} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
-          <Icon name="chevron-back" color={colors.ink} />
-        </Pressable>
-      ) : null}
-      <Text style={{ fontSize: 40, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
-      <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.splash}</Text>
-      <Text style={{ color: colors.muted, marginBottom: 24 }}>中盈紫達集團</Text>
-      {step === "phone" ? (
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-          <View style={{ ...field(colors), marginBottom: 0, justifyContent: "center", paddingHorizontal: 14 }}>
-            <Text style={{ color: colors.ink }}>+852</Text>
-          </View>
-          <TextInput
-            value={digits}
-            onChangeText={(value) => setDigits(value.replace(/\D/g, "").slice(0, 8))}
-            keyboardType="number-pad"
-            placeholder={text.phone}
-            placeholderTextColor={colors.muted}
-            style={{ ...field(colors), flex: 1, marginBottom: 0 }}
-          />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40, paddingHorizontal: 8 }}>
+          {navigation.canGoBack() ? (
+            <Pressable accessibilityLabel={text.back} onPress={() => navigation.goBack()} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+              <Icon name="chevron-back" color={colors.ink} />
+            </Pressable>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
+          <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.login}</Text>
+          <View style={{ width: 40 }} />
         </View>
-      ) : (
-        <>
-          <Text style={{ color: colors.muted, marginBottom: 8 }}>{phone}</Text>
-          <Text style={{ color: colors.ink, marginBottom: 8 }}>{text.codeSent}</Text>
-          <TextInput
-            value={code}
-            onChangeText={(value) => setCode(value.replace(/\D/g, "").slice(0, 6))}
-            keyboardType="number-pad"
-            placeholder={text.code}
-            placeholderTextColor={colors.muted}
-            style={field(colors)}
-          />
-        </>
-      )}
-      {error ? <Text style={{ color: colors.danger, marginBottom: 8 }}>{error}</Text> : null}
-      <Pressable
-        disabled={busy}
-        onPress={() => void (step === "phone" ? requestCode() : verify())}
-        style={{ backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: busy ? 0.7 : 1 }}
-      >
-        <Text style={{ color: colors.onAccent }}>{step === "phone" ? text.getCode : text.login}</Text>
-      </Pressable>
-      {step === "code" ? (
-        <Pressable
-          onPress={() => {
-            setStep("phone");
-            setError("");
-          }}
-          style={{ marginTop: 16 }}
-        >
-          <Text style={{ color: colors.accent, textAlign: "center" }}>{text.changeNumber}</Text>
-        </Pressable>
-      ) : null}
-      </View>
+
+        <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
+          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 28, marginBottom: 6 }}>{text.app}</Text>
+          {step === "phone" ? (
+            <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.phoneHint}</Text>
+          ) : (
+            <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.codeSent}</Text>
+          )}
+
+          <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 }}>
+            {step === "phone" ? (
+              <>
+                <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>{text.phone}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, borderRadius: 12, paddingHorizontal: 12, height: 48, justifyContent: "center" }}>
+                    <Text style={{ color: colors.ink }}>+852</Text>
+                  </View>
+                  <TextInput
+                    value={digits.length > 4 ? `${digits.slice(0, 4)} ${digits.slice(4)}` : digits}
+                    onChangeText={(value) => {
+                      setDigits(value.replace(/\D/g, "").slice(0, 8));
+                      setError("");
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={9}
+                    autoFocus
+                    autoComplete="tel"
+                    textContentType="telephoneNumber"
+                    placeholder="9123 4567"
+                    placeholderTextColor={colors.muted}
+                    onSubmitEditing={() => {
+                      if (phoneReady) void requestCode();
+                    }}
+                    style={{
+                      flex: 1,
+                      height: 48,
+                      borderWidth: 1,
+                      borderColor: colors.line,
+                      backgroundColor: colors.bg,
+                      color: colors.ink,
+                      borderRadius: 12,
+                      paddingHorizontal: 14,
+                      fontSize: 18,
+                    }}
+                  />
+                </View>
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{text.digitsOf(digits.length, 8)}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={{ color: colors.ink, marginBottom: 12 }}>{formatHk(phone)}</Text>
+                <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>{text.code}</Text>
+                <TextInput
+                  ref={codeField}
+                  value={code}
+                  onChangeText={(value) => {
+                    const next = value.replace(/\D/g, "").slice(0, 6);
+                    setCode(next);
+                    setError("");
+                    if (next.length === 6) void verify(next);
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  placeholder=""
+                  placeholderTextColor={colors.muted}
+                  onSubmitEditing={() => void verify()}
+                  style={{
+                    height: 56,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    backgroundColor: colors.bg,
+                    color: colors.ink,
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                    fontSize: 24,
+                    letterSpacing: code ? 8 : 2,
+                    textAlign: "center",
+                  }}
+                />
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 12 }}>
+                  <Pressable
+                    onPress={() => {
+                      setStep("phone");
+                      setCode("");
+                      setError("");
+                      setCooldown(0);
+                    }}
+                  >
+                    <Text style={{ color: colors.accent }}>{text.changeNumber}</Text>
+                  </Pressable>
+                  {cooldown > 0 ? (
+                    <Text style={{ color: colors.muted }}>{text.resendIn(cooldown)}</Text>
+                  ) : (
+                    <Pressable disabled={busy} onPress={() => void requestCode()}>
+                      <Text style={{ color: colors.accent }}>{text.resend}</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        <View style={{ paddingHorizontal: 20, paddingBottom: 16, gap: 10 }}>
+          {error ? <Text style={{ color: colors.danger, textAlign: "center" }}>{error}</Text> : null}
+          <Pressable
+            disabled={!canSubmit}
+            onPress={() => void (step === "phone" ? requestCode() : verify())}
+            style={{
+              backgroundColor: colors.accent,
+              borderRadius: 16,
+              paddingVertical: 16,
+              alignItems: "center",
+              opacity: canSubmit ? 1 : 0.4,
+            }}
+          >
+            <Text style={{ color: colors.onAccent, fontSize: 16 }}>{step === "phone" ? text.getCode : text.login}</Text>
+          </Pressable>
+          <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12 }}>{text.company}</Text>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-function field(colors: { card: string; line: string; ink: string }) {
-  return {
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.card,
-    color: colors.ink,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-  };
+function formatHk(phone: string): string {
+  const local = phone.replace(/\D/g, "").slice(-8);
+  if (local.length !== 8) return phone;
+  return `+852 ${local.slice(0, 4)} ${local.slice(4)}`;
 }
