@@ -3,7 +3,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import { DRAW_CARDS } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
@@ -51,7 +51,7 @@ export function ImageScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
+    <Screen edges={["top"]}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8 }}>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34 }}>{text.image}</Text>
         <Pressable accessibilityLabel={text.recentImage} onPress={() => scroll.current?.scrollToEnd({ animated: true })} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
@@ -124,7 +124,7 @@ export function ImageScreen({ navigation }: Props) {
           <Icon name="arrow-up" color={colors.onAccent} size={18} />
         </Pressable>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

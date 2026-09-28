@@ -2,7 +2,7 @@ import { WRITE_TEMPLATES } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -39,7 +39,7 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
   const recent = (chats.data?.items ?? []).filter((item) => item.mode === "write").slice(0, 5);
   const featured = WRITE_TEMPLATES.filter((item) => ["email", "rewrite", "cantonese"].includes(item.id));
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <Screen>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
       <ScreenHeader title={text.write} />
       <Text style={{ color: colors.muted, marginBottom: 10 }}>{text.popular}</Text>
@@ -75,6 +75,6 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
         <RecentRow key={item.id} item={item} modeLabel={text.write} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "write" })} />
       ))}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

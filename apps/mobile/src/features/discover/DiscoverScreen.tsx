@@ -2,7 +2,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import type { AppStackParamList, MainTabParamList } from "../../navigation/MainTabs";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
@@ -34,7 +34,7 @@ export function DiscoverScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
+    <Screen edges={["top"]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginHorizontal: 20, marginBottom: 16 }}>{text.discover}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, marginBottom: 18 }}>
@@ -84,7 +84,7 @@ export function DiscoverScreen({ navigation }: Props) {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

@@ -5,7 +5,7 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import { openAuth, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -46,7 +46,7 @@ export function SettingsScreen() {
   const limit = guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
+    <Screen edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
       <ScreenHeader title={text.mine} />
       <View style={{ alignItems: "center", marginBottom: 18 }}>
@@ -122,7 +122,7 @@ export function SettingsScreen() {
         </Group>
       ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

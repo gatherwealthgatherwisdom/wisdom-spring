@@ -3,7 +3,7 @@ import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -29,7 +29,7 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
     return locale === "en" ? language?.en : language?.zh;
   };
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
       <ScreenHeader title={text.translate} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -87,7 +87,7 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
         <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

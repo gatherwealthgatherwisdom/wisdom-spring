@@ -2,7 +2,7 @@ import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Screen } from "../../shared/ui/Screen";
 import { BOTS, DRAW_CARDS, TOOLS } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
 import { DrawerMenu } from "./DrawerMenu";
@@ -41,7 +41,7 @@ export function InboxScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top"]}>
+    <Screen edges={["top"]}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingTop: 4 }}>
         <Pressable accessibilityLabel={text.chatsMenu} onPress={() => setDrawerOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Icon name="menu-outline" color={colors.ink} size={26} />
@@ -175,7 +175,7 @@ export function InboxScreen({ navigation }: Props) {
       </View>
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} navigation={navigation} />
       <PoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
-    </SafeAreaView>
+    </Screen>
   );
 }
 

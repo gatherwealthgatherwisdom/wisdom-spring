@@ -4,7 +4,6 @@ import { ErrorCode, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -13,6 +12,8 @@ import { useStream } from "../../shared/lib/stream";
 import { speak, startDictation } from "../../shared/lib/voice";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
+import { Screen } from "../../shared/ui/Screen";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { Composer } from "./Composer";
 import { MessageList } from "./MessageList";
@@ -184,37 +185,40 @@ export function ChatScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <KeyboardAvoidingView style={{ flex: 1, padding: 16 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 40, marginBottom: 4 }}>
-          <Pressable onPress={() => navigation.goBack()} accessibilityLabel={text.inbox} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="chevron-back" color={colors.ink} />
-          </Pressable>
-          <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 20 }} numberOfLines={1}>{chatTitle}</Text>
-          <Pressable
-            accessibilityLabel={text.copy}
-            onPress={() => {
-              const last = [...messages].reverse().find((item) => item.role === "ASSISTANT");
-              if (last?.content) void Clipboard.setStringAsync(last.content);
-            }}
-            style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
-          >
-            <Icon name="share-outline" color={colors.ink} />
-          </Pressable>
-          <Pressable
-            accessibilityLabel={text.newChat}
-            onPress={() => {
-              stream.reset();
-              setDraft("");
-              setBanner(null);
-              setGuestBlocked(false);
-              navigation.replace("Chat", { mode: "chat" });
-            }}
-            style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
-          >
-            <Icon name="create-outline" color={colors.ink} />
-          </Pressable>
-        </View>
+    <Screen>
+      <KeyboardAvoidingView style={{ flex: 1, paddingHorizontal: 16 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScreenHeader
+          title={chatTitle}
+          onBack={() => navigation.goBack()}
+          accessibilityBack={text.inbox}
+          trailing={
+            <View style={{ flexDirection: "row" }}>
+              <Pressable
+                accessibilityLabel={text.copy}
+                onPress={() => {
+                  const last = [...messages].reverse().find((item) => item.role === "ASSISTANT");
+                  if (last?.content) void Clipboard.setStringAsync(last.content);
+                }}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+              >
+                <Icon name="share-outline" color={colors.ink} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel={text.newChat}
+                onPress={() => {
+                  stream.reset();
+                  setDraft("");
+                  setBanner(null);
+                  setGuestBlocked(false);
+                  navigation.replace("Chat", { mode: "chat" });
+                }}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+              >
+                <Icon name="create-outline" color={colors.ink} />
+              </Pressable>
+            </View>
+          }
+        />
         {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
         <QuotaBanner
           message={banner}
@@ -261,6 +265,6 @@ export function ChatScreen({ navigation, route }: Props) {
           }}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
-import { Icon } from "../../shared/ui/Icon";
+import { Screen } from "../../shared/ui/Screen";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import { TOOLS } from "./catalog";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Tool">;
@@ -20,21 +20,17 @@ export function ToolScreen({ navigation, route }: Props) {
   const [shown, setShown] = useState("");
   if (!tool) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-        <Pressable onPress={() => navigation.goBack()}><Icon name="chevron-back" color={colors.ink} /></Pressable>
-      </SafeAreaView>
+      <Screen>
+        <ScreenHeader title="" onBack={() => navigation.goBack()} />
+      </Screen>
     );
   }
   const title = locale === "en" ? tool.en : tool.zh;
   const blurb = locale === "en" ? tool.blurbEn : tool.blurbZh;
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-          <Icon name="chevron-back" color={colors.ink} />
-        </Pressable>
-        <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{title}</Text>
-      </View>
+    <Screen>
+      <ScreenHeader title={title} onBack={() => navigation.goBack()} />
+      <View style={{ flex: 1, paddingHorizontal: 20 }}>
       <Text style={{ color: colors.muted, marginBottom: 16 }}>{blurb}</Text>
       <TextInput
         value={draft}
@@ -56,6 +52,7 @@ export function ToolScreen({ navigation, route }: Props) {
           <Text style={{ color: colors.ink, lineHeight: 24 }}>{shown}</Text>
         </View>
       ) : null}
-    </SafeAreaView>
+      </View>
+    </Screen>
   );
 }

@@ -9,7 +9,7 @@ import {
 } from "@spring/shared";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
@@ -17,6 +17,8 @@ import { copy, type Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors, type Palette } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
+import { Screen } from "../../shared/ui/Screen";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Auth">;
 
@@ -101,19 +103,9 @@ export function AuthScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <Screen>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40, paddingHorizontal: 8 }}>
-          {navigation.canGoBack() ? (
-            <Pressable accessibilityLabel={text.back} onPress={() => navigation.goBack()} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-              <Icon name="chevron-back" color={colors.ink} />
-            </Pressable>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
-          <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.login}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title={text.login} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} accessibilityBack={text.back} />
 
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 28, marginBottom: 6 }}>{text.app}</Text>
@@ -254,7 +246,7 @@ export function AuthScreen({ navigation }: Props) {
           setDialOpen(false);
         }}
       />
-    </SafeAreaView>
+    </Screen>
   );
 }
 
@@ -274,10 +266,11 @@ function DialSheet({
   onPick: (dial: DialCode) => void;
 }) {
   const labels: Record<DialCode, string> = { "852": text.regionHk, "853": text.regionMo, "86": text.regionCn };
+  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={open} animationType="slide" transparent statusBarTranslucent onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <Pressable onPress={() => undefined} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+        <Pressable onPress={() => undefined} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: Math.max(insets.bottom, 20) }}>
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 20, marginBottom: 12 }}>{text.phone}</Text>
           {DIALS.map((item, index) => (
             <Pressable

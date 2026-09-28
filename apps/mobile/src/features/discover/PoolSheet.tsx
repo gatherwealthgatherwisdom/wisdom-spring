@@ -1,4 +1,5 @@
 import { Modal, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -6,12 +7,13 @@ import { POOL_LABELS } from "./catalog";
 
 export function PoolSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   return (
-    <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={open} animationType="slide" transparent statusBarTranslucent onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
-        <Pressable onPress={() => undefined} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: "70%" }}>
+        <Pressable onPress={() => undefined} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: Math.max(insets.bottom, 20), maxHeight: "70%" }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <Text style={{ color: colors.ink, fontSize: 20, fontFamily: "Palatino" }}>{text.models}</Text>
             <Pressable onPress={onClose}><Text style={{ color: colors.muted, fontSize: 18 }}>×</Text></Pressable>

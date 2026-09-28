@@ -2,14 +2,14 @@ import { ApiError } from "@spring/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
-import { Icon } from "../../shared/ui/Icon";
+import { Screen } from "../../shared/ui/Screen";
+import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Register">;
 
@@ -40,15 +40,9 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <Screen>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40, paddingHorizontal: 8 }}>
-          <Pressable accessibilityLabel={text.back} onPress={() => navigation.goBack()} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="chevron-back" color={colors.ink} />
-          </Pressable>
-          <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.completeRegistration}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title={text.completeRegistration} onBack={() => navigation.goBack()} accessibilityBack={text.back} />
 
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.registerHint}</Text>
@@ -87,6 +81,6 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
           <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12 }}>{text.company}</Text>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }
