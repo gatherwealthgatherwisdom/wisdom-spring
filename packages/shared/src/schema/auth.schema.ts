@@ -4,15 +4,15 @@ import { Locale } from "../enums/locale";
 import { PlanTier } from "../enums/plan-tier";
 import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
-import { normalizeHkMobile } from "../lib/phone";
+import { normalizeMobile } from "../lib/phone";
 
-const HkPhoneSchema = z
+const MobilePhoneSchema = z
   .string()
   .trim()
   .min(8)
   .max(24)
   .transform((value, ctx) => {
-    const phone = normalizeHkMobile(value);
+    const phone = normalizeMobile(value);
     if (!phone) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "phone" });
       return z.NEVER;
@@ -55,11 +55,11 @@ export const OAuthRequestSchema = z.object({
 });
 
 export const PhoneCodeRequestSchema = z.object({
-  phone: HkPhoneSchema,
+  phone: MobilePhoneSchema,
 });
 
 export const PhoneVerifyRequestSchema = z.object({
-  phone: HkPhoneSchema,
+  phone: MobilePhoneSchema,
   code: z.string().trim().regex(/^\d{6}$/),
 });
 

@@ -111,6 +111,33 @@ describe("phone login", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it("accepts Macau and mainland China mobiles", async () => {
+    const macau = await issue("+853 6612 3456");
+    const macauOk = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: "+85366123456", code: macau },
+    });
+    expect(macauOk.statusCode).toBe(200);
+    expect(macauOk.json().user.phone).toBe("+85366123456");
+
+    const china = await issue("+86 138 0013 8000");
+    const chinaOk = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: "+8613800138000", code: china },
+    });
+    expect(chinaOk.statusCode).toBe(200);
+    expect(chinaOk.json().user.phone).toBe("+8613800138000");
+
+    const landline = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/request",
+      payload: { phone: "+85328123456" },
+    });
+    expect(landline.statusCode).toBe(400);
+  });
+
   it("rejects a wrong code and an expired code", async () => {
     const phone = "61111111";
     const code = await issue(phone);

@@ -1,17 +1,30 @@
 import { ApiError } from "@spring/api-client";
-import { normalizeHkMobile } from "@spring/shared";
+import {
+  DIALS,
+  formatE164,
+  formatLocalDigits,
+  localLength,
+  normalizeMobile,
+  type DialCode,
+} from "@spring/shared";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
-import { copy } from "../../shared/lib/i18n";
+import { copy, type Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
-import { useColors } from "../../shared/theme";
+import { useColors, type Palette } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Auth">;
+
+const PLACEHOLDER: Record<DialCode, string> = {
+  "852": "9123 4567",
+  "853": "6612 3456",
+  "86": "138 0013 8000",
+};
 
 export function AuthScreen({ navigation }: Props) {
   const colors = useColors();
@@ -19,6 +32,8 @@ export function AuthScreen({ navigation }: Props) {
   const text = copy[locale];
   const setSession = usePrefs((state) => state.setSession);
   const [step, setStep] = useState<"phone" | "code">("phone");
+  const [dial, setDial] = useState<DialCode>("852");
+  const [dialOpen, setDialOpen] = useState(false);
   const [digits, setDigits] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -27,7 +42,8 @@ export function AuthScreen({ navigation }: Props) {
   const [cooldown, setCooldown] = useState(0);
   const busyRef = useRef(false);
   const codeField = useRef<TextInput>(null);
-  const phoneReady = Boolean(normalizeHkMobile(digits));
+  const maxLocal = localLength(dial);
+  const phoneReady = Boolean(normalizeMobile(digits, dial));
   const codeReady = code.length === 6;
   const canSubmit = !busy && (step === "phone" ? phoneReady : codeReady);
 
@@ -46,7 +62,7 @@ export function AuthScreen({ navigation }: Props) {
 
   async function requestCode() {
     setError("");
-    const normalized = normalizeHkMobile(digits);
+    const normalized = step === "code" && phone ? phone : normalizeMobile(digits, dial);
     if (!normalized) {
       setError(text.phoneInvalid);
       return;
@@ -112,21 +128,26 @@ export function AuthScreen({ navigation }: Props) {
               <>
                 <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>{text.phone}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <View style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, borderRadius: 12, paddingHorizontal: 12, height: 48, justifyContent: "center" }}>
-                    <Text style={{ color: colors.ink }}>+852</Text>
-                  </View>
+                  <Pressable
+                    accessibilityLabel={`+${dial}`}
+                    onPress={() => setDialOpen(true)}
+                    style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, borderRadius: 12, paddingHorizontal: 10, height: 48, flexDirection: "row", alignItems: "center", gap: 4 }}
+                  >
+                    <Text style={{ color: colors.ink }}>+{dial}</Text>
+                    <Icon name="chevron-down" color={colors.muted} size={16} />
+                  </Pressable>
                   <TextInput
-                    value={digits.length > 4 ? `${digits.slice(0, 4)} ${digits.slice(4)}` : digits}
+                    value={formatLocalDigits(dial, digits)}
                     onChangeText={(value) => {
-                      setDigits(value.replace(/\D/g, "").slice(0, 8));
+                      setDigits(value.replace(/\D/g, "").slice(0, maxLocal));
                       setError("");
                     }}
                     keyboardType="number-pad"
-                    maxLength={9}
+                    maxLength={formatLocalDigits(dial, "0".repeat(maxLocal)).length}
                     autoFocus
                     autoComplete="tel"
                     textContentType="telephoneNumber"
-                    placeholder="9123 4567"
+                    placeholder={PLACEHOLDER[dial]}
                     placeholderTextColor={colors.muted}
                     onSubmitEditing={() => {
                       if (phoneReady) void requestCode();
@@ -144,11 +165,11 @@ export function AuthScreen({ navigation }: Props) {
                     }}
                   />
                 </View>
-                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{text.digitsOf(digits.length, 8)}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12, marginTop: 8 }}>{text.digitsOf(digits.length, maxLocal)}</Text>
               </>
             ) : (
               <>
-                <Text style={{ color: colors.ink, marginBottom: 12 }}>{formatHk(phone)}</Text>
+                <Text style={{ color: colors.ink, marginBottom: 12 }}>{formatE164(phone)}</Text>
                 <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>{text.code}</Text>
                 <TextInput
                   ref={codeField}
@@ -221,12 +242,57 @@ export function AuthScreen({ navigation }: Props) {
           <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12 }}>{text.company}</Text>
         </View>
       </KeyboardAvoidingView>
+      <DialSheet
+        open={dialOpen}
+        value={dial}
+        colors={colors}
+        text={text}
+        onClose={() => setDialOpen(false)}
+        onPick={(next) => {
+          setDial(next);
+          setDigits("");
+          setError("");
+          setDialOpen(false);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function formatHk(phone: string): string {
-  const local = phone.replace(/\D/g, "").slice(-8);
-  if (local.length !== 8) return phone;
-  return `+852 ${local.slice(0, 4)} ${local.slice(4)}`;
+function DialSheet({
+  open,
+  value,
+  colors,
+  text,
+  onClose,
+  onPick,
+}: {
+  open: boolean;
+  value: DialCode;
+  colors: Palette;
+  text: Copy;
+  onClose: () => void;
+  onPick: (dial: DialCode) => void;
+}) {
+  const labels: Record<DialCode, string> = { "852": text.regionHk, "853": text.regionMo, "86": text.regionCn };
+  return (
+    <Modal visible={open} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }}>
+        <Pressable onPress={() => undefined} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+          <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 20, marginBottom: 12 }}>{text.phone}</Text>
+          {DIALS.map((item, index) => (
+            <Pressable
+              key={item.code}
+              onPress={() => onPick(item.code)}
+              style={{ flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: index === DIALS.length - 1 ? 0 : 1, borderBottomColor: colors.line }}
+            >
+              <Text style={{ color: colors.ink, fontSize: 16, width: 64 }}>+{item.code}</Text>
+              <Text style={{ color: colors.ink, fontSize: 16, flex: 1 }}>{labels[item.code]}</Text>
+              {value === item.code ? <Icon name="checkmark" color={colors.accent} size={20} /> : null}
+            </Pressable>
+          ))}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
 }

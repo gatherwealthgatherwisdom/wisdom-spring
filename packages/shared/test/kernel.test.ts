@@ -3,7 +3,7 @@ import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
 import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
-import { normalizeHkMobile } from "../src/lib/phone";
+import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 
@@ -87,5 +87,36 @@ describe("Hong Kong mobile numbers", () => {
     expect(normalizeHkMobile("31234567")).toBeNull();
     expect(normalizeHkMobile("9123456")).toBeNull();
     expect(normalizeHkMobile("85231234567")).toBeNull();
+  });
+});
+
+describe("Macau and mainland mobile numbers", () => {
+  it("accepts +853 mobiles starting with 6", () => {
+    expect(normalizeMobile("+853 6612 3456")).toBe("+85366123456");
+    expect(normalizeMobile("85366123456")).toBe("+85366123456");
+    expect(normalizeMobile("66123456", "853")).toBe("+85366123456");
+  });
+
+  it("accepts +86 mainland mobiles", () => {
+    expect(normalizeMobile("+86 138 0013 8000")).toBe("+8613800138000");
+    expect(normalizeMobile("13800138000")).toBe("+8613800138000");
+    expect(normalizeMobile("13800138000", "86")).toBe("+8613800138000");
+  });
+
+  it("rejects landlines and short numbers for those prefixes", () => {
+    expect(normalizeMobile("+853 2812 3456")).toBeNull();
+    expect(normalizeMobile("66123456", "852")).toBe("+85266123456");
+    expect(normalizeMobile("28123456", "853")).toBeNull();
+    expect(normalizeMobile("01012345678", "86")).toBeNull();
+    expect(normalizeMobile("1380013800", "86")).toBeNull();
+  });
+
+  it("formats local digits and E.164 display", () => {
+    expect(formatLocalDigits("852", "91234567")).toBe("9123 4567");
+    expect(formatLocalDigits("853", "66123456")).toBe("6612 3456");
+    expect(formatLocalDigits("86", "13800138000")).toBe("138 0013 8000");
+    expect(formatE164("+85291234567")).toBe("+852 9123 4567");
+    expect(formatE164("+85366123456")).toBe("+853 6612 3456");
+    expect(formatE164("+8613800138000")).toBe("+86 138 0013 8000");
   });
 });
