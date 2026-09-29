@@ -19,7 +19,7 @@ export const SPRING_TOOLS: readonly SpringTool[] = [
   { id: "search", zh: "搜尋", en: "Search", blurbZh: "用即時網頁搜尋，有就列真實連結。", blurbEn: "Search the live web and list real links.", live: true, mode: "chat", templateId: "search", instruction: "你會收到即時網頁搜尋結果。根據結果用繁體中文回答。有來源就列真實連結。如果搜尋冇結果，就講搵唔到，唔好杜撰網頁，亦唔好標「來自網頁」。" },
   { id: "memo", zh: "備忘", en: "Memo", blurbZh: "寫一則短備忘。", blurbEn: "Write a short memo.", live: true, mode: "write", templateId: "memo" },
   { id: "voice", zh: "即時語音", en: "Voice", blurbZh: "用裝置咪同智泉傾。", blurbEn: "Talk with the device microphone.", live: true, mode: "chat" },
-  { id: "pdf", zh: "聊天 PDF", en: "Chat PDF", blurbZh: "示範畫面。檔案上傳下一輪先接。", blurbEn: "A sample screen. File upload comes later.", live: false },
+  { id: "pdf", zh: "聊天 PDF", en: "Chat PDF", blurbZh: "上傳 PDF，用繁體中文講重點。", blurbEn: "Upload a PDF and summarise it.", live: true, mode: "chat" },
   { id: "artifacts", zh: "創作", en: "Compose", blurbZh: "開一張寫作卡。", blurbEn: "Open a writing card.", live: true, mode: "write", templateId: "email" },
   { id: "plain", zh: "淺白", en: "Plain", blurbZh: "改成淺白短句。", blurbEn: "Turn it into plain speech.", live: true, mode: "write", templateId: "plain" },
   { id: "mind", zh: "大綱", en: "Outline", blurbZh: "整理成要點大綱。", blurbEn: "Turn notes into an outline.", live: true, mode: "write", templateId: "report" },

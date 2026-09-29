@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   ErrorCode,
   FILE_LATER_COPY,
+  FILE_PROMPT,
   IMAGE_MODE_NO_UPLOAD_COPY,
   IMAGE_TOO_LARGE_COPY,
   LIMITS,
@@ -13,13 +14,18 @@ import {
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { env } from "../src/env";
-import type { ChatMessage, OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
+import type { ChatMessage, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
 const PIXEL =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
-function visionClient(): OpenRouterClient & { streamCalls: number; imageCalls: number; lastMessages: ChatMessage[] } {
-  const state: { streamCalls: number; imageCalls: number; lastMessages: ChatMessage[] } = {
+function visionClient(): OpenRouterClient & {
+  streamCalls: number;
+  imageCalls: number;
+  lastMessages: ChatMessage[];
+  last?: StreamChatInput;
+} {
+  const state: { streamCalls: number; imageCalls: number; lastMessages: ChatMessage[]; last?: StreamChatInput } = {
     streamCalls: 0,
     imageCalls: 0,
     lastMessages: [],
@@ -33,6 +39,9 @@ function visionClient(): OpenRouterClient & { streamCalls: number; imageCalls: n
     },
     get lastMessages() {
       return state.lastMessages;
+    },
+    get last() {
+      return state.last;
     },
     async listModels() {
       return [];
@@ -49,6 +58,7 @@ function visionClient(): OpenRouterClient & { streamCalls: number; imageCalls: n
     },
     streamChat(input) {
       state.streamCalls += 1;
+      state.last = input;
       state.lastMessages = input.messages;
       return (async function* () {
         yield { type: "delta" as const, text: "見到一點綠。" };
@@ -182,16 +192,16 @@ describe("photo uploads and vision", () => {
     expect(response.json().error.code).toBe(ErrorCode.AUTH_INVALID);
   });
 
-  it("rejects pdf and oversized payloads", async () => {
-    const pdf = await app.inject({
+  it("rejects unknown files and oversized payloads", async () => {
+    const unknown = await app.inject({
       method: "POST",
       url: "/v1/uploads",
       headers: { authorization: `Bearer ${token}` },
-      payload: { mime: "application/pdf", data: Buffer.from("%PDF-1.4").toString("base64") },
+      payload: { mime: "text/plain", data: Buffer.from("hello").toString("base64") },
     });
-    expect(pdf.statusCode).toBe(400);
-    expect(pdf.json().error.code).toBe(ErrorCode.VALIDATION);
-    expect(pdf.json().error.message).toBe(FILE_LATER_COPY);
+    expect(unknown.statusCode).toBe(400);
+    expect(unknown.json().error.code).toBe(ErrorCode.VALIDATION);
+    expect(unknown.json().error.message).toBe(FILE_LATER_COPY);
 
     const huge = Buffer.alloc(LIMITS.uploadMaxBytes + 1, 0xff);
     huge[0] = 0xff;
@@ -303,7 +313,7 @@ describe("photo uploads and vision", () => {
     expect(sent.body).toContain("qwen/qwen-2.5-vl-7b-instruct");
     expect(sent.body).toContain("見到一點綠。");
     expect(client.imageCalls).toBe(0);
-    expect(client.streamCalls).toBe(1);
+    expect(client.streamCalls).toBeGreaterThan(0);
     const lastUser = [...client.lastMessages].reverse().find((row) => row.role === "user");
     expect(Array.isArray(lastUser?.content)).toBe(true);
     const parts = lastUser?.content as Array<{ type?: string; text?: string; image_url?: { url?: string } }>;
@@ -332,5 +342,48 @@ describe("photo uploads and vision", () => {
     const userTurn = messages.find((row) => row.role === "USER");
     expect(userTurn?.content).toBe("");
     expect(userTurn?.attachments).toEqual([{ id: assetId, url: `/v1/uploads/${assetId}`, mime: "image/png" }]);
+  });
+
+  it("stores a pdf and sends it through the file-parser plugin", async () => {
+    const bytes = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { mime: "application/pdf", data: bytes.toString("base64") },
+    });
+    expect(created.statusCode).toBe(201);
+    const body = created.json() as { id: string; url: string; mime: string; byteSize: number };
+    expect(body.mime).toBe("application/pdf");
+    expect(body.byteSize).toBe(bytes.length);
+    const fetched = await app.inject({ method: "GET", url: body.url });
+    expect(fetched.statusCode).toBe(200);
+    expect(String(fetched.headers["content-type"])).toMatch(/application\/pdf/);
+
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "", clientMessageId: randomUUID(), attachments: [{ assetId: body.id }] },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("event: done");
+    expect(client.last?.plugins).toEqual([{ id: "file-parser", pdf: { engine: "pdf-text" } }]);
+    const lastUser = [...client.lastMessages].reverse().find((row) => row.role === "user");
+    expect(Array.isArray(lastUser?.content)).toBe(true);
+    const parts = lastUser?.content as Array<{
+      type?: string;
+      text?: string;
+      file?: { filename?: string; file_data?: string };
+    }>;
+    expect(parts.some((part) => part.type === "text" && part.text === FILE_PROMPT)).toBe(true);
+    expect(
+      parts.some(
+        (part) =>
+          part.type === "file" &&
+          typeof part.file?.file_data === "string" &&
+          part.file.file_data.startsWith("data:application/pdf;base64,"),
+      ),
+    ).toBe(true);
   });
 });

@@ -5,25 +5,30 @@ import { env } from "../../../env";
 import type { UploadMime } from "@spring/shared";
 
 const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/i;
-const EXTS = ["png", "jpg", "jpeg", "webp"] as const;
+const EXTS = ["png", "jpg", "jpeg", "webp", "pdf"] as const;
 
 export function isUploadId(id: string): boolean {
   return ULID.test(id);
 }
 
-export function extOfMime(mime: UploadMime): "jpg" | "png" | "webp" {
+export function extOfMime(mime: UploadMime): "jpg" | "png" | "webp" | "pdf" {
   if (mime === "image/jpeg") return "jpg";
   if (mime === "image/webp") return "webp";
+  if (mime === "application/pdf") return "pdf";
   return "png";
 }
 
 function mimeOf(ext: string): string {
   if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
   if (ext === "webp") return "image/webp";
+  if (ext === "pdf") return "application/pdf";
   return "image/png";
 }
 
 export function mimeFromMagic(bytes: Buffer, claimed: string): UploadMime | null {
+  if (bytes.length >= 4 && bytes.subarray(0, 4).toString("ascii") === "%PDF") {
+    return claimed === "application/pdf" ? "application/pdf" : null;
+  }
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return claimed === "image/jpeg" ? "image/jpeg" : null;
   }

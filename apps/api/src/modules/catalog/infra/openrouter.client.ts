@@ -22,14 +22,17 @@ export interface OpenRouterModel {
 
 export type ChatContentPart =
   | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "file"; file: { filename: string; file_data: string } };
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string | ChatContentPart[];
 }
 
-export type OpenRouterPlugin = { id: "web"; max_results?: number };
+export type OpenRouterPlugin =
+  | { id: "web"; max_results?: number }
+  | { id: "file-parser"; pdf?: { engine: "pdf-text" } };
 
 export interface StreamChatInput {
   model: string;

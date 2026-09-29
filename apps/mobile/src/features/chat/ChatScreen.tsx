@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, LIMITS, type AssetView, type MessageView } from "@spring/shared";
+import { ErrorCode, LIMITS, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -8,7 +8,7 @@ import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, mediaUrl, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
-import { pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
+import { pickPdf, pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useStream } from "../../shared/lib/stream";
 import { speak, startDictation } from "../../shared/lib/voice";
@@ -90,12 +90,24 @@ export function ChatScreen({ navigation, route }: Props) {
     void refreshAccount().catch(() => undefined);
   }
 
-  async function attach(kind: AttachKind) {
+  async function attach(kind: AttachKind | "file") {
     if (!usePrefs.getState().accessToken) {
       navigation.navigate("Auth");
       return;
     }
     if (pending.length >= LIMITS.attachmentsMax) return;
+    if (kind === "file") {
+      try {
+        const picked = await pickPdf();
+        if (!picked) return;
+        const uploaded = await spring.upload({ mime: picked.mime, data: picked.data });
+        setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
+      } catch (error) {
+        const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : text.attachLater;
+        setBanner(message);
+      }
+      return;
+    }
     const vision = caps.data?.vision ?? (await spring.capabilities().then((row) => row.vision).catch(() => false));
     if (!vision) {
       setBanner(text.noVisionModel);
@@ -359,9 +371,19 @@ export function ChatScreen({ navigation, route }: Props) {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 6, paddingTop: 8 }}>
               {pending.map((item) => {
                 const uri = mediaUrl(item.url);
+                const pdf = isPdfMime(item.mime);
                 return (
-                  <View key={item.id} style={{ width: 64, height: 64 }}>
-                    {uri ? <Image source={{ uri }} style={{ width: 64, height: 64, borderRadius: 10 }} /> : null}
+                  <View key={item.id} style={{ width: pdf ? undefined : 64, height: 64, minWidth: pdf ? 96 : 64 }}>
+                    {pdf ? (
+                      <View style={{ height: 64, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Icon name="document-text-outline" color={colors.ink} size={18} />
+                        <Text style={{ color: colors.ink, fontSize: 12 }} numberOfLines={1}>
+                          {text.pdfFile}
+                        </Text>
+                      </View>
+                    ) : uri ? (
+                      <Image source={{ uri }} style={{ width: 64, height: 64, borderRadius: 10 }} />
+                    ) : null}
                     <Pressable
                       onPress={() => setPending((current) => current.filter((row) => row.id !== item.id))}
                       style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" }}
@@ -383,10 +405,6 @@ export function ChatScreen({ navigation, route }: Props) {
             onStop={stop}
             onAttach={(kind) => {
               setGuestBlocked(false);
-              if (kind === "file") {
-                setBanner(text.attachLater);
-                return;
-              }
               void attach(kind);
             }}
             onMic={() => {

@@ -168,10 +168,6 @@ export function InboxScreen({ navigation }: Props) {
               <Pressable
                 key={item.name}
                 onPress={() => {
-                  if (item.kind === "file") {
-                    setHint(text.attachLater);
-                    return;
-                  }
                   setAttachOpen(false);
                   setHint(null);
                   openChat(navigation, { mode: "chat", attach: item.kind });

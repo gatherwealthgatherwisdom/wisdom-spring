@@ -6,6 +6,7 @@ import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
+import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
@@ -149,7 +150,7 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "webchat")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "memo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
-    expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(false);
+    expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(true);
   });
 
   it("exposes aide instructions without claiming web results", () => {
@@ -161,6 +162,13 @@ describe("tool catalog", () => {
     expect(usesWebSearch("search")).toBe(true);
     expect(usesWebSearch("webchat")).toBe(true);
     expect(usesWebSearch("rewrite")).toBe(false);
+  });
+
+  it("accepts pdf uploads separately from images", () => {
+    expect(isUploadMime("application/pdf")).toBe(true);
+    expect(isPdfMime("application/pdf")).toBe(true);
+    expect(isImageMime("application/pdf")).toBe(false);
+    expect(isPdfMime("image/png")).toBe(false);
   });
 });
 

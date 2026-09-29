@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { LOOK_TITLE, ModelCapability, PlanTier, assetIdsOf } from "@spring/shared";
+import { FILE_TITLE, LOOK_TITLE, ModelCapability, PlanTier, assetIdsOf, isPdfMime } from "@spring/shared";
 import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
 import { PrismaModelPoolReader } from "../../catalog/infra/pool.repository";
 import { isEligible } from "../../catalog/application/draw-model";
@@ -21,9 +21,12 @@ export class GenerateTitleService {
     if (messages.length === 0) return;
     const firstUser = messages.find((message) => message.role === "USER");
     if (firstUser && firstUser.content.trim().length === 0 && assetIdsOf(firstUser.attachments).length > 0) {
+      const ids = assetIdsOf(firstUser.attachments);
+      const assets = await this.prisma.asset.findMany({ where: { id: { in: ids } } });
+      const title = assets.length > 0 && assets.every((row) => isPdfMime(row.mime)) ? FILE_TITLE : LOOK_TITLE;
       await this.prisma.conversation.updateMany({
         where: { id: conversationId, title: null },
-        data: { title: LOOK_TITLE },
+        data: { title },
       });
       return;
     }

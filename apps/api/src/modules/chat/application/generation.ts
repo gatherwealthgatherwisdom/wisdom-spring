@@ -4,10 +4,13 @@ import {
   AppError,
   ErrorCode,
   LIMITS,
+  FILE_PROMPT,
   LOOK_PROMPT,
   ModelCapability,
   OPENROUTER,
   assetIdsOf,
+  isImageMime,
+  isPdfMime,
   usesWebSearch,
   createId,
   estimateCostMicros,
@@ -95,12 +98,17 @@ export async function runGeneration(
     imageStyle: conversation?.imageStyle ?? null,
   };
   const lastUser = [...history].reverse().find((row) => row.role === "USER");
-  const visionIds = modeFields.mode === "image" ? [] : assetIdsOf(lastUser?.attachments);
+  const mediaIds = modeFields.mode === "image" ? [] : assetIdsOf(lastUser?.attachments);
+  const media = mediaIds.length > 0 ? await deps.prisma.asset.findMany({ where: { id: { in: mediaIds } } }) : [];
+  const visionIds = media.filter((row) => isImageMime(row.mime)).map((row) => row.id);
+  const pdfIds = media.filter((row) => isPdfMime(row.mime)).map((row) => row.id);
   const hasVision = visionIds.length > 0;
+  const hasPdf = pdfIds.length > 0;
+  const emptyPrompt = hasPdf && !hasVision ? FILE_PROMPT : LOOK_PROMPT;
   const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => {
     const attached = assetIdsOf(row.attachments).length > 0;
     const text =
-      row.role === "USER" && row.content.trim().length === 0 && attached ? LOOK_PROMPT : row.content;
+      row.role === "USER" && row.content.trim().length === 0 && attached ? emptyPrompt : row.content;
     return {
       role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
       content: modeFields.mode === "image" && row.role === "USER" ? withImageStyle(text, modeFields.imageStyle) : text,
@@ -189,8 +197,12 @@ export async function runGeneration(
           };
           sawDone = true;
         }
-        const messages: ChatMessage[] = hasVision ? await withVisionParts(trimmed, visionIds) : trimmed;
-        const plugins = usesWebSearch(modeFields.templateId) ? [OPENROUTER.webPlugin] : [];
+        const messages: ChatMessage[] =
+          hasVision || hasPdf ? await withMediaParts(trimmed, mediaIds, emptyPrompt) : trimmed;
+        const plugins = [
+          ...(usesWebSearch(modeFields.templateId) ? [OPENROUTER.webPlugin] : []),
+          ...(hasPdf ? [OPENROUTER.pdfPlugin] : []),
+        ];
         for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({
           model: pick.primary,
           models: pick.fallbacks,
@@ -373,15 +385,22 @@ export async function runGeneration(
   }
 }
 
-async function withVisionParts(trimmed: ChatMessage[], assetIds: string[]): Promise<ChatMessage[]> {
+async function withMediaParts(trimmed: ChatMessage[], assetIds: string[], emptyPrompt: string): Promise<ChatMessage[]> {
   const lastUserIndex = trimmed.reduce((found, turn, index) => (turn.role === "user" ? index : found), -1);
   if (lastUserIndex < 0) return trimmed;
   const last = trimmed[lastUserIndex];
   if (!last || typeof last.content !== "string") return trimmed;
-  const parts: ChatContentPart[] = [{ type: "text", text: last.content || LOOK_PROMPT }];
+  const parts: ChatContentPart[] = [{ type: "text", text: last.content || emptyPrompt }];
   for (const id of assetIds) {
     const file = await readUpload(id);
     if (!file) throw new AppError(ErrorCode.NOT_FOUND);
+    if (isPdfMime(file.mime)) {
+      parts.push({
+        type: "file",
+        file: { filename: `${id}.pdf`, file_data: `data:application/pdf;base64,${file.bytes.toString("base64")}` },
+      });
+      continue;
+    }
     parts.push({
       type: "image_url",
       image_url: { url: `data:${file.mime};base64,${file.bytes.toString("base64")}` },

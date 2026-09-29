@@ -27,7 +27,7 @@ export type ChatParams = {
   targetLang?: string;
   imageStyle?: string;
   seed?: string;
-  attach?: "camera" | "library";
+  attach?: "camera" | "library" | "file";
 };
 
 export type AppStackParamList = {
@@ -61,6 +61,7 @@ export function paramsForLiveTool(id: string, locale: "zh-HK" | "en"): ChatParam
   const spec = springTool(id);
   if (!spec?.live) return null;
   if (spec.id === "photo") return { mode: spec.mode ?? "chat", attach: "library" };
+  if (spec.id === "pdf") return { mode: spec.mode ?? "chat", attach: "file" };
   const seed = spec.id === "search" || spec.id === "webchat" ? undefined : locale === "en" ? spec.blurbEn : spec.blurbZh;
   return {
     mode: spec.mode ?? "chat",
