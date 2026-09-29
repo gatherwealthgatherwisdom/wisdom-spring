@@ -5,14 +5,17 @@ import { ErrorCode } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { ProbeHkAvailabilityJob } from "../src/modules/catalog/application/probe-hk-availability.job";
-import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
+import type { OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 import { UpstreamError } from "../src/modules/catalog/infra/openrouter-stream.parser";
 
-function fakeClient(): OpenRouterClient & { calls: number } {
-  const state = { calls: 0 };
+function fakeClient(): OpenRouterClient & { calls: number; last?: StreamChatInput } {
+  const state: { calls: number; last?: StreamChatInput } = { calls: 0 };
   return {
     get calls() {
       return state.calls;
+    },
+    get last() {
+      return state.last;
     },
     async listModels() {
       return [];
@@ -26,8 +29,9 @@ function fakeClient(): OpenRouterClient & { calls: number } {
     async generateImage() {
       throw new Error("unused");
     },
-    streamChat() {
+    streamChat(input) {
       state.calls += 1;
+      state.last = input;
       return (async function* () {
         yield { type: "delta" as const, text: "你好，智泉。" };
         yield {
@@ -137,6 +141,7 @@ describe("POST /v1/messages", () => {
     expect(ledger).toBe(1);
     const usage = await app.ctx.prisma.usageLedger.findFirst();
     expect(usage?.costUsdMicros).toBe(210n);
+    expect(client.last?.plugins).toBeUndefined();
 
     const messageId = JSON.parse(first.body.match(/data: (\{"messageId".*\})/)?.[1] ?? "{}").messageId as string;
     const regenerated = await app.inject({
@@ -150,6 +155,44 @@ describe("POST /v1/messages", () => {
     const original = await app.ctx.prisma.message.findUnique({ where: { id: messageId } });
     expect(original?.status).toBe("SUPERSEDED");
     expect(await app.ctx.prisma.usageLedger.count()).toBe(2);
+  });
+
+  it("sends the OpenRouter web plugin for search turns", async () => {
+    const registered = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `search-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = registered.json().accessToken as string;
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "今日香港天氣", clientMessageId: randomUUID(), templateId: "search" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain("event: done");
+    expect(client.last?.plugins).toEqual([{ id: "web", max_results: 5 }]);
+    expect(client.last?.messages.some((row) => typeof row.content === "string" && row.content.includes("即時網頁搜尋"))).toBe(true);
+  });
+
+  it("uses the memo write template without a web plugin", async () => {
+    const registered = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `memo-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = registered.json().accessToken as string;
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "聽日交報告", clientMessageId: randomUUID(), mode: "write", templateId: "memo" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain("event: done");
+    expect(client.last?.plugins).toBeUndefined();
+    expect(client.last?.messages.some((row) => typeof row.content === "string" && row.content.includes("短備忘"))).toBe(true);
   });
 
   it("marks a slug HK_BLOCKED after three region 403 probes", async () => {

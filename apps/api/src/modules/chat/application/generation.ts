@@ -6,7 +6,9 @@ import {
   LIMITS,
   LOOK_PROMPT,
   ModelCapability,
+  OPENROUTER,
   assetIdsOf,
+  usesWebSearch,
   createId,
   estimateCostMicros,
   messageFor,
@@ -188,6 +190,7 @@ export async function runGeneration(
           sawDone = true;
         }
         const messages: ChatMessage[] = hasVision ? await withVisionParts(trimmed, visionIds) : trimmed;
+        const plugins = usesWebSearch(modeFields.templateId) ? [OPENROUTER.webPlugin] : [];
         for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({
           model: pick.primary,
           models: pick.fallbacks,
@@ -196,6 +199,7 @@ export async function runGeneration(
           userRef: input.userId,
           dataCollection: deny,
           ignoreProviders: deps.ignoreProviders,
+          ...(plugins.length > 0 ? { plugins } : {}),
         })) {
           ticks += 1;
           if (controller.signal.aborted || (ticks % 16 === 0 && (await deps.aborts.isRequested(input.assistantMessageId)))) {

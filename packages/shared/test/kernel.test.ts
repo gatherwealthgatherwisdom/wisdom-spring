@@ -5,7 +5,7 @@ import { messageFor } from "../src/constants/messages";
 import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
-import { SPRING_AIDES, SPRING_TOOLS, toolInstruction } from "../src/constants/catalog";
+import { SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
@@ -143,10 +143,11 @@ describe("conversation export", () => {
 });
 
 describe("tool catalog", () => {
-  it("marks rewrite live and search as a sample", () => {
+  it("marks rewrite, search, and memo live", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "rewrite")?.live).toBe(true);
-    expect(SPRING_TOOLS.find((item) => item.id === "search")?.live).toBe(false);
-    expect(SPRING_TOOLS.find((item) => item.id === "webchat")?.live).toBe(false);
+    expect(SPRING_TOOLS.find((item) => item.id === "search")?.live).toBe(true);
+    expect(SPRING_TOOLS.find((item) => item.id === "webchat")?.live).toBe(true);
+    expect(SPRING_TOOLS.find((item) => item.id === "memo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(false);
   });
@@ -156,6 +157,10 @@ describe("tool catalog", () => {
     expect(toolInstruction("biz")).toMatch(/商務/);
     expect(toolInstruction("solve")).toMatch(/步驟/);
     expect(toolInstruction("detect")).toMatch(/唔好聲稱/);
+    expect(toolInstruction("search")).toMatch(/即時網頁搜尋/);
+    expect(usesWebSearch("search")).toBe(true);
+    expect(usesWebSearch("webchat")).toBe(true);
+    expect(usesWebSearch("rewrite")).toBe(false);
   });
 });
 

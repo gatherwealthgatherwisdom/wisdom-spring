@@ -29,6 +29,8 @@ export interface ChatMessage {
   content: string | ChatContentPart[];
 }
 
+export type OpenRouterPlugin = { id: "web"; max_results?: number };
+
 export interface StreamChatInput {
   model: string;
   models?: string[];
@@ -37,6 +39,7 @@ export interface StreamChatInput {
   userRef: string;
   dataCollection: "deny" | "allow";
   ignoreProviders: string[];
+  plugins?: OpenRouterPlugin[];
 }
 
 export interface CompleteChatInput {
@@ -137,6 +140,7 @@ export class FetchOpenRouterClient implements OpenRouterClient {
           ignore: input.ignoreProviders,
           data_collection: input.dataCollection,
         },
+        ...(input.plugins && input.plugins.length > 0 ? { plugins: input.plugins } : {}),
       }),
     });
     if (!response.ok) {

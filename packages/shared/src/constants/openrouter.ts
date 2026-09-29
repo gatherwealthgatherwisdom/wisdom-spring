@@ -8,6 +8,7 @@ export const OPENROUTER = {
   probePrompt: "Reply with OK",
   probeBatchSize: 20,
   probeMaxTokens: 16,
+  webPlugin: { id: "web", max_results: 5 } as const,
 } as const;
 
 export const SYSTEM_PROMPT = `你是「智泉」，中盈紫達集團（Gather Wealth Gather Wisdom Group）嘅智能助手。

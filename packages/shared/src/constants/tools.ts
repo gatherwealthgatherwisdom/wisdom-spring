@@ -45,6 +45,12 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Cantonese",
     instruction: "用香港廣東話書面語撰寫，語氣自然、有分寸。",
   },
+  {
+    id: "memo",
+    zh: "備忘",
+    en: "Memo",
+    instruction: "幫用戶寫一則短備忘：日期或場合、要點、下一步。短句、清楚，唔好誇張。",
+  },
 ];
 
 export interface ImageStyle {

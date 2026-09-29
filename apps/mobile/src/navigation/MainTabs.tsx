@@ -61,11 +61,12 @@ export function paramsForLiveTool(id: string, locale: "zh-HK" | "en"): ChatParam
   const spec = springTool(id);
   if (!spec?.live) return null;
   if (spec.id === "photo") return { mode: spec.mode ?? "chat", attach: "library" };
+  const seed = spec.id === "search" || spec.id === "webchat" ? undefined : locale === "en" ? spec.blurbEn : spec.blurbZh;
   return {
     mode: spec.mode ?? "chat",
     ...(spec.templateId ? { templateId: spec.templateId } : {}),
     ...(spec.imageStyle ? { imageStyle: spec.imageStyle } : {}),
-    seed: locale === "en" ? spec.blurbEn : spec.blurbZh,
+    ...(seed ? { seed } : {}),
   };
 }
 
