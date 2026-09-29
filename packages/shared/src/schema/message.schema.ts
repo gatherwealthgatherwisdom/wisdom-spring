@@ -39,6 +39,8 @@ export const MessageAttachmentViewSchema = z.object({
   mime: z.string(),
 });
 
+export const FeedbackRatingSchema = z.enum(["up", "down"]);
+
 export const MessageViewSchema = z.object({
   id: z.string().ulid(),
   conversationId: z.string().ulid(),
@@ -52,10 +54,22 @@ export const MessageViewSchema = z.object({
   parentMessageId: z.string().nullable(),
   errorCode: z.string().nullable(),
   attachments: z.array(MessageAttachmentViewSchema).default([]),
+  feedback: FeedbackRatingSchema.nullable().default(null),
   createdAt: z.string(),
 });
 
-export const ListMessagesQuerySchema = PaginationQuerySchema;
+export const ListMessagesQuerySchema = PaginationQuerySchema.extend({
+  q: z.string().max(200).optional(),
+});
+
+export const FeedbackRequestSchema = z.object({
+  rating: FeedbackRatingSchema.nullable(),
+});
+
+export const ConversationExportSchema = z.object({
+  title: z.string(),
+  markdown: z.string(),
+});
 
 export const SseMetaSchema = z.object({
   messageId: z.string().ulid(),

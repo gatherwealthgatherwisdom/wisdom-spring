@@ -34,6 +34,8 @@ import type {
   UpdateConversationSchema,
 } from "../schema/conversation.schema";
 import type {
+  ConversationExportSchema,
+  FeedbackRequestSchema,
   ListMessagesQuerySchema,
   MessageViewSchema,
   SendMessageRequestSchema,
@@ -81,6 +83,8 @@ export type ListConversationsQuery = z.infer<typeof ListConversationsQuerySchema
 export type SendMessageRequest = z.infer<typeof SendMessageRequestSchema>;
 export type MessageView = z.infer<typeof MessageViewSchema>;
 export type ListMessagesQuery = z.infer<typeof ListMessagesQuerySchema>;
+export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
+export type ConversationExport = z.infer<typeof ConversationExportSchema>;
 export type SseMeta = z.infer<typeof SseMetaSchema>;
 export type SseDelta = z.infer<typeof SseDeltaSchema>;
 export type SseDone = z.infer<typeof SseDoneSchema>;

@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { ErrorCode, LIMITS, type AssetView, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, mediaUrl, spring } from "../../shared/lib/api";
@@ -39,12 +39,20 @@ export function ChatScreen({ navigation, route }: Props) {
   const [pending, setPending] = useState<AssetView[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
   const [guestBlocked, setGuestBlocked] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState("");
+  const trimmedSearch = searchQ.trim();
   const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
   const stream = useStream();
   const history = useQuery({
     queryKey: ["messages", conversationId],
     queryFn: () => spring.messages(conversationId ?? ""),
     enabled: Boolean(conversationId),
+  });
+  const found = useQuery({
+    queryKey: ["messages", conversationId, trimmedSearch],
+    queryFn: () => spring.messages(conversationId ?? "", { q: trimmedSearch }),
+    enabled: Boolean(conversationId && searchOpen && trimmedSearch),
   });
   const chats = useQuery({
     queryKey: ["conversations", ""],
@@ -58,13 +66,18 @@ export function ChatScreen({ navigation, route }: Props) {
   });
   const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
 
-  const messages: MessageView[] = (history.data?.items ?? []).filter((item) => item.status !== "SUPERSEDED");
+  const searching = searchOpen && trimmedSearch.length > 0;
+  const messages: MessageView[] = searching
+    ? (found.data?.items ?? [])
+    : (history.data?.items ?? []).filter((item) => item.status !== "SUPERSEDED");
   const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
-  const showDraft = stream.status !== "idle" && stream.conversationId === conversationId && stream.text.length > 0
-    ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
-    : stream.status === "streaming" && !conversationId
+  const showDraft = searching
+    ? null
+    : stream.status !== "idle" && stream.conversationId === conversationId && stream.text.length > 0
       ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
-      : null;
+      : stream.status === "streaming" && !conversationId
+        ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
+        : null;
 
   async function refreshAccount() {
     const me = await spring.me();
@@ -232,6 +245,28 @@ export function ChatScreen({ navigation, route }: Props) {
     stream.fail(locale === "en" ? "Generation stopped." : "已停止生成。");
   }
 
+  async function exportChat() {
+    if (!conversationId) return;
+    try {
+      const exported = await spring.exportConversation(conversationId);
+      await Clipboard.setStringAsync(exported.markdown);
+      setBanner(text.copiedChat);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : text.copiedChat;
+      setBanner(message);
+    }
+  }
+
+  async function rate(messageId: string, rating: "up" | "down") {
+    try {
+      await spring.feedback(messageId, { rating });
+      void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : text.placeholder;
+      setBanner(message);
+    }
+  }
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingHorizontal: 16 }}>
@@ -242,11 +277,20 @@ export function ChatScreen({ navigation, route }: Props) {
           trailing={
             <View style={{ flexDirection: "row" }}>
               <Pressable
-                accessibilityLabel={text.copy}
+                accessibilityLabel={text.searchInChat}
                 onPress={() => {
-                  const last = [...messages].reverse().find((item) => item.role === "ASSISTANT");
-                  if (last?.content) void Clipboard.setStringAsync(last.content);
+                  setSearchOpen((open) => {
+                    if (open) setSearchQ("");
+                    return !open;
+                  });
                 }}
+                style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+              >
+                <Icon name={searchOpen ? "close-outline" : "search-outline"} color={colors.ink} />
+              </Pressable>
+              <Pressable
+                accessibilityLabel={text.exportChat}
+                onPress={() => void exportChat()}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
               >
                 <Icon name="share-outline" color={colors.ink} />
@@ -259,6 +303,8 @@ export function ChatScreen({ navigation, route }: Props) {
                   setPending([]);
                   setBanner(null);
                   setGuestBlocked(false);
+                  setSearchOpen(false);
+                  setSearchQ("");
                   navigation.replace("Chat", { mode: "chat" });
                 }}
                 style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
@@ -268,6 +314,20 @@ export function ChatScreen({ navigation, route }: Props) {
             </View>
           }
         />
+        {searchOpen ? (
+          <View style={{ marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
+            <Icon name="search-outline" color={colors.muted} size={18} />
+            <TextInput
+              value={searchQ}
+              onChangeText={setSearchQ}
+              placeholder={text.searchInChat}
+              placeholderTextColor={colors.muted}
+              autoFocus
+              autoCorrect={false}
+              style={{ flex: 1, paddingVertical: 10, color: colors.ink }}
+            />
+          </View>
+        ) : null}
         {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
         <QuotaBanner
           message={banner}
@@ -282,6 +342,7 @@ export function ChatScreen({ navigation, route }: Props) {
             mode={mode}
             regenerateLabel={text.regenerate}
             listenLabel={text.listen}
+            emptyLabel={searching ? (found.isFetched ? text.emptySearch : " ") : undefined}
             onCard={(card) => {
               if (card === "email") navigation.navigate("Chat", { mode: "write", templateId: "email" });
               if (card === "translate") navigation.replace("Chat", { mode: "translate" });
@@ -290,6 +351,7 @@ export function ChatScreen({ navigation, route }: Props) {
             }}
             onRegenerate={(id) => void regenerate(id)}
             onListen={(content) => speak(content, locale)}
+            onFeedback={(id, rating) => void rate(id, rating)}
           />
         </View>
         <KeyboardDock>

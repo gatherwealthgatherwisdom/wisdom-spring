@@ -6,8 +6,10 @@ import type {
   AuditLogView,
   AssetView,
   AuthResponse,
+  ConversationExport,
   ConversationView,
   FeatureFlagView,
+  FeedbackRequest,
   LoginRequest,
   MeResponse,
   MeUsage,
@@ -147,8 +149,16 @@ export class SpringClient {
     return this.request(`/v1/conversations/${id}`, { method: "DELETE" });
   }
 
-  messages(conversationId: string): Promise<PageOf<MessageView>> {
-    return this.request(`/v1/conversations/${conversationId}/messages?limit=100`);
+  messages(conversationId: string, query?: { q?: string }): Promise<PageOf<MessageView>> {
+    return this.request(`/v1/conversations/${conversationId}/messages${queryString({ limit: "100", ...query })}`);
+  }
+
+  exportConversation(id: string): Promise<ConversationExport> {
+    return this.request(`/v1/conversations/${id}/export`);
+  }
+
+  feedback(id: string, body: FeedbackRequest): Promise<MessageView> {
+    return this.request(`/v1/messages/${id}/feedback`, { method: "POST", body: JSON.stringify(body) });
   }
 
   capabilities(): Promise<{ image: boolean; vision: boolean }> {
@@ -326,12 +336,13 @@ function splitSlug(slug: string): [string, string] {
   return [slug.slice(0, index), slug.slice(index + 1)];
 }
 
-function queryString(query?: { q?: string; cursor?: string; mode?: string }): string {
+function queryString(query?: { q?: string; cursor?: string; mode?: string; limit?: string }): string {
   if (!query) return "";
   const params = new URLSearchParams();
   if (query.q) params.set("q", query.q);
   if (query.cursor) params.set("cursor", query.cursor);
   if (query.mode) params.set("mode", query.mode);
+  if (query.limit) params.set("limit", query.limit);
   const text = params.toString();
   return text ? `?${text}` : "";
 }

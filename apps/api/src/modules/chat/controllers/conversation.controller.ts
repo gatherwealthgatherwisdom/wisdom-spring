@@ -1,5 +1,5 @@
-import type { FastifyInstance } from "fastify";
-import type { Conversation, Message, PrismaClient } from "@prisma/client";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { Conversation, Prisma } from "@prisma/client";
 import {
   AppError,
   ConversationStatus,
@@ -7,13 +7,18 @@ import {
   ErrorCode,
   ListConversationsQuerySchema,
   ListMessagesQuerySchema,
+  MessageRole,
+  MessageStatus,
   UpdateConversationSchema,
-  assetIdsOf,
+  conversationMarkdown,
   createId,
   decodeCursor,
   encodeCursor,
+  searchNeedle,
 } from "@spring/shared";
 import { requireUser } from "../../../http/auth-guard";
+import { env } from "../../../env";
+import { messageViews } from "../application/message-view";
 
 function view(row: Conversation) {
   return {
@@ -32,41 +37,77 @@ function view(row: Conversation) {
   };
 }
 
+function ownedWhere(
+  userId: string,
+  query: { q?: string; status?: ConversationStatus; mode?: string },
+  extra: Prisma.ConversationWhereInput,
+): Prisma.ConversationWhereInput {
+  const needle = searchNeedle(query.q);
+  return {
+    userId,
+    status: query.status ?? { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
+    ...(query.mode ? { mode: query.mode } : {}),
+    ...extra,
+    ...(needle
+      ? {
+          AND: [
+            {
+              OR: [
+                { title: { contains: needle } },
+                {
+                  messages: {
+                    some: {
+                      content: { contains: needle },
+                      status: MessageStatus.COMPLETED,
+                      role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : {}),
+  };
+}
+
+function perMinute(max: number): {
+  config: { rateLimit: { max: number; timeWindow: string; keyGenerator: (request: FastifyRequest) => string } };
+} {
+  return {
+    config: {
+      rateLimit: {
+        max: env.nodeEnv === "test" ? 10_000 : max,
+        timeWindow: "1 minute",
+        keyGenerator: (request) => `${request.ip}:${request.headers.authorization ?? ""}`,
+      },
+    },
+  };
+}
+
 export async function conversationRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/conversations", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
     const query = ListConversationsQuerySchema.parse(request.query);
     const cursor = query.cursor ? decodeCursor(query.cursor) : null;
-    const where = {
-      userId: user.id,
-      status: query.status ?? { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
-      ...(query.q ? { title: { contains: query.q } } : {}),
-      ...(query.mode ? { mode: query.mode } : {}),
-      pinnedAt: null,
-      ...(cursor?.lastMessageAt && cursor.id
+    const cursorClause: Prisma.ConversationWhereInput =
+      cursor?.lastMessageAt && cursor.id
         ? {
             OR: [
               { lastMessageAt: { lt: new Date(cursor.lastMessageAt) } },
               { lastMessageAt: new Date(cursor.lastMessageAt), id: { lt: cursor.id } },
             ],
           }
-        : {}),
-    };
+        : {};
     const pinned = cursor
       ? []
       : await app.ctx.prisma.conversation.findMany({
-          where: {
-            userId: user.id,
-            status: query.status ?? { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
-            ...(query.q ? { title: { contains: query.q } } : {}),
-            ...(query.mode ? { mode: query.mode } : {}),
-            pinnedAt: { not: null },
-          },
+          where: ownedWhere(user.id, query, { pinnedAt: { not: null } }),
           orderBy: { pinnedAt: "desc" },
           take: 50,
         });
     const rows = await app.ctx.prisma.conversation.findMany({
-      where,
+      where: ownedWhere(user.id, query, { pinnedAt: null, ...cursorClause }),
       orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
       take: query.limit + 1,
     });
@@ -126,39 +167,46 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       where: { id, userId: user.id, status: { not: "DELETED" } },
     });
     if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
+    const needle = searchNeedle(query.q);
     const rows = await app.ctx.prisma.message.findMany({
-      where: { conversationId: id },
+      where: {
+        conversationId: id,
+        ...(needle
+          ? {
+              status: MessageStatus.COMPLETED,
+              role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
+              content: { contains: needle },
+            }
+          : {}),
+      },
       orderBy: { createdAt: "desc" },
-      take: query.limit,
+      take: needle ? 100 : query.limit,
     });
     return {
       items: await messageViews(app.ctx.prisma, rows.reverse()),
       nextCursor: null,
     };
   });
-}
 
-async function messageViews(prisma: PrismaClient, rows: Message[]) {
-  const ids = [...new Set(rows.flatMap((row) => assetIdsOf(row.attachments)))];
-  const assets = ids.length > 0 ? await prisma.asset.findMany({ where: { id: { in: ids } } }) : [];
-  const mimeById = new Map(assets.map((row) => [row.id, row.mime]));
-  return rows.map((row) => ({
-    id: row.id,
-    conversationId: row.conversationId,
-    role: row.role,
-    status: row.status,
-    content: row.content,
-    imageUrl: row.imageUrl,
-    requestedModel: row.requestedModel,
-    servedModel: row.servedModel,
-    fallbackUsed: row.fallbackUsed,
-    parentMessageId: row.parentMessageId,
-    errorCode: row.errorCode,
-    attachments: assetIdsOf(row.attachments).map((id) => ({
-      id,
-      url: `/v1/uploads/${id}`,
-      mime: mimeById.get(id) ?? "image/jpeg",
-    })),
-    createdAt: row.createdAt.toISOString(),
-  }));
+  app.get("/v1/conversations/:id/export", perMinute(20), async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const { id } = request.params as { id: string };
+    const conversation = await app.ctx.prisma.conversation.findFirst({
+      where: { id, userId: user.id, status: { not: "DELETED" } },
+    });
+    if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
+    const rows = await app.ctx.prisma.message.findMany({
+      where: {
+        conversationId: id,
+        status: MessageStatus.COMPLETED,
+        role: { in: [MessageRole.USER, MessageRole.ASSISTANT] },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    const items = await messageViews(app.ctx.prisma, rows);
+    return {
+      title: conversation.title?.trim() || "新對話",
+      markdown: conversationMarkdown(conversation.title, items),
+    };
+  });
 }

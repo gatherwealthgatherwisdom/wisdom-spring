@@ -15,9 +15,11 @@ export function MessageList({
   mode,
   regenerateLabel,
   listenLabel,
+  emptyLabel,
   onCard,
   onRegenerate,
   onListen,
+  onFeedback,
 }: {
   messages: MessageView[];
   draft: { content: string; requestedModel: string | null; servedModel: string | null; fallbackUsed: boolean } | null;
@@ -25,13 +27,19 @@ export function MessageList({
   mode: "chat" | "write" | "translate" | "image";
   regenerateLabel: string;
   listenLabel: string;
+  emptyLabel?: string;
   onCard: (card: "email" | "translate" | "image" | "resume") => void;
   onRegenerate: (messageId: string) => void;
   onListen: (content: string) => void;
+  onFeedback?: (messageId: string, rating: "up" | "down") => void;
 }) {
   const locale = usePrefs((state) => state.locale);
+  const colors = useColors();
   const data = draft ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" }] : messages;
-  if (data.length === 0) return <EmptyHero text={text} onCard={onCard} />;
+  if (data.length === 0) {
+    if (emptyLabel) return <Text style={{ color: colors.muted, paddingVertical: 24, textAlign: "center" }}>{emptyLabel}</Text>;
+    return <EmptyHero text={text} onCard={onCard} />;
+  }
   return (
     <FlatList
       data={data}
@@ -74,8 +82,12 @@ export function MessageList({
             listenLabel={listenLabel}
             copyLabel={text.copy}
             timeLabel={"createdAt" in item ? formatWhen(item.createdAt, locale) : undefined}
+            feedback={"feedback" in item ? item.feedback : null}
+            thumbsUpLabel={text.thumbsUp}
+            thumbsDownLabel={text.thumbsDown}
             onListen={streaming ? undefined : () => onListen(item.content)}
             onRegenerate={streaming || mode === "image" ? undefined : () => onRegenerate(item.id)}
+            onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
           />
         );
       }}

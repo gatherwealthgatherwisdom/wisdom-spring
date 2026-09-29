@@ -8,6 +8,10 @@ import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicro
 import { SPRING_AIDES, SPRING_TOOLS, toolInstruction } from "../src/constants/catalog";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
+import { searchNeedle } from "../src/lib/search";
+import { conversationMarkdown, EXPORT_ASSISTANT, EXPORT_UNTITLED, EXPORT_USER } from "../src/lib/conversation-export";
+import { ratingOf } from "../src/constants/feedback";
+import { MessageRole } from "../src/enums/message-role";
 
 describe("money", () => {
   it("converts USD to micros", () => {
@@ -95,6 +99,46 @@ describe("copy", () => {
   it("uses the Hong Kong quota line", () => {
     expect(messageFor(ErrorCode.QUOTA_DAILY_MESSAGE)).toBe("今日對話次數已用完。");
     expect(messageFor(ErrorCode.QUOTA_GUEST)).toBe("試用 5 次已用完。完成註冊後可以繼續用。");
+  });
+});
+
+describe("search needle", () => {
+  it("trims and strips LIKE wildcards", () => {
+    expect(searchNeedle("  睇圖  ")).toBe("睇圖");
+    expect(searchNeedle("%foo_bar\\")).toBe("foobar");
+    expect(searchNeedle("   ")).toBe("");
+  });
+});
+
+describe("feedback rating", () => {
+  it("only keeps up and down", () => {
+    expect(ratingOf("up")).toBe("up");
+    expect(ratingOf("down")).toBe("down");
+    expect(ratingOf("side")).toBeNull();
+    expect(ratingOf(null)).toBeNull();
+  });
+});
+
+describe("conversation export", () => {
+  it("writes 用戶 and 智泉 without model names", () => {
+    const markdown = conversationMarkdown("睇圖", [
+      { role: MessageRole.USER, content: "請睇呢張圖", attachments: [{ url: "/v1/uploads/01HTESTUPLOAD0000000000001" }] },
+      {
+        role: MessageRole.ASSISTANT,
+        content: "見到一點綠。",
+        imageUrl: "/v1/generated/01HTESTIMAGE00000000000001",
+      },
+    ]);
+    expect(markdown.startsWith(`# 睇圖\n`)).toBe(true);
+    expect(markdown).toContain(`**${EXPORT_USER}**`);
+    expect(markdown).toContain(`**${EXPORT_ASSISTANT}**`);
+    expect(markdown).toContain("![](/v1/uploads/01HTESTUPLOAD0000000000001)");
+    expect(markdown).toContain("![](/v1/generated/01HTESTIMAGE00000000000001)");
+    expect(markdown).not.toMatch(/deepseek|qwen|gpt|claude|gemini/i);
+  });
+
+  it("falls back to 新對話", () => {
+    expect(conversationMarkdown(null, [])).toBe(`# ${EXPORT_UNTITLED}\n`);
   });
 });
 

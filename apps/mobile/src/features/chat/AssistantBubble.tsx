@@ -38,6 +38,10 @@ export function AssistantBubble({
   onListen,
   copyLabel,
   timeLabel,
+  feedback,
+  thumbsUpLabel,
+  thumbsDownLabel,
+  onFeedback,
 }: {
   content: string;
   imageUrl?: string | null;
@@ -52,6 +56,10 @@ export function AssistantBubble({
   copyLabel?: string;
   createdAt?: string;
   timeLabel?: string;
+  feedback?: "up" | "down" | null;
+  thumbsUpLabel?: string;
+  thumbsDownLabel?: string;
+  onFeedback?: (rating: "up" | "down") => void;
 }) {
   const colors = useColors();
   const image = splitImage(content);
@@ -90,6 +98,16 @@ export function AssistantBubble({
           {onRegenerate ? (
             <Pressable accessibilityLabel={regenerateLabel} onPress={onRegenerate} style={action(colors)}>
               <Icon name="refresh-outline" color={colors.muted} size={18} />
+            </Pressable>
+          ) : null}
+          {onFeedback ? (
+            <Pressable accessibilityLabel={thumbsUpLabel} onPress={() => onFeedback("up")} style={action(colors)}>
+              <Icon name={feedback === "up" ? "thumbs-up" : "thumbs-up-outline"} color={feedback === "up" ? colors.accent : colors.muted} size={18} />
+            </Pressable>
+          ) : null}
+          {onFeedback ? (
+            <Pressable accessibilityLabel={thumbsDownLabel} onPress={() => onFeedback("down")} style={action(colors)}>
+              <Icon name={feedback === "down" ? "thumbs-down" : "thumbs-down-outline"} color={feedback === "down" ? colors.accent : colors.muted} size={18} />
             </Pressable>
           ) : null}
         </View>
