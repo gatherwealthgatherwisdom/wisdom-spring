@@ -15,6 +15,7 @@ import {
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
 import type { SseSink } from "../../../http/sse";
 import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
+import { persistGeneratedImage } from "../infra/generated-image.store";
 import { UpstreamError, type SpringStreamEvent, type StreamUsage } from "../../catalog/infra/openrouter-stream.parser";
 import type { AbortRegistry } from "./abort-registry";
 
@@ -105,6 +106,7 @@ export async function runGeneration(
   let regionRetries = 0;
   let sawDelta = false;
   let text = "";
+  let imageUrl: string | null = null;
   const started = Date.now();
 
   try {
@@ -152,18 +154,30 @@ export async function runGeneration(
         let sawDone = false;
         let ticks = 0;
         if (modeFields.mode === "image") {
-          const image = await deps.openrouter.completeChat({
+          const lastUser = [...history].reverse().find((row) => row.role === "USER");
+          const prompt = withImageStyle(lastUser?.content ?? "", modeFields.imageStyle);
+          const image = await deps.openrouter.generateImage({
             model: pick.primary,
-            messages: trimmed,
+            prompt,
             signal: controller.signal,
-            image: true,
+            ignoreProviders: deps.ignoreProviders,
+            userRef: input.userId,
           });
-          const url = image.images[0];
-          if (!url) throw new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, "image missing", 502);
-          text = image.text ? `${image.text}\n![image](${url})` : `![image](${url})`;
+          const part = image.images[0];
+          if (!part) throw new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, "image missing", 502);
+          try {
+            imageUrl = await persistGeneratedImage(input.assistantMessageId, part);
+          } catch {
+            throw new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, "image missing", 502);
+          }
+          text = "";
           sawDelta = true;
-          sink.send("delta", { text });
           served = image.model || served;
+          usage = {
+            promptTokens: image.promptTokens,
+            completionTokens: image.completionTokens,
+            costUsd: image.costUsd,
+          };
           sawDone = true;
         }
         for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({
@@ -220,6 +234,7 @@ export async function runGeneration(
             data: {
               status: "COMPLETED",
               content: text,
+              imageUrl,
               requestedModel: pick.primary,
               servedModel: served,
               fallbackUsed,
@@ -243,7 +258,10 @@ export async function runGeneration(
           }),
           deps.prisma.conversation.update({
             where: { id: input.conversationId },
-            data: { lastMessageAt: deps.now() },
+            data: {
+              lastMessageAt: deps.now(),
+              ...(imageUrl ? { lastImageUrl: imageUrl } : {}),
+            },
           }),
         ]);
         await deps.prisma.modelPoolEntry
@@ -254,6 +272,7 @@ export async function runGeneration(
           fallbackUsed,
           usage: { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens },
           costUsdMicros: cost.toString(),
+          ...(imageUrl ? { imageUrl } : {}),
         });
         const userTurns = history.filter((row) => row.role === "USER").length;
         const conversation = await deps.prisma.conversation.findUnique({

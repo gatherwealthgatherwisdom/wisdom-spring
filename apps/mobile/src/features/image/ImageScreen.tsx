@@ -2,12 +2,12 @@ import { IMAGE_STYLES } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { DRAW_CARDS, HERO_ART, STYLE_ART } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
-import { spring } from "../../shared/lib/api";
+import { mediaUrl, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -34,8 +34,8 @@ export function ImageScreen({ navigation }: Props) {
   const [prompt, setPrompt] = useState("");
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
-  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
-  const recent = (chats.data?.items ?? []).filter((item) => item.mode === "image").slice(0, 5);
+  const chats = useQuery({ queryKey: ["conversations", "image"], queryFn: () => spring.conversations({ mode: "image" }), enabled: signedIn });
+  const recent = (chats.data?.items ?? []).slice(0, 8);
   const scroll = useRef<ScrollView>(null);
   const blocked = caps.data?.image === false;
 
@@ -102,9 +102,27 @@ export function ImageScreen({ navigation }: Props) {
         {recent.length === 0 ? (
           <RecentRow modeLabel={text.image} locale={locale} empty={text.emptyImage} />
         ) : (
-          recent.map((item) => (
-            <RecentRow key={item.id} item={item} modeLabel={text.image} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "image" })} />
-          ))
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            {recent.map((item) => {
+              const uri = mediaUrl(item.lastImageUrl);
+              return (
+                <Pressable
+                  key={item.id}
+                  onPress={() => openChat(navigation, { conversationId: item.id, mode: "image" })}
+                  style={{ width: "47%", aspectRatio: 1, borderRadius: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}
+                >
+                  {uri ? (
+                    <Image source={{ uri }} style={{ width: "100%", height: "100%" }} />
+                  ) : (
+                    <Cover source={HERO_ART.drawHero} style={{ width: "100%", height: "100%" }} dim={0.45} />
+                  )}
+                  <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, backgroundColor: "#1C1B1999" }}>
+                    <Text style={{ color: "#F7F6F3", fontSize: 12 }} numberOfLines={1}>{item.title || text.image}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         )}
       </ScrollView>
       <KeyboardDock tabBar>

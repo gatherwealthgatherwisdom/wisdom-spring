@@ -21,10 +21,14 @@ export class GenerateTitleService {
     if (messages.length === 0) return;
     const slug = await this.cheapestSlug();
     if (!slug) return;
-    const transcript = messages
-      .map((message) => `${message.role === "USER" ? "用戶" : "智泉"}：${message.content}`)
-      .join("\n")
-      .slice(0, 2_000);
+    const transcript =
+      conversation.mode === "image"
+        ? (messages.find((message) => message.role === "USER")?.content ?? "").slice(0, 200)
+        : messages
+            .map((message) => `${message.role === "USER" ? "用戶" : "智泉"}：${message.content}`)
+            .join("\n")
+            .slice(0, 2_000);
+    if (!transcript) return;
     try {
       const result = await this.openrouter.completeChat({
         model: slug,

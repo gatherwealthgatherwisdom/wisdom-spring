@@ -22,6 +22,7 @@ export const ModelPoolViewSchema = z.object({
   lastProbeAt: z.string().nullable(),
   lastErrorCode: z.string().nullable(),
   contextLength: z.number().int(),
+  supportsImageOutput: z.boolean(),
 });
 
 export const UpdateModelPoolSchema = z

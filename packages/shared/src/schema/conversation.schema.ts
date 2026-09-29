@@ -14,6 +14,7 @@ export const ConversationViewSchema = z.object({
   sourceLang: z.string().nullable(),
   targetLang: z.string().nullable(),
   imageStyle: z.string().nullable(),
+  lastImageUrl: z.string().nullable(),
   pinnedAt: z.string().nullable(),
   lastMessageAt: z.string(),
   createdAt: z.string(),
@@ -37,4 +38,5 @@ export const UpdateConversationSchema = z
 export const ListConversationsQuerySchema = PaginationQuerySchema.extend({
   q: z.string().max(200).optional(),
   status: z.enum([ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED]).optional(),
+  mode: ConversationModeSchema.optional(),
 });

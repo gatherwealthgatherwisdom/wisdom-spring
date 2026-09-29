@@ -17,8 +17,14 @@ function fakeClient(): OpenRouterClient & { calls: number } {
     async listModels() {
       return [];
     },
+    async listImageModels() {
+      return [];
+    },
     async completeChat() {
       return { text: "測試標題", model: "deepseek/deepseek-chat", images: [] };
+    },
+    async generateImage() {
+      throw new Error("unused");
     },
     streamChat() {
       state.calls += 1;
@@ -151,12 +157,18 @@ describe("POST /v1/messages", () => {
       async listModels() {
         return [];
       },
+      async listImageModels() {
+        return [];
+      },
       streamChat() {
         throw new Error("unused");
       },
       async completeChat() {
         attempts += 1;
         throw new UpstreamError(ErrorCode.UPSTREAM_REGION_BLOCKED, "Unsupported region", 403);
+      },
+      async generateImage() {
+        throw new Error("unused");
       },
     };
     await app.ctx.prisma.modelPoolEntry.create({

@@ -22,6 +22,42 @@ function jsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
 }
 
+function mergeCatalog(chat: OpenRouterModel[], images: OpenRouterModel[]): OpenRouterModel[] {
+  const merged = new Map<string, OpenRouterModel>();
+  for (const model of chat) {
+    const slug = model.id.trim();
+    if (slug) merged.set(slug, model);
+  }
+  for (const model of images) {
+    const slug = model.id.trim();
+    if (!slug) continue;
+    const existing = merged.get(slug);
+    const outputs =
+      model.architecture?.output_modalities && model.architecture.output_modalities.length > 0
+        ? model.architecture.output_modalities
+        : ["image"];
+    if (existing) {
+      merged.set(slug, {
+        ...existing,
+        architecture: {
+          ...existing.architecture,
+          output_modalities: outputs,
+          input_modalities: existing.architecture?.input_modalities ?? model.architecture?.input_modalities,
+        },
+      });
+    } else {
+      merged.set(slug, {
+        ...model,
+        architecture: {
+          ...model.architecture,
+          output_modalities: outputs,
+        },
+      });
+    }
+  }
+  return [...merged.values()];
+}
+
 export class SyncOpenRouterCatalogJob {
   constructor(
     private readonly prisma: PrismaClient,
@@ -29,7 +65,7 @@ export class SyncOpenRouterCatalogJob {
   ) {}
 
   async run(): Promise<{ upserted: number }> {
-    const models = await this.client.listModels();
+    const models = mergeCatalog(await this.client.listModels(), await this.client.listImageModels());
     let upserted = 0;
     for (const model of models) {
       const slug = model.id.trim();

@@ -36,12 +36,24 @@ export class ProbeHkAvailabilityJob {
 
   private async probeRow(slug: string, consecutive: number): Promise<void> {
     try {
-      await this.client.completeChat({
-        model: slug,
-        messages: [{ role: "user", content: OPENROUTER.probePrompt }],
-        maxTokens: OPENROUTER.probeMaxTokens,
-        signal: AbortSignal.timeout(20_000),
-      });
+      const catalog = await this.prisma.modelCatalog.findUnique({ where: { slug } });
+      const outputs = Array.isArray(catalog?.outputModalities)
+        ? catalog.outputModalities.filter((item): item is string => typeof item === "string")
+        : [];
+      if (outputs.includes("image")) {
+        await this.client.generateImage({
+          model: slug,
+          prompt: "a blank sheet of warm paper with one ink stroke",
+          signal: AbortSignal.timeout(20_000),
+        });
+      } else {
+        await this.client.completeChat({
+          model: slug,
+          messages: [{ role: "user", content: OPENROUTER.probePrompt }],
+          maxTokens: OPENROUTER.probeMaxTokens,
+          signal: AbortSignal.timeout(20_000),
+        });
+      }
       await this.prisma.modelPoolEntry.update({
         where: { slug },
         data: {

@@ -59,6 +59,7 @@ export function MessageList({
         return (
           <AssistantBubble
             content={item.content}
+            imageUrl={"imageUrl" in item ? item.imageUrl : null}
             requestedModel={"requestedModel" in item ? item.requestedModel : null}
             servedModel={"servedModel" in item ? item.servedModel : null}
             fallbackUsed={"fallbackUsed" in item ? item.fallbackUsed : false}

@@ -24,6 +24,7 @@ function view(row: Conversation) {
     sourceLang: row.sourceLang,
     targetLang: row.targetLang,
     imageStyle: row.imageStyle,
+    lastImageUrl: row.lastImageUrl,
     pinnedAt: row.pinnedAt?.toISOString() ?? null,
     lastMessageAt: row.lastMessageAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
@@ -39,6 +40,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       userId: user.id,
       status: query.status ?? { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
       ...(query.q ? { title: { contains: query.q } } : {}),
+      ...(query.mode ? { mode: query.mode } : {}),
       pinnedAt: null,
       ...(cursor?.lastMessageAt && cursor.id
         ? {
@@ -56,6 +58,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
             userId: user.id,
             status: query.status ?? { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
             ...(query.q ? { title: { contains: query.q } } : {}),
+            ...(query.mode ? { mode: query.mode } : {}),
             pinnedAt: { not: null },
           },
           orderBy: { pinnedAt: "desc" },
@@ -134,6 +137,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
         role: row.role,
         status: row.status,
         content: row.content,
+        imageUrl: row.imageUrl,
         requestedModel: row.requestedModel,
         servedModel: row.servedModel,
         fallbackUsed: row.fallbackUsed,

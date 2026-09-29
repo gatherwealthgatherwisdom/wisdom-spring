@@ -11,4 +11,5 @@ apps/admin/dist
 .DS_Store
 prisma/*.db
 apps/api/src/generated
+data/generated
 *.log

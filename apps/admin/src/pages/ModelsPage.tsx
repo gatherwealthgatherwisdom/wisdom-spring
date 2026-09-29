@@ -68,6 +68,7 @@ export function ModelsPage() {
             <tr>
               <th>slug</th>
               <th>author</th>
+              <th>out</th>
               <th>enabled</th>
               <th>region</th>
               <th>health</th>
@@ -105,6 +106,7 @@ function ModelRow({
     <tr>
       <td>{row.slug}</td>
       <td>{row.author}</td>
+      <td>{row.supportsImageOutput ? "圖像" : "文字"}</td>
       <td>
         <input type="checkbox" checked={row.enabled} onChange={(event) => onChange({ enabled: event.target.checked })} />
       </td>

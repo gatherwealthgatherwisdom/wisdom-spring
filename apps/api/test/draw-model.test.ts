@@ -101,6 +101,13 @@ describe("drawModel", () => {
     }
   });
 
+  it("keeps image-only models out of text turns", () => {
+    const rows = [row({ slug: "qwen/image", supportsText: false, supportsImageOutput: true })];
+    expect(() =>
+      drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero),
+    ).toThrow(AppError);
+  });
+
   it("draws an image model only when the turn asks for an image", () => {
     const rows = [
       row({ slug: "deepseek/chat" }),

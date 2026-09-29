@@ -31,6 +31,7 @@ export const MessageViewSchema = z.object({
   role: z.nativeEnum(MessageRole),
   status: z.nativeEnum(MessageStatus),
   content: z.string(),
+  imageUrl: z.string().nullable(),
   requestedModel: z.string().nullable(),
   servedModel: z.string().nullable(),
   fallbackUsed: z.boolean(),
@@ -59,6 +60,7 @@ export const SseDoneSchema = z.object({
     completionTokens: z.number().int(),
   }),
   costUsdMicros: z.string().regex(/^\d+$/),
+  imageUrl: z.string().optional(),
 });
 
 export const SseErrorSchema = z.object({

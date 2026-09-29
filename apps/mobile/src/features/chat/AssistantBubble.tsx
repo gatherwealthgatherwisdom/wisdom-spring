@@ -1,5 +1,6 @@
 import * as Clipboard from "expo-clipboard";
 import { Image, Pressable, Text, View } from "react-native";
+import { mediaUrl } from "../../shared/lib/api";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { ModelBadge } from "./ModelBadge";
@@ -26,6 +27,7 @@ function splitImage(content: string): { text: string; uri: string | null } {
 
 export function AssistantBubble({
   content,
+  imageUrl,
   requestedModel,
   servedModel,
   fallbackUsed,
@@ -38,6 +40,7 @@ export function AssistantBubble({
   timeLabel,
 }: {
   content: string;
+  imageUrl?: string | null;
   requestedModel: string | null;
   servedModel: string | null;
   fallbackUsed: boolean;
@@ -52,6 +55,7 @@ export function AssistantBubble({
 }) {
   const colors = useColors();
   const image = splitImage(content);
+  const uri = mediaUrl(imageUrl ?? image.uri);
   return (
     <View style={{ marginVertical: 8, maxWidth: "92%" }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -62,8 +66,8 @@ export function AssistantBubble({
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
       <ModelBadge requestedModel={requestedModel} servedModel={servedModel} fallbackUsed={fallbackUsed} />
-      {image.uri ? (
-        <Image source={{ uri: image.uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
+      {uri ? (
+        <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
       ) : null}
       {image.text ? (
         <Text style={{ color: colors.ink, fontSize: 16, lineHeight: 26 }}>

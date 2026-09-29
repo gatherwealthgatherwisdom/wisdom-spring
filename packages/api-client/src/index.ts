@@ -120,7 +120,7 @@ export class SpringClient {
     return this.request("/v1/catalog/aides");
   }
 
-  conversations(query?: { q?: string; cursor?: string }): Promise<PageOf<ConversationView>> {
+  conversations(query?: { q?: string; cursor?: string; mode?: string }): Promise<PageOf<ConversationView>> {
     return this.request(`/v1/conversations${queryString(query)}`);
   }
 
@@ -311,11 +311,12 @@ function splitSlug(slug: string): [string, string] {
   return [slug.slice(0, index), slug.slice(index + 1)];
 }
 
-function queryString(query?: { q?: string; cursor?: string }): string {
+function queryString(query?: { q?: string; cursor?: string; mode?: string }): string {
   if (!query) return "";
   const params = new URLSearchParams();
   if (query.q) params.set("q", query.q);
   if (query.cursor) params.set("cursor", query.cursor);
+  if (query.mode) params.set("mode", query.mode);
   const text = params.toString();
   return text ? `?${text}` : "";
 }

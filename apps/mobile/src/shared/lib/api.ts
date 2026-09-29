@@ -23,6 +23,13 @@ export function createClientMessageId(): string {
   });
 }
 
+export function mediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
+  const base = API_URL.replace(/\/$/, "");
+  return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
+}
+
 export function shortModelName(slug: string | null | undefined): string {
   if (!slug) return "";
   const leaf = slug.split("/").pop() ?? slug;

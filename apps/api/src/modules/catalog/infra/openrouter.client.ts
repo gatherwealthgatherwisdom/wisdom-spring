@@ -43,10 +43,35 @@ export interface CompleteChatInput {
   image?: boolean;
 }
 
+export interface GenerateImageInput {
+  model: string;
+  prompt: string;
+  signal?: AbortSignal;
+  ignoreProviders?: string[];
+  userRef?: string;
+  aspectRatio?: string;
+}
+
+export interface GeneratedImagePart {
+  url?: string;
+  b64?: string;
+  mediaType?: string;
+}
+
+export interface GenerateImageResult {
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  costUsd?: number;
+  images: GeneratedImagePart[];
+}
+
 export interface OpenRouterClient {
   listModels(): Promise<OpenRouterModel[]>;
+  listImageModels(): Promise<OpenRouterModel[]>;
   streamChat(input: StreamChatInput): AsyncIterable<SpringStreamEvent>;
   completeChat(input: CompleteChatInput): Promise<{ text: string; model: string; images: string[] }>;
+  generateImage(input: GenerateImageInput): Promise<GenerateImageResult>;
 }
 
 export class FetchOpenRouterClient implements OpenRouterClient {
@@ -71,8 +96,16 @@ export class FetchOpenRouterClient implements OpenRouterClient {
   }
 
   async listModels(): Promise<OpenRouterModel[]> {
+    return this.listCatalog(`${OPENROUTER.baseUrl}/models`);
+  }
+
+  async listImageModels(): Promise<OpenRouterModel[]> {
+    return this.listCatalog(`${OPENROUTER.baseUrl}/images/models`);
+  }
+
+  private async listCatalog(url: string): Promise<OpenRouterModel[]> {
     this.assertKey();
-    const response = await this.fetchImpl(`${OPENROUTER.baseUrl}/models`, { headers: this.headers() });
+    const response = await this.fetchImpl(url, { headers: this.headers() });
     const body = await response.text();
     if (!response.ok) throw classifyUpstream(response.status, body);
     const parsed: unknown = JSON.parse(body);
@@ -149,6 +182,30 @@ export class FetchOpenRouterClient implements OpenRouterClient {
       images: extractImageUrls(message),
     };
   }
+
+  async generateImage(input: GenerateImageInput): Promise<GenerateImageResult> {
+    this.assertKey();
+    const response = await this.fetchImpl(`${OPENROUTER.baseUrl}/images`, {
+      method: "POST",
+      headers: this.headers(),
+      signal: input.signal,
+      body: JSON.stringify({
+        model: input.model,
+        prompt: input.prompt,
+        n: 1,
+        aspect_ratio: input.aspectRatio ?? "1:1",
+        user: input.userRef ?? "spring-system",
+        provider: {
+          allow_fallbacks: true,
+          ignore: input.ignoreProviders ?? ["openai", "anthropic"],
+          data_collection: "deny",
+        },
+      }),
+    });
+    const body = await response.text();
+    if (!response.ok) throw classifyUpstream(response.status, body);
+    return parseImageGeneration(body, input.model);
+  }
 }
 
 export function extractImageUrls(message: unknown): string[] {
@@ -179,6 +236,38 @@ function imageUrl(value: unknown): string | null {
   if (typeof record.image_url?.url === "string") return record.image_url.url;
   if (typeof record.url === "string") return record.url;
   return null;
+}
+
+export function parseImageGeneration(body: string, fallbackModel: string): GenerateImageResult {
+  const parsed: unknown = JSON.parse(body);
+  if (!parsed || typeof parsed !== "object") {
+    throw classifyUpstream(502, body);
+  }
+  const record = parsed as {
+    model?: unknown;
+    data?: unknown;
+    usage?: { prompt_tokens?: unknown; completion_tokens?: unknown; cost?: unknown };
+  };
+  const images: GeneratedImagePart[] = [];
+  if (Array.isArray(record.data)) {
+    for (const item of record.data) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as { b64_json?: unknown; url?: unknown; media_type?: unknown };
+      const part: GeneratedImagePart = {};
+      if (typeof row.b64_json === "string" && row.b64_json.length > 0) part.b64 = row.b64_json;
+      if (typeof row.url === "string" && row.url.length > 0) part.url = row.url;
+      if (typeof row.media_type === "string" && row.media_type.length > 0) part.mediaType = row.media_type;
+      if (part.b64 || part.url) images.push(part);
+    }
+  }
+  const usage = record.usage;
+  return {
+    model: typeof record.model === "string" ? record.model : fallbackModel,
+    promptTokens: typeof usage?.prompt_tokens === "number" ? usage.prompt_tokens : 0,
+    completionTokens: typeof usage?.completion_tokens === "number" ? usage.completion_tokens : 0,
+    costUsd: typeof usage?.cost === "number" ? usage.cost : undefined,
+    images,
+  };
 }
 
 async function* decodeBody(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {

@@ -39,6 +39,10 @@ export const env = {
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   appleClientId: process.env.APPLE_CLIENT_ID ?? "",
   smsProviderKey: process.env.SMS_PROVIDER_KEY ?? "",
+  generatedDir:
+    process.env.GENERATED_DIR && process.env.GENERATED_DIR.length > 0
+      ? process.env.GENERATED_DIR
+      : resolve(root, "data/generated"),
 };
 
 export type AppEnv = typeof env;

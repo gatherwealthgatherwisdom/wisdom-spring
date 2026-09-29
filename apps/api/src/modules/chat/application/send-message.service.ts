@@ -139,6 +139,7 @@ export class SendMessageService {
         fallbackUsed: assistant.fallbackUsed,
         usage: { promptTokens: assistant.promptTokens, completionTokens: assistant.completionTokens },
         costUsdMicros: assistant.costUsdMicros.toString(),
+        ...(assistant.imageUrl ? { imageUrl: assistant.imageUrl } : {}),
       });
       return;
     }

@@ -18,6 +18,11 @@ import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
 import { writeAudit } from "./audit";
 
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
 function pricingOf(value: unknown): { prompt: string; completion: string } {
   if (!value || typeof value !== "object") return { prompt: "0", completion: "0" };
   const record = value as Record<string, unknown>;
@@ -95,6 +100,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           lastProbeAt: pool.lastProbeAt?.toISOString() ?? null,
           lastErrorCode: pool.lastErrorCode,
           contextLength: catalog?.contextLength ?? 0,
+          supportsImageOutput: stringList(catalog?.outputModalities).includes("image"),
         };
       }),
     };

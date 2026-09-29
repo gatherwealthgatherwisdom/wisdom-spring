@@ -33,6 +33,10 @@ describe("allowlist", () => {
     expect(isAllowlisted("google/gemma-2-9b-it:free")).toBe(true);
     expect(isAllowlisted("deepseek/deepseek-chat")).toBe(true);
     expect(isAllowlisted("qwen/qwen-2.5-72b-instruct")).toBe(true);
+    expect(isAllowlisted("qwen/qwen-image-3")).toBe(true);
+    expect(isAllowlisted("openai/gpt-image-2")).toBe(false);
+    expect(isAllowlisted("google/gemini-3.1-flash-image")).toBe(false);
+    expect(isAllowlisted("x-ai/grok-imagine-image-quality")).toBe(false);
     expect(isAllowlisted("meta-llama/llama-3.3-70b-instruct:free")).toBe(true);
   });
 });

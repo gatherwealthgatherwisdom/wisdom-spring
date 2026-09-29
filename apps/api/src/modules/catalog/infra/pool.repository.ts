@@ -68,7 +68,7 @@ export class PrismaModelPoolReader implements ModelPoolReader {
         promptUsdMicrosPerMillion: usdPerTokenToMicrosPerMillion(pricing.prompt),
         completionUsdMicrosPerMillion: usdPerTokenToMicrosPerMillion(pricing.completion),
         contextLength: catalog.contextLength > 0 ? catalog.contextLength : 8192,
-        supportsText: modalities.length === 0 || modalities.includes("text"),
+        supportsText: outputs.length === 0 || outputs.includes("text"),
         supportsVision: modalities.includes("image"),
         supportsImageOutput: outputs.includes("image"),
       });

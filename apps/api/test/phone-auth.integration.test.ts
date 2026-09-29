@@ -16,8 +16,14 @@ function fakeClient(): OpenRouterClient & { calls: number } {
     async listModels() {
       return [];
     },
+    async listImageModels() {
+      return [];
+    },
     async completeChat() {
       return { text: "測試標題", model: "deepseek/deepseek-chat", images: [] };
+    },
+    async generateImage() {
+      throw new Error("unused");
     },
     streamChat() {
       state.calls += 1;
