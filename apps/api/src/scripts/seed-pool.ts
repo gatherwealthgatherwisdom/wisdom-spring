@@ -13,6 +13,7 @@ const models: Array<{
   author: string;
   prompt: string;
   completion: string;
+  inputs: string[];
   outputs: string[];
 }> = [
   {
@@ -21,6 +22,7 @@ const models: Array<{
     author: "deepseek",
     prompt: "0.00000014",
     completion: "0.00000028",
+    inputs: ["text"],
     outputs: ["text"],
   },
   {
@@ -29,6 +31,7 @@ const models: Array<{
     author: "qwen",
     prompt: "0.0000002",
     completion: "0.0000004",
+    inputs: ["text"],
     outputs: ["text"],
   },
   {
@@ -37,6 +40,7 @@ const models: Array<{
     author: "google",
     prompt: "0.0000001",
     completion: "0.0000002",
+    inputs: ["text"],
     outputs: ["text"],
   },
   {
@@ -45,12 +49,22 @@ const models: Array<{
     author: "qwen",
     prompt: "0",
     completion: "0",
+    inputs: ["text"],
     outputs: ["image"],
+  },
+  {
+    slug: "qwen/qwen-2.5-vl-7b-instruct",
+    name: "Qwen VL",
+    author: "qwen",
+    prompt: "0.0000002",
+    completion: "0.0000004",
+    inputs: ["text", "image"],
+    outputs: ["text"],
   },
 ];
 
 for (const model of models) {
-  const { slug, name, author, prompt, completion, outputs } = model;
+  const { slug, name, author, prompt, completion, inputs, outputs } = model;
   await prisma.modelCatalog.upsert({
     where: { slug },
     create: {
@@ -58,14 +72,21 @@ for (const model of models) {
       name,
       author,
       contextLength: 32_000,
-      inputModalities: ["text"],
+      inputModalities: inputs,
       outputModalities: outputs,
       pricing: { prompt, completion },
       isFreeRoute: false,
       raw: {},
       syncedAt: new Date(),
     },
-    update: { name, author, pricing: { prompt, completion }, outputModalities: outputs, syncedAt: new Date() },
+    update: {
+      name,
+      author,
+      pricing: { prompt, completion },
+      inputModalities: inputs,
+      outputModalities: outputs,
+      syncedAt: new Date(),
+    },
   });
   await prisma.modelPoolEntry.upsert({
     where: { slug },

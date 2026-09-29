@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { ModelCapability, PlanTier } from "@spring/shared";
+import { LOOK_TITLE, ModelCapability, PlanTier, assetIdsOf } from "@spring/shared";
 import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
 import { PrismaModelPoolReader } from "../../catalog/infra/pool.repository";
 import { isEligible } from "../../catalog/application/draw-model";
@@ -19,6 +19,14 @@ export class GenerateTitleService {
       take: 6,
     });
     if (messages.length === 0) return;
+    const firstUser = messages.find((message) => message.role === "USER");
+    if (firstUser && firstUser.content.trim().length === 0 && assetIdsOf(firstUser.attachments).length > 0) {
+      await this.prisma.conversation.updateMany({
+        where: { id: conversationId, title: null },
+        data: { title: LOOK_TITLE },
+      });
+      return;
+    }
     const slug = await this.cheapestSlug();
     if (!slug) return;
     const transcript =

@@ -158,13 +158,27 @@ export function InboxScreen({ navigation }: Props) {
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
         {attachOpen ? (
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {(["camera-outline", "image-outline", "document-text-outline"] as const).map((name) => (
+            {(
+              [
+                { name: "camera-outline" as const, kind: "camera" as const },
+                { name: "image-outline" as const, kind: "library" as const },
+                { name: "document-text-outline" as const, kind: "file" as const },
+              ]
+            ).map((item) => (
               <Pressable
-                key={name}
-                onPress={() => setHint(text.attachLater)}
+                key={item.name}
+                onPress={() => {
+                  if (item.kind === "file") {
+                    setHint(text.attachLater);
+                    return;
+                  }
+                  setAttachOpen(false);
+                  setHint(null);
+                  openChat(navigation, { mode: "chat", attach: item.kind });
+                }}
                 style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
               >
-                <Icon name={name} color={colors.ink} size={18} />
+                <Icon name={item.name} color={colors.ink} size={18} />
               </Pressable>
             ))}
           </View>

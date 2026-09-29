@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gwgwgroup.spring"
+      "bundleIdentifier": "com.gwgwgroup.spring",
+      "infoPlist": {
+        "NSCameraUsageDescription": "智泉用相機影相，方便你問圖。",
+        "NSPhotoLibraryUsageDescription": "智泉讀相簿相片，方便你問圖。"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,6 +28,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "智泉讀相簿相片，方便你問圖。",
+          "cameraPermission": "智泉用相機影相，方便你問圖。"
+        }
+      ]
+    ]
   }
 }

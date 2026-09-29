@@ -24,7 +24,7 @@ export const SPRING_TOOLS: readonly SpringTool[] = [
   { id: "plain", zh: "淺白", en: "Plain", blurbZh: "改成淺白短句。", blurbEn: "Turn it into plain speech.", live: true, mode: "write", templateId: "plain" },
   { id: "mind", zh: "大綱", en: "Outline", blurbZh: "整理成要點大綱。", blurbEn: "Turn notes into an outline.", live: true, mode: "write", templateId: "report" },
   { id: "bot", zh: "助手", en: "Aide", blurbZh: "用固定語氣回覆。", blurbEn: "Reply in a set tone.", live: true, mode: "chat", templateId: "biz" },
-  { id: "photo", zh: "睇圖", en: "Look", blurbZh: "示範畫面。相片下一輪先接。", blurbEn: "A sample screen. Photos come later.", live: false },
+  { id: "photo", zh: "睇圖", en: "Look", blurbZh: "上傳相片，用繁體中文講你見到乜。", blurbEn: "Upload a photo and say what you see.", live: true, mode: "chat" },
   { id: "interpret", zh: "口譯", en: "Interpret", blurbZh: "即時對譯。", blurbEn: "Spoken translation.", live: true, mode: "translate" },
   { id: "detect", zh: "文風檢查", en: "Style check", blurbZh: "指出語氣同病句。唔會聲稱可以避開偵測。", blurbEn: "Point out tone and broken sentences. It does not claim to hide detection.", live: true, mode: "chat", templateId: "detect", instruction: "檢查用戶文字嘅語氣同病句，用短點列出。唔好聲稱可以避開任何偵測或審查。" },
   { id: "summary", zh: "摘要", en: "Summary", blurbZh: "把長文收短。", blurbEn: "Shorten a long text.", live: true, mode: "chat", templateId: "summary", instruction: "把用戶文字收成短摘要，保留要點，唔好加唔存在嘅資料。" },

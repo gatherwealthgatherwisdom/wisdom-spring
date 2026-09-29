@@ -75,6 +75,7 @@ model User {
   usage         UsageLedger[]
   refreshTokens RefreshToken[]
   oauthAccounts OAuthAccount[]
+  assets        Asset[]
 }
 
 model PhoneCode {
@@ -152,11 +153,23 @@ model Message {
   latencyMs        Int?
   errorCode        String?       @db.VarChar(64)
   parentMessageId  String?       @db.VarChar(26)
+  attachments      Json          @default("[]")
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
   @@unique([conversationId, clientMessageId])
   @@index([conversationId, createdAt])
+}
+
+model Asset {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mime      String   @db.VarChar(32)
+  byteSize  Int
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model ClientMessage {

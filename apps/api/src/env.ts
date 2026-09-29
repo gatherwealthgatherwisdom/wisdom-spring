@@ -45,6 +45,10 @@ export const env = {
     process.env.GENERATED_DIR && process.env.GENERATED_DIR.length > 0
       ? process.env.GENERATED_DIR
       : resolve(root, "data/generated"),
+  uploadsDir:
+    process.env.UPLOADS_DIR && process.env.UPLOADS_DIR.length > 0
+      ? process.env.UPLOADS_DIR
+      : resolve(root, "data/uploads"),
 };
 
 export type AppEnv = typeof env;

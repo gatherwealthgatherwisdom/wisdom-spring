@@ -53,6 +53,7 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.clientMessage.deleteMany();
   await prisma.message.deleteMany();
   await prisma.conversation.deleteMany();
+  await prisma.asset.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.oAuthAccount.deleteMany();
   await prisma.user.deleteMany();

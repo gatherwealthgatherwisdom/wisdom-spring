@@ -5,8 +5,8 @@ import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
-import { springTool } from "@spring/shared";
 import { Screen } from "../../shared/ui/Screen";
+import { paramsForLiveTool } from "../../navigation/MainTabs";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import { TOOLS } from "./catalog";
 
@@ -17,7 +17,6 @@ export function ToolScreen({ navigation, route }: Props) {
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const tool = TOOLS.find((item) => item.id === route.params.id);
-  const spec = springTool(route.params.id);
   const [draft, setDraft] = useState("");
   const [shown, setShown] = useState("");
   if (!tool) {
@@ -45,16 +44,12 @@ export function ToolScreen({ navigation, route }: Props) {
       />
       <Pressable
         onPress={() => {
-          const seed = draft.trim() || (locale === "en" ? tool.blurbEn : tool.blurbZh);
-          if (spec?.live) {
-            navigation.navigate("Chat", {
-              mode: spec.mode ?? "chat",
-              ...(spec.templateId ? { templateId: spec.templateId } : {}),
-              ...(spec.imageStyle ? { imageStyle: spec.imageStyle } : {}),
-              seed,
-            });
+          const live = paramsForLiveTool(tool.id, locale);
+          if (live) {
+            navigation.navigate("Chat", live.attach ? live : { ...live, seed: draft.trim() || live.seed });
             return;
           }
+          const seed = draft.trim() || (locale === "en" ? tool.blurbEn : tool.blurbZh);
           setShown(seed);
         }}
         style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}

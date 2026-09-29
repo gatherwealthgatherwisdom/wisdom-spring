@@ -1,5 +1,13 @@
 import type { ClientMessage, PrismaClient } from "@prisma/client";
-import { AppError, ErrorCode, createId, messageFor, type SendMessageRequest } from "@spring/shared";
+import {
+  AppError,
+  ErrorCode,
+  IMAGE_MODE_NO_UPLOAD_COPY,
+  assetIdsOf,
+  createId,
+  messageFor,
+  type SendMessageRequest,
+} from "@spring/shared";
 import type { SseSink } from "../../../http/sse";
 import type { QuotaService } from "../../billing/application/quota.service";
 import type { ActingUser } from "../../auth/acting-user";
@@ -22,19 +30,29 @@ export class SendMessageService {
   ) {}
 
   async prepare(user: ActingUser, input: SendMessageRequest): Promise<PreparedSend> {
-    if (input.attachments.length > 0) {
-      throw new AppError(ErrorCode.VALIDATION, "暫未支援圖片。");
-    }
     const existing = await this.prisma.clientMessage.findUnique({
       where: { userId_clientMessageId: { userId: user.id, clientMessageId: input.clientMessageId } },
     });
     if (existing) return { kind: "replay", row: existing };
 
+    const attachmentIds = assetIdsOf(input.attachments.map((item) => item.assetId));
+    let conversationMode: string = input.mode ?? "chat";
     if (input.conversationId) {
       const conversation = await this.prisma.conversation.findFirst({
         where: { id: input.conversationId, userId: user.id, status: { not: "DELETED" } },
       });
       if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
+      conversationMode = conversation.mode;
+    }
+    if (attachmentIds.length > 0 && conversationMode === "image") {
+      throw new AppError(ErrorCode.VALIDATION, IMAGE_MODE_NO_UPLOAD_COPY);
+    }
+    if (attachmentIds.length > 0) {
+      const owned = await this.prisma.asset.findMany({
+        where: { id: { in: attachmentIds }, userId: user.id },
+        select: { id: true },
+      });
+      if (owned.length !== attachmentIds.length) throw new AppError(ErrorCode.NOT_FOUND);
     }
 
     const now = this.generation.now();
@@ -68,6 +86,7 @@ export class SendMessageService {
             role: "USER",
             status: "COMPLETED",
             content: input.content,
+            attachments: attachmentIds,
           },
         });
         await tx.message.create({

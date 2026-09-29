@@ -7,6 +7,7 @@ import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } fro
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SPRING_AIDES, SPRING_TOOLS, toolInstruction } from "../src/constants/catalog";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
+import { createId } from "../src/lib/id";
 
 describe("money", () => {
   it("converts USD to micros", () => {
@@ -40,6 +41,7 @@ describe("allowlist", () => {
     expect(isAllowlisted("deepseek/deepseek-chat")).toBe(true);
     expect(isAllowlisted("qwen/qwen-2.5-72b-instruct")).toBe(true);
     expect(isAllowlisted("qwen/qwen-image-3")).toBe(true);
+    expect(isAllowlisted("qwen/qwen-2.5-vl-7b-instruct")).toBe(true);
     expect(isAllowlisted("openai/gpt-image-2")).toBe(false);
     expect(isAllowlisted("google/gemini-3.1-flash-image")).toBe(false);
     expect(isAllowlisted("x-ai/grok-imagine-image-quality")).toBe(false);
@@ -77,6 +79,16 @@ describe("SendMessageRequestSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts an empty caption when a photo is attached", () => {
+    const parsed = SendMessageRequestSchema.parse({
+      content: "   ",
+      attachments: [{ assetId: createId() }],
+      clientMessageId: "550e8400-e29b-41d4-a716-446655440000",
+    });
+    expect(parsed.content).toBe("");
+    expect(parsed.attachments).toHaveLength(1);
+  });
 });
 
 describe("copy", () => {
@@ -91,6 +103,8 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "rewrite")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "search")?.live).toBe(false);
     expect(SPRING_TOOLS.find((item) => item.id === "webchat")?.live).toBe(false);
+    expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
+    expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(false);
   });
 
   it("exposes aide instructions without claiming web results", () => {

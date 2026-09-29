@@ -12,4 +12,5 @@ apps/admin/dist
 prisma/*.db
 apps/api/src/generated
 data/generated
+data/uploads
 *.log

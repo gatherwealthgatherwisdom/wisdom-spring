@@ -108,6 +108,21 @@ describe("drawModel", () => {
     ).toThrow(AppError);
   });
 
+  it("draws a vision model only when the turn asks to look at a photo", () => {
+    const rows = [
+      row({ slug: "deepseek/chat" }),
+      row({ slug: "qwen/vl", supportsVision: true }),
+    ];
+    const text = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero);
+    expect(text.primary).toBe("deepseek/chat");
+    const vision = drawModel(
+      rows,
+      { planTier: PlanTier.FREE, capability: ModelCapability.VISION, excludeSlugs: [] },
+      zero,
+    );
+    expect(vision.primary).toBe("qwen/vl");
+  });
+
   it("draws an image model only when the turn asks for an image", () => {
     const rows = [
       row({ slug: "deepseek/chat" }),

@@ -3,6 +3,7 @@ import { PlanTier } from "../enums/plan-tier";
 export const LIMITS = {
   contentMaxChars: 32_000,
   attachmentsMax: 4,
+  uploadMaxBytes: 4 * 1024 * 1024,
   historyMaxMessages: 40,
   reserveOutputTokens: 4096,
   fallbacksMax: 2,

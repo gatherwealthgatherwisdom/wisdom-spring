@@ -26,6 +26,7 @@ export default defineConfig({
       PUBLIC_APP_URL: "https://gwgwgroup.com",
       OPENROUTER_IGNORE_PROVIDERS: "openai,anthropic",
       GENERATED_DIR: "/tmp/spring-generated-test",
+      UPLOADS_DIR: "/tmp/spring-uploads-test",
     },
   },
 });

@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
 import { useColors } from "../shared/theme";
+import { springTool } from "@spring/shared";
 
 export type MainTabParamList = {
   Inbox: undefined;
@@ -26,6 +27,7 @@ export type ChatParams = {
   targetLang?: string;
   imageStyle?: string;
   seed?: string;
+  attach?: "camera" | "library";
 };
 
 export type AppStackParamList = {
@@ -53,6 +55,18 @@ export function openRegister(navigation: NavigationProp<MainTabParamList>): void
 export function openAuth(navigation: NavigationProp<MainTabParamList>): void {
   const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   parent?.navigate("Auth");
+}
+
+export function paramsForLiveTool(id: string, locale: "zh-HK" | "en"): ChatParams | null {
+  const spec = springTool(id);
+  if (!spec?.live) return null;
+  if (spec.id === "photo") return { mode: spec.mode ?? "chat", attach: "library" };
+  return {
+    mode: spec.mode ?? "chat",
+    ...(spec.templateId ? { templateId: spec.templateId } : {}),
+    ...(spec.imageStyle ? { imageStyle: spec.imageStyle } : {}),
+    seed: locale === "en" ? spec.blurbEn : spec.blurbZh,
+  };
 }
 
 export function MainTabs() {

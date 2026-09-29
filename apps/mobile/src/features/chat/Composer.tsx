@@ -22,20 +22,31 @@ export function Composer({
   onChange: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
-  onAttach: () => void;
+  onAttach: (kind: "camera" | "library" | "file") => void;
   onMic: () => void;
   onCall?: () => void;
 }) {
   const colors = useColors();
   const [attachOpen, setAttachOpen] = useState(false);
-  const extras: IconName[] = ["camera-outline", "image-outline", "document-text-outline"];
+  const extras: { name: IconName; kind: "camera" | "library" | "file" }[] = [
+    { name: "camera-outline", kind: "camera" },
+    { name: "image-outline", kind: "library" },
+    { name: "document-text-outline", kind: "file" },
+  ];
   return (
     <View style={{ marginTop: 8, gap: 8 }}>
       {attachOpen ? (
         <View style={{ flexDirection: "row", gap: 10, paddingLeft: 4 }}>
-          {extras.map((name) => (
-            <Pressable key={name} onPress={onAttach} style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}>
-              <Icon name={name} color={colors.ink} size={18} />
+          {extras.map((item) => (
+            <Pressable
+              key={item.name}
+              onPress={() => {
+                setAttachOpen(false);
+                onAttach(item.kind);
+              }}
+              style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
+            >
+              <Icon name={item.name} color={colors.ink} size={18} />
             </Pressable>
           ))}
         </View>

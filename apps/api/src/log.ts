@@ -10,6 +10,7 @@ export const LOG_REDACT = {
     "req.body.password",
     "req.body.refreshToken",
     "req.body.code",
+    "req.body.data",
     "req.headers.authorization",
   ],
   censor: "[redacted]",

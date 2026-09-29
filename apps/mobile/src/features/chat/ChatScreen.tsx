@@ -1,13 +1,14 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, type MessageView } from "@spring/shared";
+import { ErrorCode, LIMITS, type AssetView, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { createClientMessageId, spring } from "../../shared/lib/api";
+import { createClientMessageId, mediaUrl, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
+import { pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useStream } from "../../shared/lib/stream";
 import { speak, startDictation } from "../../shared/lib/voice";
@@ -30,10 +31,12 @@ export function ChatScreen({ navigation, route }: Props) {
   const conversationId = route.params?.conversationId;
   const mode = route.params?.mode ?? "chat";
   const seeded = useRef(false);
+  const attached = useRef(false);
   const token = usePrefs((state) => state.accessToken);
   const askedToSignIn = useRef(false);
   const account = usePrefs((state) => state.user);
   const [draft, setDraft] = useState("");
+  const [pending, setPending] = useState<AssetView[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
   const [guestBlocked, setGuestBlocked] = useState(false);
   const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
@@ -46,6 +49,11 @@ export function ChatScreen({ navigation, route }: Props) {
   const chats = useQuery({
     queryKey: ["conversations", ""],
     queryFn: () => spring.conversations(),
+    enabled: Boolean(token),
+  });
+  const caps = useQuery({
+    queryKey: ["capabilities"],
+    queryFn: () => spring.capabilities(),
     enabled: Boolean(token),
   });
   const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
@@ -69,9 +77,31 @@ export function ChatScreen({ navigation, route }: Props) {
     void refreshAccount().catch(() => undefined);
   }
 
+  async function attach(kind: AttachKind) {
+    if (!usePrefs.getState().accessToken) {
+      navigation.navigate("Auth");
+      return;
+    }
+    if (pending.length >= LIMITS.attachmentsMax) return;
+    const vision = caps.data?.vision ?? (await spring.capabilities().then((row) => row.vision).catch(() => false));
+    if (!vision) {
+      setBanner(text.noVisionModel);
+      return;
+    }
+    try {
+      const picked = await pickPhoto(kind);
+      if (!picked) return;
+      const uploaded = await spring.upload(picked);
+      setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : text.noVisionModel;
+      setBanner(message);
+    }
+  }
+
   async function send(content: string) {
     const trimmed = content.trim();
-    if (!trimmed || stream.status === "streaming") return;
+    if ((!trimmed && pending.length === 0) || stream.status === "streaming") return;
     if (!usePrefs.getState().accessToken) {
       navigation.navigate("Auth");
       return;
@@ -80,12 +110,13 @@ export function ChatScreen({ navigation, route }: Props) {
     setGuestBlocked(false);
     const controller = new AbortController();
     stream.begin(controller);
+    const attachments = pending.map((item) => ({ assetId: item.id }));
     try {
       const params = route.params;
       await spring.sendMessage(
         {
           content: trimmed,
-          attachments: [],
+          attachments,
           clientMessageId: createClientMessageId(),
           ...(conversationId
             ? { conversationId }
@@ -100,6 +131,7 @@ export function ChatScreen({ navigation, route }: Props) {
         {
           onMeta: (event) => {
             setDraft("");
+            setPending([]);
             stream.meta(event.conversationId, event.messageId, event.requestedModel);
             if (!conversationId) navigation.setParams({ conversationId: event.conversationId });
           },
@@ -178,6 +210,21 @@ export function ChatScreen({ navigation, route }: Props) {
     void send(seed);
   }, [conversationId, route.params?.seed, token, navigation]);
 
+  useEffect(() => {
+    const kind = route.params?.attach;
+    if (!kind || attached.current) return;
+    if (!token) {
+      if (!askedToSignIn.current) {
+        askedToSignIn.current = true;
+        navigation.navigate("Auth");
+      }
+      return;
+    }
+    attached.current = true;
+    navigation.setParams({ attach: undefined });
+    void attach(kind);
+  }, [route.params?.attach, token, navigation]);
+
   function stop() {
     const messageId = stream.messageId;
     stream.controller?.abort();
@@ -209,6 +256,7 @@ export function ChatScreen({ navigation, route }: Props) {
                 onPress={() => {
                   stream.reset();
                   setDraft("");
+                  setPending([]);
                   setBanner(null);
                   setGuestBlocked(false);
                   navigation.replace("Chat", { mode: "chat" });
@@ -245,6 +293,24 @@ export function ChatScreen({ navigation, route }: Props) {
           />
         </View>
         <KeyboardDock>
+          {pending.length > 0 ? (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 6, paddingTop: 8 }}>
+              {pending.map((item) => {
+                const uri = mediaUrl(item.url);
+                return (
+                  <View key={item.id} style={{ width: 64, height: 64 }}>
+                    {uri ? <Image source={{ uri }} style={{ width: 64, height: 64, borderRadius: 10 }} /> : null}
+                    <Pressable
+                      onPress={() => setPending((current) => current.filter((row) => row.id !== item.id))}
+                      style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" }}
+                    >
+                      <Icon name="close" color={colors.bg} size={12} />
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null}
           <Composer
             value={draft}
             placeholder={text.placeholder}
@@ -253,9 +319,13 @@ export function ChatScreen({ navigation, route }: Props) {
             onChange={setDraft}
             onSend={() => void send(draft)}
             onStop={stop}
-            onAttach={() => {
+            onAttach={(kind) => {
               setGuestBlocked(false);
-              setBanner(text.attachLater);
+              if (kind === "file") {
+                setBanner(text.attachLater);
+                return;
+              }
+              void attach(kind);
             }}
             onMic={() => {
               const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));

@@ -4,6 +4,7 @@ import type {
   CatalogAidesResponse,
   CatalogToolsResponse,
   AuditLogView,
+  AssetView,
   AuthResponse,
   ConversationView,
   FeatureFlagView,
@@ -150,8 +151,12 @@ export class SpringClient {
     return this.request(`/v1/conversations/${conversationId}/messages?limit=100`);
   }
 
-  capabilities(): Promise<{ image: boolean }> {
+  capabilities(): Promise<{ image: boolean; vision: boolean }> {
     return this.request("/v1/capabilities");
+  }
+
+  upload(body: { mime: string; data: string }): Promise<AssetView> {
+    return this.request("/v1/uploads", { method: "POST", body: JSON.stringify(body) });
   }
 
   sendMessage(body: SendMessageRequest, handlers: StreamHandlers, signal?: AbortSignal): Promise<void> {

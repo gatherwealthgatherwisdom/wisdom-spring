@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { Conversation } from "@prisma/client";
+import type { Conversation, Message, PrismaClient } from "@prisma/client";
 import {
   AppError,
   ConversationStatus,
@@ -8,6 +8,7 @@ import {
   ListConversationsQuerySchema,
   ListMessagesQuerySchema,
   UpdateConversationSchema,
+  assetIdsOf,
   createId,
   decodeCursor,
   encodeCursor,
@@ -131,21 +132,33 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       take: query.limit,
     });
     return {
-      items: rows.reverse().map((row) => ({
-        id: row.id,
-        conversationId: row.conversationId,
-        role: row.role,
-        status: row.status,
-        content: row.content,
-        imageUrl: row.imageUrl,
-        requestedModel: row.requestedModel,
-        servedModel: row.servedModel,
-        fallbackUsed: row.fallbackUsed,
-        parentMessageId: row.parentMessageId,
-        errorCode: row.errorCode,
-        createdAt: row.createdAt.toISOString(),
-      })),
+      items: await messageViews(app.ctx.prisma, rows.reverse()),
       nextCursor: null,
     };
   });
+}
+
+async function messageViews(prisma: PrismaClient, rows: Message[]) {
+  const ids = [...new Set(rows.flatMap((row) => assetIdsOf(row.attachments)))];
+  const assets = ids.length > 0 ? await prisma.asset.findMany({ where: { id: { in: ids } } }) : [];
+  const mimeById = new Map(assets.map((row) => [row.id, row.mime]));
+  return rows.map((row) => ({
+    id: row.id,
+    conversationId: row.conversationId,
+    role: row.role,
+    status: row.status,
+    content: row.content,
+    imageUrl: row.imageUrl,
+    requestedModel: row.requestedModel,
+    servedModel: row.servedModel,
+    fallbackUsed: row.fallbackUsed,
+    parentMessageId: row.parentMessageId,
+    errorCode: row.errorCode,
+    attachments: assetIdsOf(row.attachments).map((id) => ({
+      id,
+      url: `/v1/uploads/${id}`,
+      mime: mimeById.get(id) ?? "image/jpeg",
+    })),
+    createdAt: row.createdAt.toISOString(),
+  }));
 }

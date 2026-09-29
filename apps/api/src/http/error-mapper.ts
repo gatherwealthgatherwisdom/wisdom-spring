@@ -15,6 +15,12 @@ export function errorMapper(error: FastifyError, request: FastifyRequest, reply:
     });
     return;
   }
+  if (error.statusCode === 413 || error.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+    reply.status(400).send({
+      error: { code: ErrorCode.VALIDATION, message: messageFor(ErrorCode.VALIDATION, Locale.ZH_HK) },
+    });
+    return;
+  }
   if (error.statusCode === 429) {
     reply.status(429).send({
       error: {

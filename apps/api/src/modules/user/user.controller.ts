@@ -52,7 +52,14 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
         requireImageOutput: true,
       }),
     );
-    return { image };
+    const vision = rows.some((row) =>
+      isEligible(row, {
+        planTier: user.planTier,
+        capability: ModelCapability.VISION,
+        excludeSlugs: [],
+      }),
+    );
+    return { image, vision };
   });
 
   app.get("/v1/me/usage", async (request) => {

@@ -4,7 +4,9 @@ import {
   AppError,
   ErrorCode,
   LIMITS,
+  LOOK_PROMPT,
   ModelCapability,
+  assetIdsOf,
   createId,
   estimateCostMicros,
   messageFor,
@@ -14,8 +16,9 @@ import {
 } from "@spring/shared";
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
 import type { SseSink } from "../../../http/sse";
-import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
+import type { ChatContentPart, ChatMessage, OpenRouterClient } from "../../catalog/infra/openrouter.client";
 import { persistGeneratedImage } from "../infra/generated-image.store";
+import { readUpload } from "../infra/upload.store";
 import { UpstreamError, type SpringStreamEvent, type StreamUsage } from "../../catalog/infra/openrouter-stream.parser";
 import type { AbortRegistry } from "./abort-registry";
 
@@ -89,13 +92,18 @@ export async function runGeneration(
     targetLang: conversation?.targetLang ?? null,
     imageStyle: conversation?.imageStyle ?? null,
   };
-  const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => ({
-    role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
-    content:
-      modeFields.mode === "image" && row.role === "USER"
-        ? withImageStyle(row.content, modeFields.imageStyle)
-        : row.content,
-  }));
+  const lastUser = [...history].reverse().find((row) => row.role === "USER");
+  const visionIds = modeFields.mode === "image" ? [] : assetIdsOf(lastUser?.attachments);
+  const hasVision = visionIds.length > 0;
+  const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => {
+    const attached = assetIdsOf(row.attachments).length > 0;
+    const text =
+      row.role === "USER" && row.content.trim().length === 0 && attached ? LOOK_PROMPT : row.content;
+    return {
+      role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
+      content: modeFields.mode === "image" && row.role === "USER" ? withImageStyle(text, modeFields.imageStyle) : text,
+    };
+  });
 
   const controller = new AbortController();
   const onClientAbort = (): void => controller.abort();
@@ -116,7 +124,7 @@ export async function runGeneration(
       try {
       const pick = await deps.picker.pick({
         planTier: input.planTier,
-        capability: ModelCapability.TEXT,
+        capability: hasVision ? ModelCapability.VISION : ModelCapability.TEXT,
         excludeSlugs,
         requireImageOutput: modeFields.mode === "image",
       });
@@ -154,7 +162,6 @@ export async function runGeneration(
         let sawDone = false;
         let ticks = 0;
         if (modeFields.mode === "image") {
-          const lastUser = [...history].reverse().find((row) => row.role === "USER");
           const prompt = withImageStyle(lastUser?.content ?? "", modeFields.imageStyle);
           const image = await deps.openrouter.generateImage({
             model: pick.primary,
@@ -180,10 +187,11 @@ export async function runGeneration(
           };
           sawDone = true;
         }
+        const messages: ChatMessage[] = hasVision ? await withVisionParts(trimmed, visionIds) : trimmed;
         for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({
           model: pick.primary,
           models: pick.fallbacks,
-          messages: trimmed,
+          messages,
           signal: controller.signal,
           userRef: input.userId,
           dataCollection: deny,
@@ -359,6 +367,23 @@ export async function runGeneration(
     sink.signal.removeEventListener("abort", onClientAbort);
     deps.aborts.clear(input.assistantMessageId);
   }
+}
+
+async function withVisionParts(trimmed: ChatMessage[], assetIds: string[]): Promise<ChatMessage[]> {
+  const lastUserIndex = trimmed.reduce((found, turn, index) => (turn.role === "user" ? index : found), -1);
+  if (lastUserIndex < 0) return trimmed;
+  const last = trimmed[lastUserIndex];
+  if (!last || typeof last.content !== "string") return trimmed;
+  const parts: ChatContentPart[] = [{ type: "text", text: last.content || LOOK_PROMPT }];
+  for (const id of assetIds) {
+    const file = await readUpload(id);
+    if (!file) throw new AppError(ErrorCode.NOT_FOUND);
+    parts.push({
+      type: "image_url",
+      image_url: { url: `data:${file.mime};base64,${file.bytes.toString("base64")}` },
+    });
+  }
+  return trimmed.map((turn, index) => (index === lastUserIndex ? { role: "user", content: parts } : turn));
 }
 
 async function* emptyStream(): AsyncGenerator<SpringStreamEvent> {

@@ -6,23 +6,37 @@ import { LIMITS } from "../constants/limits";
 import { ConversationModeSchema } from "./conversation.schema";
 import { PaginationQuerySchema } from "./pagination.schema";
 
-export const SendMessageRequestSchema = z.object({
-  conversationId: z.string().ulid().optional(),
-  content: z.string().trim().min(1).max(LIMITS.contentMaxChars),
-  attachments: z
-    .array(z.object({ assetId: z.string().ulid() }))
-    .max(LIMITS.attachmentsMax)
-    .default([]),
-  clientMessageId: z.string().uuid(),
-  mode: ConversationModeSchema.optional(),
-  templateId: z.string().max(32).optional(),
-  sourceLang: z.string().max(16).optional(),
-  targetLang: z.string().max(16).optional(),
-  imageStyle: z.string().max(32).optional(),
-});
+export const SendMessageRequestSchema = z
+  .object({
+    conversationId: z.string().ulid().optional(),
+    content: z.string().max(LIMITS.contentMaxChars).default(""),
+    attachments: z
+      .array(z.object({ assetId: z.string().ulid() }))
+      .max(LIMITS.attachmentsMax)
+      .default([]),
+    clientMessageId: z.string().uuid(),
+    mode: ConversationModeSchema.optional(),
+    templateId: z.string().max(32).optional(),
+    sourceLang: z.string().max(16).optional(),
+    targetLang: z.string().max(16).optional(),
+    imageStyle: z.string().max(32).optional(),
+  })
+  .transform((value) => ({ ...value, content: value.content.trim() }))
+  .superRefine((value, ctx) => {
+    if (value.content.length === 0 && value.attachments.length === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["content"], message: "empty" });
+    }
+  });
 
 export const CapabilitiesSchema = z.object({
   image: z.boolean(),
+  vision: z.boolean(),
+});
+
+export const MessageAttachmentViewSchema = z.object({
+  id: z.string().ulid(),
+  url: z.string(),
+  mime: z.string(),
 });
 
 export const MessageViewSchema = z.object({
@@ -37,6 +51,7 @@ export const MessageViewSchema = z.object({
   fallbackUsed: z.boolean(),
   parentMessageId: z.string().nullable(),
   errorCode: z.string().nullable(),
+  attachments: z.array(MessageAttachmentViewSchema).default([]),
   createdAt: z.string(),
 });
 

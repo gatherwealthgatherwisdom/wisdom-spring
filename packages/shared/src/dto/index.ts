@@ -42,6 +42,7 @@ import type {
   SseErrorSchema,
   SseMetaSchema,
 } from "../schema/message.schema";
+import type { AssetViewSchema, UploadRequestSchema } from "../schema/upload.schema";
 import type {
   CatalogAideViewSchema,
   CatalogAidesResponseSchema,
@@ -100,3 +101,5 @@ export type CatalogToolView = z.infer<typeof CatalogToolViewSchema>;
 export type CatalogAideView = z.infer<typeof CatalogAideViewSchema>;
 export type CatalogToolsResponse = z.infer<typeof CatalogToolsResponseSchema>;
 export type CatalogAidesResponse = z.infer<typeof CatalogAidesResponseSchema>;
+export type UploadRequest = z.infer<typeof UploadRequestSchema>;
+export type AssetView = z.infer<typeof AssetViewSchema>;

@@ -9,6 +9,7 @@ import { authRoutes } from "./modules/auth/auth.controller";
 import { conversationRoutes } from "./modules/chat/controllers/conversation.controller";
 import { generatedRoutes } from "./modules/chat/controllers/generated.controller";
 import { messageRoutes } from "./modules/chat/controllers/message.controller";
+import { uploadRoutes } from "./modules/chat/controllers/upload.controller";
 import { publicCatalogRoutes } from "./modules/catalog/controllers/public-catalog.controller";
 import { userRoutes } from "./modules/user/user.controller";
 import { createContext, type AppContext } from "./context";
@@ -46,6 +47,7 @@ export async function buildApp(options?: { ctx?: AppContext }): Promise<FastifyI
   await app.register(publicCatalogRoutes);
   await app.register(conversationRoutes);
   await app.register(generatedRoutes);
+  await app.register(uploadRoutes);
   await app.register(messageRoutes);
   await app.register(adminRoutes);
   return app;

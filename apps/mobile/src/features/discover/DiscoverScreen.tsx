@@ -3,13 +3,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
-import type { AppStackParamList, MainTabParamList } from "../../navigation/MainTabs";
+import { paramsForLiveTool, type AppStackParamList, type MainTabParamList } from "../../navigation/MainTabs";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
-import { springTool } from "@spring/shared";
 import { HEROES, RECOS, TOOLS, type CardItem } from "./catalog";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Discover">;
@@ -32,15 +31,9 @@ export function DiscoverScreen({ navigation }: Props) {
   }
 
   function openTool(id: string) {
-    const spec = springTool(id);
-    if (spec?.live) {
-      const seed = locale === "en" ? spec.blurbEn : spec.blurbZh;
-      stack?.navigate("Chat", {
-        mode: spec.mode ?? "chat",
-        ...(spec.templateId ? { templateId: spec.templateId } : {}),
-        ...(spec.imageStyle ? { imageStyle: spec.imageStyle } : {}),
-        seed,
-      });
+    const params = paramsForLiveTool(id, locale);
+    if (params) {
+      stack?.navigate("Chat", params);
       return;
     }
     stack?.navigate("Tool", { id });
