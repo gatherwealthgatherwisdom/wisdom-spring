@@ -9,6 +9,13 @@ export function microsToString(micros: bigint): string {
   return micros.toString();
 }
 
+/** Ledger micros → USD decimal, four places like the admin usage page. */
+export function microsToUsd(micros: string | bigint, digits = 4): string {
+  const n = typeof micros === "bigint" ? Number(micros) : Number(micros);
+  if (!Number.isFinite(n)) return (0).toFixed(digits);
+  return (n / 1_000_000).toFixed(digits);
+}
+
 /** OpenRouter per-token USD string → USD micros per 1,000,000 tokens. */
 export function usdPerTokenToMicrosPerMillion(decimal: string | undefined | null): bigint {
   if (!decimal) return 0n;

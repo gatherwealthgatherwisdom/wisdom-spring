@@ -27,8 +27,14 @@ export function InboxScreen({ navigation }: Props) {
   const user = usePrefs((state) => state.user);
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
+  const notices = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
+  const dismissedAnnouncementId = usePrefs((state) => state.dismissedAnnouncementId);
+  const setDismissedAnnouncementId = usePrefs((state) => state.setDismissedAnnouncementId);
   const last = chats.data?.items[0];
   const initial = user?.displayName?.trim().charAt(0) ?? "";
+  const latest = notices.data?.items[0];
+  const banner = latest && latest.id !== dismissedAnnouncementId ? latest : undefined;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [poolOpen, setPoolOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -65,6 +71,21 @@ export function InboxScreen({ navigation }: Props) {
       </View>
       <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+        {banner ? (
+          <View style={{ flexDirection: "row", alignItems: "stretch", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
+            <View style={{ width: 4, backgroundColor: colors.accent }} />
+            <Text style={{ flex: 1, color: colors.ink, paddingVertical: 12, paddingHorizontal: 12, lineHeight: 22 }}>
+              {locale === "en" ? banner.bodyEn : banner.bodyZh}
+            </Text>
+            <Pressable
+              accessibilityLabel={text.dismissBanner}
+              onPress={() => setDismissedAnnouncementId(banner.id)}
+              style={{ width: 40, alignItems: "center", justifyContent: "center" }}
+            >
+              <Icon name="close" color={colors.muted} size={18} />
+            </Pressable>
+          </View>
+        ) : null}
         <Cover source={HEROES[0].art} style={{ borderRadius: 16, minHeight: 124, marginBottom: 14 }} dim={0.42}>
           <Pressable onPress={() => navigation.navigate("Discover")} style={{ minHeight: 124, padding: 16, justifyContent: "space-between" }}>
             <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? HEROES[0].en : HEROES[0].zh}</Text>

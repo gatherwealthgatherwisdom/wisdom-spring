@@ -14,10 +14,13 @@ import type {
   LoginRequestSchema,
   LogoutRequestSchema,
   MeResponseSchema,
+  MeUsageSchema,
   OAuthRequestSchema,
   PhoneCodeRequestSchema,
   PhoneRegisterRequestSchema,
   PhoneVerifyRequestSchema,
+  PublicFlagsResponseSchema,
+  PublicFlagSchema,
   QuotaSnapshotSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
@@ -66,6 +69,9 @@ export type UpdateMeRequest = z.infer<typeof UpdateMeRequestSchema>;
 export type UserPublic = z.infer<typeof UserPublicSchema>;
 export type QuotaSnapshot = z.infer<typeof QuotaSnapshotSchema>;
 export type MeResponse = z.infer<typeof MeResponseSchema>;
+export type MeUsage = z.infer<typeof MeUsageSchema>;
+export type PublicFlag = z.infer<typeof PublicFlagSchema>;
+export type PublicFlagsResponse = z.infer<typeof PublicFlagsResponseSchema>;
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 export type CreateConversationRequest = z.infer<typeof CreateConversationSchema>;

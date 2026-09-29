@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { ModelCapability, UpdateMeRequestSchema } from "@spring/shared";
+import { FeatureFlagKey, ModelCapability, UpdateMeRequestSchema, hkMonthRange } from "@spring/shared";
 import { isEligible } from "../catalog/application/draw-model";
 import { requireUser } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
@@ -53,6 +53,33 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       }),
     );
     return { image };
+  });
+
+  app.get("/v1/me/usage", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const range = hkMonthRange(new Date());
+    const aggregate = await app.ctx.prisma.usageLedger.aggregate({
+      where: { userId: user.id, occurredAt: { gte: range.start, lt: range.end } },
+      _count: { _all: true },
+      _sum: { costUsdMicros: true, promptTokens: true, completionTokens: true },
+    });
+    return {
+      from: range.start.toISOString(),
+      to: range.end.toISOString(),
+      requests: aggregate._count._all,
+      costUsdMicros: (aggregate._sum.costUsdMicros ?? 0n).toString(),
+      promptTokens: aggregate._sum.promptTokens ?? 0,
+      completionTokens: aggregate._sum.completionTokens ?? 0,
+    };
+  });
+
+  app.get("/v1/flags", async () => {
+    const rows = await app.ctx.prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
+    const items = rows.map((row) => ({ key: row.key, enabled: row.enabled }));
+    if (!items.some((item) => item.key === FeatureFlagKey.USER_MODEL_PICKER)) {
+      items.push({ key: FeatureFlagKey.USER_MODEL_PICKER, enabled: false });
+    }
+    return { items };
   });
 
   app.get("/v1/announcements", async () => {

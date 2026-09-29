@@ -102,6 +102,24 @@ export const MeResponseSchema = z.object({
   quota: QuotaSnapshotSchema,
 });
 
+export const MeUsageSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  requests: z.number().int(),
+  costUsdMicros: z.string().regex(/^\d+$/),
+  promptTokens: z.number().int(),
+  completionTokens: z.number().int(),
+});
+
+export const PublicFlagSchema = z.object({
+  key: z.string(),
+  enabled: z.boolean(),
+});
+
+export const PublicFlagsResponseSchema = z.object({
+  items: z.array(PublicFlagSchema),
+});
+
 export const AuthResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),

@@ -4,7 +4,7 @@ import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
 import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
-import { decimalToScaled, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
+import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SPRING_AIDES, SPRING_TOOLS, toolInstruction } from "../src/constants/catalog";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 
@@ -18,6 +18,12 @@ describe("money", () => {
   it("converts per-token price strings to micros per million", () => {
     expect(usdPerTokenToMicrosPerMillion("0.00000014")).toBe(140_000n);
     expect(decimalToScaled("1.5", 2)).toBe(150n);
+  });
+
+  it("formats ledger micros as USD", () => {
+    expect(microsToUsd(210n)).toBe("0.0002");
+    expect(microsToUsd("500000")).toBe("0.5000");
+    expect(microsToUsd("not-a-number")).toBe("0.0000");
   });
 });
 

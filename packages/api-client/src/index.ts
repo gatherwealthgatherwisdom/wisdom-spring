@@ -9,7 +9,9 @@ import type {
   FeatureFlagView,
   LoginRequest,
   MeResponse,
+  MeUsage,
   PhoneCodeRequest,
+  PublicFlagsResponse,
   PhoneRegisterRequest,
   PhoneVerifyRequest,
   MessageView,
@@ -100,12 +102,20 @@ export class SpringClient {
     return this.request("/v1/me");
   }
 
+  meUsage(): Promise<MeUsage> {
+    return this.request("/v1/me/usage");
+  }
+
   updateMe(body: UpdateMeRequest): Promise<MeResponse> {
     return this.request("/v1/me", { method: "PATCH", body: JSON.stringify(body) });
   }
 
   deleteMe(): Promise<{ ok: true }> {
     return this.request("/v1/me", { method: "DELETE" });
+  }
+
+  flags(): Promise<PublicFlagsResponse> {
+    return this.request("/v1/flags");
   }
 
   announcements(): Promise<PageOf<AnnouncementView>> {

@@ -1,4 +1,4 @@
-import { Locale } from "@spring/shared";
+import { Locale, microsToUsd } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -28,6 +28,7 @@ export function SettingsScreen() {
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const sessionUser = usePrefs((state) => state.user);
   const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
+  const usage = useQuery({ queryKey: ["me-usage"], queryFn: () => spring.meUsage(), enabled: signedIn });
   const user = me.data?.user ?? sessionUser;
   const quota = me.data?.quota;
   const remaining = quota ? Math.max(0, quota.dailyLimit - quota.dailyUsed) : null;
@@ -78,6 +79,11 @@ export function SettingsScreen() {
               {text.usedOf(used, limit)}
             </Text>
             <UsageBar used={used} limit={limit} colors={colors} />
+            {usage.data ? (
+              <Text style={{ color: colors.muted, marginBottom: 4 }}>
+                {text.monthlyUsage(usage.data.requests, microsToUsd(usage.data.costUsdMicros))}
+              </Text>
+            ) : null}
             {guest ? (
               <Pressable onPress={() => openRegister(navigation)}>
                 <Text style={{ color: colors.accent }}>{text.completeRegistration}</Text>
