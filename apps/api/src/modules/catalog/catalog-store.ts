@@ -2,27 +2,54 @@ import type { CatalogKind as PrismaCatalogKind, Prisma, PrismaClient } from "@pr
 import {
   AppError,
   ErrorCode,
+  IMAGE_STYLES,
   SPRING_AIDES,
   SPRING_TOOLS,
+  TRANSLATE_LANGUAGES,
+  WRITE_TEMPLATES,
+  imageStyle,
   toolInstruction,
   usesWebSearch,
+  writeTemplate,
   type AdminCatalogItem,
   type CatalogAideView,
   type CatalogKind,
+  type CatalogLanguageView,
+  type CatalogStyleView,
   type CatalogToolView,
+  type CatalogWriteView,
   type ConversationMode,
   type CreateCatalogEntryRequest,
+  type ImageStyle,
   type SpringAide,
   type SpringTool,
+  type TranslateLanguage,
   type UpdateCatalogEntryRequest,
+  type WriteTemplate,
 } from "@spring/shared";
 
+const PRISMA_KIND: Record<CatalogKind, PrismaCatalogKind> = {
+  tool: "TOOL",
+  aide: "AIDE",
+  write: "WRITE",
+  image: "IMAGE",
+  translate: "TRANSLATE",
+};
+
+const API_KIND: Record<PrismaCatalogKind, CatalogKind> = {
+  TOOL: "tool",
+  AIDE: "aide",
+  WRITE: "write",
+  IMAGE: "image",
+  TRANSLATE: "translate",
+};
+
 function toPrismaKind(kind: CatalogKind): PrismaCatalogKind {
-  return kind === "aide" ? "AIDE" : "TOOL";
+  return PRISMA_KIND[kind];
 }
 
 function fromPrismaKind(kind: PrismaCatalogKind): CatalogKind {
-  return kind === "AIDE" ? "aide" : "tool";
+  return API_KIND[kind];
 }
 
 function asMode(value: string | null | undefined): ConversationMode | undefined {
@@ -62,6 +89,52 @@ function aideFromConstant(item: SpringAide, index: number): AdminCatalogItem {
     mode: "chat",
     templateId: item.id,
     instruction: item.instruction,
+  };
+}
+
+function writeFromConstant(item: WriteTemplate, index: number): AdminCatalogItem {
+  return {
+    kind: "write",
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+    live: true,
+    sort: index,
+    mode: "write",
+    templateId: item.id,
+    instruction: item.instruction,
+  };
+}
+
+function styleFromConstant(item: ImageStyle, index: number): AdminCatalogItem {
+  return {
+    kind: "image",
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+    live: true,
+    sort: index,
+    mode: "image",
+    imageStyle: item.id,
+    instruction: item.hint,
+  };
+}
+
+function langFromConstant(item: TranslateLanguage, index: number): AdminCatalogItem {
+  return {
+    kind: "translate",
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.zh,
+    blurbEn: item.en,
+    live: true,
+    sort: index,
+    mode: "translate",
   };
 }
 
@@ -134,6 +207,28 @@ export function toPublicAide(item: AdminCatalogItem): CatalogAideView {
   };
 }
 
+export function toPublicWrite(item: AdminCatalogItem): CatalogWriteView {
+  return {
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+  };
+}
+
+export function toPublicStyle(item: AdminCatalogItem): CatalogStyleView {
+  return toPublicWrite(item);
+}
+
+export function toPublicLanguage(item: AdminCatalogItem): CatalogLanguageView {
+  return {
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+  };
+}
+
 export async function listCatalog(prisma: PrismaClient, kind?: CatalogKind): Promise<AdminCatalogItem[]> {
   const rows = await prisma.catalogEntry.findMany({
     where: kind ? { kind: toPrismaKind(kind) } : undefined,
@@ -149,11 +244,30 @@ export async function listCatalog(prisma: PrismaClient, kind?: CatalogKind): Pro
     const row = byKey.get(`aide:${item.id}`);
     return row ? overlay(base, row) : base;
   });
-  const known = new Set([...tools, ...aides].map((item) => `${item.kind}:${item.id}`));
+  const writes = WRITE_TEMPLATES.map((item, index) => {
+    const base = writeFromConstant(item, index);
+    const row = byKey.get(`write:${item.id}`);
+    return row ? overlay(base, row) : base;
+  });
+  const styles = IMAGE_STYLES.map((item, index) => {
+    const base = styleFromConstant(item, index);
+    const row = byKey.get(`image:${item.id}`);
+    return row ? overlay(base, row) : base;
+  });
+  const langs = TRANSLATE_LANGUAGES.map((item, index) => {
+    const base = langFromConstant(item, index);
+    const row = byKey.get(`translate:${item.id}`);
+    return row ? overlay(base, row) : base;
+  });
+  const known = new Set(
+    [...tools, ...aides, ...writes, ...styles, ...langs].map((item) => `${item.kind}:${item.id}`),
+  );
   const extras = rows
     .filter((row) => !known.has(`${fromPrismaKind(row.kind)}:${row.id}`))
     .map((row) => fromRow(row));
-  const all = [...tools, ...aides, ...extras].filter((item) => !kind || item.kind === kind);
+  const all = [...tools, ...aides, ...writes, ...styles, ...langs, ...extras].filter(
+    (item) => !kind || item.kind === kind,
+  );
   all.sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
   return all;
 }
@@ -164,6 +278,18 @@ export async function publicTools(prisma: PrismaClient): Promise<CatalogToolView
 
 export async function publicAides(prisma: PrismaClient): Promise<CatalogAideView[]> {
   return (await listCatalog(prisma, "aide")).filter((item) => item.live).map(toPublicAide);
+}
+
+export async function publicWrite(prisma: PrismaClient): Promise<CatalogWriteView[]> {
+  return (await listCatalog(prisma, "write")).filter((item) => item.live).map(toPublicWrite);
+}
+
+export async function publicStyles(prisma: PrismaClient): Promise<CatalogStyleView[]> {
+  return (await listCatalog(prisma, "image")).filter((item) => item.live).map(toPublicStyle);
+}
+
+export async function publicLanguages(prisma: PrismaClient): Promise<CatalogLanguageView[]> {
+  return (await listCatalog(prisma, "translate")).filter((item) => item.live).map(toPublicLanguage);
 }
 
 export async function catalogInstruction(
@@ -177,6 +303,7 @@ export async function catalogInstruction(
         { kind: "AIDE", id: templateId },
         { kind: "TOOL", id: templateId },
         { kind: "TOOL", templateId },
+        { kind: "WRITE", id: templateId },
       ],
     },
   });
@@ -186,7 +313,21 @@ export async function catalogInstruction(
   if (toolById?.instruction) return toolById.instruction;
   const toolByTemplate = rows.find((row) => row.kind === "TOOL" && row.templateId === templateId && row.instruction);
   if (toolByTemplate?.instruction) return toolByTemplate.instruction;
-  return toolInstruction(templateId);
+  const write = rows.find((row) => row.kind === "WRITE" && row.id === templateId && row.instruction);
+  if (write?.instruction) return write.instruction;
+  return toolInstruction(templateId) ?? writeTemplate(templateId)?.instruction;
+}
+
+export async function catalogImageHint(
+  prisma: PrismaClient,
+  styleId: string | null | undefined,
+): Promise<string | undefined> {
+  if (!styleId) return undefined;
+  const row = await prisma.catalogEntry.findUnique({
+    where: { kind_id: { kind: "IMAGE", id: styleId } },
+  });
+  if (row?.instruction) return row.instruction;
+  return imageStyle(styleId)?.hint;
 }
 
 export async function isWebToolLive(prisma: PrismaClient, templateId: string | null | undefined): Promise<boolean> {
@@ -312,6 +453,9 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
   const data = [
     ...SPRING_TOOLS.map((item, index) => toData(toolFromConstant(item, index))),
     ...SPRING_AIDES.map((item, index) => toData(aideFromConstant(item, index))),
+    ...WRITE_TEMPLATES.map((item, index) => toData(writeFromConstant(item, index))),
+    ...IMAGE_STYLES.map((item, index) => toData(styleFromConstant(item, index))),
+    ...TRANSLATE_LANGUAGES.map((item, index) => toData(langFromConstant(item, index))),
   ];
   await prisma.catalogEntry.createMany({ data, skipDuplicates: true });
 }

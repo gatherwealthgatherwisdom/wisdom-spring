@@ -1,7 +1,7 @@
 import { IMAGE_STYLES } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
@@ -15,15 +15,6 @@ import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 
-function styleNote(id: string, locale: "zh-HK" | "en") {
-  const notes: Record<string, { "zh-HK": string; en: string }> = {
-    ink: { "zh-HK": "留白、淡墨", en: "Blank paper and light ink" },
-    paper: { "zh-HK": "暖色紙本插畫", en: "Warm illustration on paper" },
-    night: { "zh-HK": "夜色裡一點暖光", en: "A night scene with one warm light" },
-  };
-  return notes[id]?.[locale] ?? "";
-}
-
 type Props = BottomTabScreenProps<MainTabParamList, "Image">;
 
 export function ImageScreen({ navigation }: Props) {
@@ -35,6 +26,12 @@ export function ImageScreen({ navigation }: Props) {
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
   const chats = useQuery({ queryKey: ["conversations", "image"], queryFn: () => spring.conversations({ mode: "image" }), enabled: signedIn });
+  const catalog = useQuery({ queryKey: ["catalog-styles"], queryFn: () => spring.catalogStyles() });
+  const styles = catalog.data?.items ?? IMAGE_STYLES;
+  const selected = useMemo(
+    () => (styles.some((style) => style.id === styleId) ? styleId : (styles[0]?.id ?? "ink")),
+    [styles, styleId],
+  );
   const recent = (chats.data?.items ?? []).slice(0, 8);
   const scroll = useRef<ScrollView>(null);
   const blocked = caps.data?.image === false;
@@ -42,7 +39,7 @@ export function ImageScreen({ navigation }: Props) {
   function send(seed?: string, style?: string) {
     const content = (seed ?? prompt).trim();
     if (!content || blocked) return;
-    openChat(navigation, { mode: "image", imageStyle: style ?? styleId, seed: content });
+    openChat(navigation, { mode: "image", imageStyle: style ?? selected, seed: content });
     setPrompt("");
   }
 
@@ -83,16 +80,16 @@ export function ImageScreen({ navigation }: Props) {
         </View>
         <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 10 }}>{text.styles}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 8 }}>
-          {IMAGE_STYLES.map((style) => (
+          {styles.map((style) => (
             <Pressable
               key={style.id}
               onPress={() => setStyleId(style.id)}
-              style={{ width: 140, minHeight: 120, borderRadius: 16, overflow: "hidden", borderWidth: styleId === style.id ? 2 : 1, borderColor: styleId === style.id ? colors.accent : colors.line }}
+              style={{ width: 140, minHeight: 120, borderRadius: 16, overflow: "hidden", borderWidth: selected === style.id ? 2 : 1, borderColor: selected === style.id ? colors.accent : colors.line }}
             >
               <Cover source={STYLE_ART[style.id] ?? HERO_ART.drawHero} style={{ flex: 1, minHeight: 116 }} dim={0.35}>
                 <View style={{ flex: 1, minHeight: 116, padding: 12, justifyContent: "flex-end" }}>
                   <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? style.en : style.zh}</Text>
-                  <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{styleNote(style.id, locale)}</Text>
+                  <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{locale === "en" ? style.blurbEn : style.blurbZh}</Text>
                 </View>
               </Cover>
             </Pressable>

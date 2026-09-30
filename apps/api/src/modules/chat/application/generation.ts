@@ -19,7 +19,7 @@ import {
   type PlanTier,
 } from "@spring/shared";
 import { assertCapabilityFlags } from "../../admin/feature-flags";
-import { catalogInstruction, isWebToolLive } from "../../catalog/catalog-store";
+import { catalogImageHint, catalogInstruction, isWebToolLive } from "../../catalog/catalog-store";
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
 import type { SseSink } from "../../../http/sse";
 import type { ChatContentPart, ChatMessage, OpenRouterClient } from "../../catalog/infra/openrouter.client";
@@ -111,13 +111,14 @@ export async function runGeneration(
   const pdfIds = media.filter((row) => isPdfMime(row.mime)).map((row) => row.id);
   const hasVision = visionIds.length > 0;
   const hasPdf = pdfIds.length > 0;
-  const [{ webOn }, extraInstruction, webLive] = await Promise.all([
+  const [{ webOn }, extraInstruction, webLive, extraHint] = await Promise.all([
     assertCapabilityFlags(deps.prisma, {
       mode: modeFields.mode,
       mimes: media.map((row) => row.mime),
     }),
     catalogInstruction(deps.prisma, modeFields.templateId),
     isWebToolLive(deps.prisma, modeFields.templateId),
+    catalogImageHint(deps.prisma, modeFields.imageStyle),
   ]);
   const emptyPrompt = hasPdf && !hasVision ? FILE_PROMPT : LOOK_PROMPT;
   const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => {
@@ -126,7 +127,10 @@ export async function runGeneration(
       row.role === "USER" && row.content.trim().length === 0 && attached ? emptyPrompt : row.content;
     return {
       role: row.role === "USER" ? ("user" as const) : ("assistant" as const),
-      content: modeFields.mode === "image" && row.role === "USER" ? withImageStyle(text, modeFields.imageStyle) : text,
+      content:
+        modeFields.mode === "image" && row.role === "USER"
+          ? withImageStyle(text, modeFields.imageStyle, extraHint)
+          : text,
     };
   });
 
@@ -162,7 +166,7 @@ export async function runGeneration(
         [
           {
             role: "system",
-            content: systemPromptFor(modeFields, pick.primary, extraInstruction),
+            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint),
           },
           ...turns,
         ],
@@ -187,7 +191,7 @@ export async function runGeneration(
         let sawDone = false;
         let ticks = 0;
         if (modeFields.mode === "image") {
-          const prompt = withImageStyle(lastUser?.content ?? "", modeFields.imageStyle);
+          const prompt = withImageStyle(lastUser?.content ?? "", modeFields.imageStyle, extraHint);
           const image = await deps.openrouter.generateImage({
             model: pick.primary,
             prompt,

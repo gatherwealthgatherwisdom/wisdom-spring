@@ -30,3 +30,31 @@ export const CatalogToolsResponseSchema = z.object({
 export const CatalogAidesResponseSchema = z.object({
   items: z.array(CatalogAideViewSchema),
 });
+
+export const CatalogWriteViewSchema = z.object({
+  id: z.string(),
+  zh: z.string(),
+  en: z.string(),
+  blurbZh: z.string(),
+  blurbEn: z.string(),
+});
+
+export const CatalogStyleViewSchema = CatalogWriteViewSchema;
+
+export const CatalogLanguageViewSchema = z.object({
+  id: z.string(),
+  zh: z.string(),
+  en: z.string(),
+});
+
+export const CatalogWriteResponseSchema = z.object({
+  items: z.array(CatalogWriteViewSchema),
+});
+
+export const CatalogStylesResponseSchema = z.object({
+  items: z.array(CatalogStyleViewSchema),
+});
+
+export const CatalogLanguagesResponseSchema = z.object({
+  items: z.array(CatalogLanguageViewSchema),
+});

@@ -172,7 +172,7 @@ export const CreateCatalogEntrySchema = z.object({
     .trim()
     .min(1)
     .max(64)
-    .regex(/^[a-z0-9-]+$/),
+    .regex(/^[A-Za-z0-9-]+$/),
   zh: z.string().trim().min(1).max(80),
   en: z.string().trim().min(1).max(80),
   blurbZh: z.string().trim().min(1).max(500),

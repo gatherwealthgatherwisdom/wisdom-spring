@@ -53,8 +53,14 @@ import type { AssetViewSchema, UploadRequestSchema } from "../schema/upload.sche
 import type {
   CatalogAideViewSchema,
   CatalogAidesResponseSchema,
+  CatalogLanguageViewSchema,
+  CatalogLanguagesResponseSchema,
+  CatalogStyleViewSchema,
+  CatalogStylesResponseSchema,
   CatalogToolViewSchema,
   CatalogToolsResponseSchema,
+  CatalogWriteResponseSchema,
+  CatalogWriteViewSchema,
 } from "../schema/catalog.schema";
 import type {
   ModelPoolViewSchema,
@@ -111,6 +117,12 @@ export type CatalogToolView = z.infer<typeof CatalogToolViewSchema>;
 export type CatalogAideView = z.infer<typeof CatalogAideViewSchema>;
 export type CatalogToolsResponse = z.infer<typeof CatalogToolsResponseSchema>;
 export type CatalogAidesResponse = z.infer<typeof CatalogAidesResponseSchema>;
+export type CatalogWriteView = z.infer<typeof CatalogWriteViewSchema>;
+export type CatalogStyleView = z.infer<typeof CatalogStyleViewSchema>;
+export type CatalogLanguageView = z.infer<typeof CatalogLanguageViewSchema>;
+export type CatalogWriteResponse = z.infer<typeof CatalogWriteResponseSchema>;
+export type CatalogStylesResponse = z.infer<typeof CatalogStylesResponseSchema>;
+export type CatalogLanguagesResponse = z.infer<typeof CatalogLanguagesResponseSchema>;
 export type AdminCatalogItem = z.infer<typeof AdminCatalogItemSchema>;
 export type AdminCatalogQuery = z.infer<typeof AdminCatalogQuerySchema>;
 export type UpdateCatalogEntryRequest = z.infer<typeof UpdateCatalogEntrySchema>;

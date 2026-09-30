@@ -1,6 +1,6 @@
 import type { ConversationMode } from "./tools";
 
-export const CATALOG_KINDS = ["tool", "aide"] as const;
+export const CATALOG_KINDS = ["tool", "aide", "write", "image", "translate"] as const;
 export type CatalogKind = (typeof CATALOG_KINDS)[number];
 
 export interface SpringTool {

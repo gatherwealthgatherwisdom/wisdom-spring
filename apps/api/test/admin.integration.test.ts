@@ -12,13 +12,16 @@ import {
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { seedCatalog } from "../src/modules/catalog/catalog-store";
-import type { OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
+import type { GenerateImageInput, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
-function fakeClient(): OpenRouterClient & { last?: StreamChatInput } {
-  const state: { last?: StreamChatInput } = {};
+function fakeClient(): OpenRouterClient & { last?: StreamChatInput; lastImagePrompt?: string } {
+  const state: { last?: StreamChatInput; lastImagePrompt?: string } = {};
   return {
     get last() {
       return state.last;
+    },
+    get lastImagePrompt() {
+      return state.lastImagePrompt;
     },
     async listModels() {
       return [
@@ -37,8 +40,15 @@ function fakeClient(): OpenRouterClient & { last?: StreamChatInput } {
     async completeChat() {
       return { text: "ok", model: "qwen/qwen3.7-flash", images: [] };
     },
-    async generateImage() {
-      throw new Error("unused");
+    async generateImage(input: GenerateImageInput) {
+      state.lastImagePrompt = input.prompt;
+      return {
+        model: "qwen/qwen-image-3",
+        promptTokens: 0,
+        completionTokens: 1,
+        costUsd: 0,
+        images: [{ url: "https://cdn.example/x.png" }],
+      };
     },
     streamChat(input) {
       state.last = input;
@@ -434,6 +444,120 @@ describe("admin panel", () => {
     await app.inject({
       method: "PATCH",
       url: "/admin/catalog/tool/search",
+      headers: auth(),
+      payload: { live: true },
+    });
+  });
+
+  it("applies a write template instruction change", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/write/cantonese",
+      headers: auth(),
+      payload: { instruction: "用香港廣東話，每句以「喂」開頭。" },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `write-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+      payload: { content: "寫一句招呼", clientMessageId: randomUUID(), mode: "write", templateId: "cantonese" },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("event: done");
+    expect(
+      openrouter.last?.messages.some(
+        (row) => typeof row.content === "string" && row.content.includes("每句以「喂」開頭"),
+      ),
+    ).toBe(true);
+  });
+
+  it("applies an image style hint to the next image turn", async () => {
+    await app.ctx.prisma.modelCatalog.create({
+      data: {
+        slug: "qwen/qwen-image-3",
+        name: "Qwen Image 3",
+        author: "qwen",
+        contextLength: 8_192,
+        inputModalities: ["text"],
+        outputModalities: ["image"],
+        pricing: { prompt: "0", completion: "0" },
+        isFreeRoute: false,
+        raw: {},
+        syncedAt: new Date(),
+      },
+    });
+    await app.ctx.prisma.modelPoolEntry.create({
+      data: {
+        slug: "qwen/qwen-image-3",
+        enabled: true,
+        regionStatus: "HK_SAFE",
+        healthStatus: "HEALTHY",
+        weight: 100,
+        qualityScore: 80,
+        minPlanTier: "FREE",
+      },
+    });
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/image/ink",
+      headers: auth(),
+      payload: { instruction: "TEST_INK_HINT_ONLY" },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `style-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+      payload: { content: "一枝松", clientMessageId: randomUUID(), mode: "image", imageStyle: "ink" },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("event: done");
+    expect(openrouter.lastImagePrompt).toContain("TEST_INK_HINT_ONLY");
+  });
+
+  it("hides unlisted write templates and languages from the public catalog", async () => {
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/write/memo",
+      headers: auth(),
+      payload: { live: false },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/translate/ja",
+      headers: auth(),
+      payload: { live: false },
+    });
+    const write = await app.inject({ method: "GET", url: "/v1/catalog/write" });
+    const languages = await app.inject({ method: "GET", url: "/v1/catalog/languages" });
+    expect((write.json().items as Array<{ id: string }>).some((item) => item.id === "memo")).toBe(false);
+    expect((languages.json().items as Array<{ id: string }>).some((item) => item.id === "ja")).toBe(false);
+    expect(JSON.stringify(write.json())).not.toContain("instruction");
+    const adminLangs = await app.inject({ method: "GET", url: "/admin/catalog?kind=translate", headers: auth() });
+    expect((adminLangs.json().items as Array<{ id: string; live: boolean }>).some((item) => item.id === "ja" && item.live === false)).toBe(true);
+    const audit = await app.inject({ method: "GET", url: "/admin/audit?action=catalog.update", headers: auth() });
+    expect((audit.json().items as Array<{ action: string }>).some((item) => item.action === "catalog.update")).toBe(true);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/write/memo",
+      headers: auth(),
+      payload: { live: true },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/translate/ja",
       headers: auth(),
       payload: { live: true },
     });

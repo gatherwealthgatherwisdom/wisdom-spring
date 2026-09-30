@@ -257,6 +257,9 @@ model Announcement {
 enum CatalogKind {
   TOOL
   AIDE
+  WRITE
+  IMAGE
+  TRANSLATE
 }
 
 model CatalogEntry {

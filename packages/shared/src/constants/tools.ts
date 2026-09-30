@@ -5,6 +5,8 @@ export interface WriteTemplate {
   id: string;
   zh: string;
   en: string;
+  blurbZh: string;
+  blurbEn: string;
   instruction: string;
 }
 
@@ -13,42 +15,56 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     id: "email",
     zh: "商務電郵",
     en: "Business email",
+    blurbZh: "穩重有禮，短段落",
+    blurbEn: "Polite, in short paragraphs",
     instruction: "幫用戶寫一封穩重、有禮嘅商務電郵。先確認對象同目的，再用短段落。唔好誇張。",
   },
   {
     id: "report",
     zh: "報告大綱",
     en: "Report outline",
+    blurbZh: "背景、要點、下一步",
+    blurbEn: "Background, points, next step",
     instruction: "幫用戶起一個清楚嘅報告大綱：背景、要點、風險、下一步。用繁體中文，除非用戶用另一種語言。",
   },
   {
     id: "rewrite",
     zh: "改寫",
     en: "Rewrite",
+    blurbZh: "保留原意，句子更清楚",
+    blurbEn: "Clearer sentences, same meaning",
     instruction: "改寫用戶嘅文字，保留原意，句子更清楚。唔好聲稱可以避開任何偵測。",
   },
   {
     id: "formal",
     zh: "正式",
     en: "Formal",
+    blurbZh: "書面語，避免口語",
+    blurbEn: "Written style, not spoken",
     instruction: "用正式書面語改寫或撰寫，避免口語。",
   },
   {
     id: "plain",
     zh: "淺白",
     en: "Plain",
+    blurbZh: "淺白短句",
+    blurbEn: "Plain, short sentences",
     instruction: "用淺白繁體中文寫，短句，避免術語。",
   },
   {
     id: "cantonese",
     zh: "廣東話",
     en: "Cantonese",
+    blurbZh: "香港廣東話，語氣自然",
+    blurbEn: "Natural Hong Kong Cantonese",
     instruction: "用香港廣東話書面語撰寫，語氣自然、有分寸。",
   },
   {
     id: "memo",
     zh: "備忘",
     en: "Memo",
+    blurbZh: "日期或場合、要點、下一步",
+    blurbEn: "Date or occasion, points, next step",
     instruction: "幫用戶寫一則短備忘：日期或場合、要點、下一步。短句、清楚，唔好誇張。",
   },
 ];
@@ -57,13 +73,36 @@ export interface ImageStyle {
   id: string;
   zh: string;
   en: string;
+  blurbZh: string;
+  blurbEn: string;
   hint: string;
 }
 
 export const IMAGE_STYLES: readonly ImageStyle[] = [
-  { id: "ink", zh: "水墨", en: "Ink", hint: "Chinese ink wash, restrained, lots of blank paper" },
-  { id: "paper", zh: "紙本", en: "Paper", hint: "warm paper illustration with fine gold lines" },
-  { id: "night", zh: "夜色", en: "Night", hint: "night scene in ink, a single warm gold light" },
+  {
+    id: "ink",
+    zh: "水墨",
+    en: "Ink",
+    blurbZh: "留白、淡墨",
+    blurbEn: "Blank paper and light ink",
+    hint: "Chinese ink wash, restrained, lots of blank paper",
+  },
+  {
+    id: "paper",
+    zh: "紙本",
+    en: "Paper",
+    blurbZh: "暖色紙本插畫",
+    blurbEn: "Warm illustration on paper",
+    hint: "warm paper illustration with fine gold lines",
+  },
+  {
+    id: "night",
+    zh: "夜色",
+    en: "Night",
+    blurbZh: "夜色裡一點暖光",
+    blurbEn: "A night scene with one warm light",
+    hint: "night scene in ink, a single warm gold light",
+  },
 ];
 
 export interface TranslateLanguage {

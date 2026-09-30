@@ -21,14 +21,7 @@ const TEMPLATE_ICON: Record<string, IconName> = {
   cantonese: "chatbubbles-outline",
 };
 
-const TEMPLATE_NOTE: Record<string, { "zh-HK": string; en: string }> = {
-  email: { "zh-HK": "穩重有禮，短段落", en: "Polite, in short paragraphs" },
-  report: { "zh-HK": "背景、要點、下一步", en: "Background, points, next step" },
-  rewrite: { "zh-HK": "保留原意，句子更清楚", en: "Clearer sentences, same meaning" },
-  formal: { "zh-HK": "書面語，避免口語", en: "Written style, not spoken" },
-  plain: { "zh-HK": "淺白短句", en: "Plain, short sentences" },
-  cantonese: { "zh-HK": "香港廣東話，語氣自然", en: "Natural Hong Kong Cantonese" },
-};
+const FEATURED = ["email", "rewrite", "cantonese"];
 
 export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTabParamList> }) {
   const colors = useColors();
@@ -36,8 +29,10 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
   const text = copy[locale];
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const catalog = useQuery({ queryKey: ["catalog-write"], queryFn: () => spring.catalogWrite() });
+  const templates = catalog.data?.items ?? WRITE_TEMPLATES;
   const recent = (chats.data?.items ?? []).filter((item) => item.mode === "write").slice(0, 5);
-  const featured = WRITE_TEMPLATES.filter((item) => ["email", "rewrite", "cantonese"].includes(item.id));
+  const featured = templates.filter((item) => FEATURED.includes(item.id));
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
@@ -52,13 +47,13 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
           <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={22} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? template.en : template.zh}</Text>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>{TEMPLATE_NOTE[template.id]?.[locale] ?? ""}</Text>
+            <Text style={{ color: colors.muted, fontSize: 13 }}>{locale === "en" ? template.blurbEn : template.blurbZh}</Text>
           </View>
         </Pressable>
       ))}
       <Text style={{ color: colors.muted, marginTop: 8, marginBottom: 10 }}>{text.all}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-        {WRITE_TEMPLATES.map((template) => (
+        {templates.map((template) => (
           <Pressable
             key={template.id}
             onPress={() => openChat(navigation, { mode: "write", templateId: template.id })}
@@ -66,7 +61,7 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
           >
             <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={20} />
             <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? template.en : template.zh}</Text>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>{TEMPLATE_NOTE[template.id]?.[locale] ?? ""}</Text>
+            <Text style={{ color: colors.muted, fontSize: 13 }}>{locale === "en" ? template.blurbEn : template.blurbZh}</Text>
           </Pressable>
         ))}
       </View>

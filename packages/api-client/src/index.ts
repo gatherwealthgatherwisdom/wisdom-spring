@@ -5,7 +5,11 @@ import type {
   AnnouncementView,
   CreateCatalogEntryRequest,
   CatalogAidesResponse,
+  CatalogKind,
+  CatalogLanguagesResponse,
+  CatalogStylesResponse,
   CatalogToolsResponse,
+  CatalogWriteResponse,
   AuditLogView,
   AssetView,
   AuthResponse,
@@ -137,6 +141,18 @@ export class SpringClient {
     return this.request("/v1/catalog/aides");
   }
 
+  catalogWrite(): Promise<CatalogWriteResponse> {
+    return this.request("/v1/catalog/write");
+  }
+
+  catalogStyles(): Promise<CatalogStylesResponse> {
+    return this.request("/v1/catalog/styles");
+  }
+
+  catalogLanguages(): Promise<CatalogLanguagesResponse> {
+    return this.request("/v1/catalog/languages");
+  }
+
   conversations(query?: { q?: string; cursor?: string; mode?: string }): Promise<PageOf<ConversationView>> {
     return this.request(`/v1/conversations${queryString(query)}`);
   }
@@ -259,12 +275,12 @@ export class SpringClient {
     return this.request(`/admin/announcements/${id}`, { method: "DELETE" });
   }
 
-  adminCatalog(kind?: "tool" | "aide"): Promise<{ items: AdminCatalogItem[] }> {
+  adminCatalog(kind?: CatalogKind): Promise<{ items: AdminCatalogItem[] }> {
     return this.request(`/admin/catalog${queryString(kind ? { kind } : undefined)}`);
   }
 
   adminUpdateCatalog(
-    kind: "tool" | "aide",
+    kind: CatalogKind,
     id: string,
     body: UpdateCatalogEntryRequest,
   ): Promise<AdminCatalogItem> {

@@ -6,7 +6,8 @@ import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/fea
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
-import { SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
+import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
+import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
@@ -196,6 +197,13 @@ describe("tool catalog", () => {
     expect(usesWebSearch("search")).toBe(true);
     expect(usesWebSearch("webchat")).toBe(true);
     expect(usesWebSearch("rewrite")).toBe(false);
+  });
+
+  it("carries write, image, and translate catalog kinds", () => {
+    expect(CATALOG_KINDS).toEqual(["tool", "aide", "write", "image", "translate"]);
+    expect(WRITE_TEMPLATES.every((item) => item.blurbZh.length > 0 && item.instruction.length > 0)).toBe(true);
+    expect(IMAGE_STYLES.map((item) => item.id)).toEqual(["ink", "paper", "night"]);
+    expect(TRANSLATE_LANGUAGES.map((item) => item.id)).toEqual(["zh-HK", "zh-CN", "en", "ja"]);
   });
 
   it("accepts pdf uploads separately from images", () => {
