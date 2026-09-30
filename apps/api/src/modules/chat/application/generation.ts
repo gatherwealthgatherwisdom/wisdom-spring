@@ -19,6 +19,7 @@ import {
   usdToMicros,
   type PlanTier,
 } from "@spring/shared";
+import { assertCapabilityFlags } from "../../admin/feature-flags";
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
 import type { SseSink } from "../../../http/sse";
 import type { ChatContentPart, ChatMessage, OpenRouterClient } from "../../catalog/infra/openrouter.client";
@@ -110,6 +111,10 @@ export async function runGeneration(
   const pdfIds = media.filter((row) => isPdfMime(row.mime)).map((row) => row.id);
   const hasVision = visionIds.length > 0;
   const hasPdf = pdfIds.length > 0;
+  const { webOn } = await assertCapabilityFlags(deps.prisma, {
+    mode: modeFields.mode,
+    mimes: media.map((row) => row.mime),
+  });
   const emptyPrompt = hasPdf && !hasVision ? FILE_PROMPT : LOOK_PROMPT;
   const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => {
     const attached = assetIdsOf(row.attachments).length > 0;
@@ -206,7 +211,7 @@ export async function runGeneration(
         const messages: ChatMessage[] =
           hasVision || hasPdf ? await withMediaParts(trimmed, mediaIds, emptyPrompt) : trimmed;
         const plugins = [
-          ...(usesWebSearch(modeFields.templateId) ? [OPENROUTER.webPlugin] : []),
+          ...(webOn && usesWebSearch(modeFields.templateId) ? [OPENROUTER.webPlugin] : []),
           ...(hasPdf ? [OPENROUTER.pdfPlugin] : []),
         ];
         for await (const event of modeFields.mode === "image" ? emptyStream() : deps.openrouter.streamChat({

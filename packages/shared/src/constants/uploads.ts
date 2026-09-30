@@ -6,6 +6,7 @@ export const FILE_LATER_COPY = "檔案下一輪先接。";
 export const IMAGE_TOO_LARGE_COPY = "圖片最大 4MB。";
 export const IMAGE_FORMAT_COPY = "圖片格式不正確。";
 export const IMAGE_MODE_NO_UPLOAD_COPY = "圖像生成唔支援上圖。";
+export const FEATURE_OFF_COPY = "呢個功能暫時關閉。";
 
 export const UPLOAD_MIMES = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
 export type UploadMime = (typeof UPLOAD_MIMES)[number];

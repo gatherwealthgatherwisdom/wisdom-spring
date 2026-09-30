@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { EstimatedContextWindow } from "@spring/domain";
-import { FeatureFlagKey, hkMonthRange } from "@spring/shared";
+import { FLAG_DEFAULTS, FeatureFlagKey, hkMonthRange } from "@spring/shared";
 import type { Redis } from "ioredis";
 import { env } from "./env";
 import { getPrisma } from "./infra/prisma";
@@ -106,11 +106,13 @@ export async function bootstrap(prisma: PrismaClient): Promise<void> {
   if (env.adminEmail) {
     await prisma.user.updateMany({ where: { email: env.adminEmail }, data: { role: "ADMIN" } });
   }
-  await prisma.featureFlag.upsert({
-    where: { key: FeatureFlagKey.USER_MODEL_PICKER },
-    create: { key: FeatureFlagKey.USER_MODEL_PICKER, enabled: false },
-    update: {},
-  });
+  for (const key of Object.values(FeatureFlagKey)) {
+    await prisma.featureFlag.upsert({
+      where: { key },
+      create: { key, enabled: FLAG_DEFAULTS[key] },
+      update: {},
+    });
+  }
 }
 
 declare module "fastify" {

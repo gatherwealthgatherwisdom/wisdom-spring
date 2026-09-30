@@ -14,6 +14,8 @@ export function Composer({
   onAttach,
   onMic,
   onCall,
+  voice = true,
+  allowPdf = true,
 }: {
   value: string;
   placeholder: string;
@@ -25,13 +27,15 @@ export function Composer({
   onAttach: (kind: "camera" | "library" | "file") => void;
   onMic: () => void;
   onCall?: () => void;
+  voice?: boolean;
+  allowPdf?: boolean;
 }) {
   const colors = useColors();
   const [attachOpen, setAttachOpen] = useState(false);
   const extras: { name: IconName; kind: "camera" | "library" | "file" }[] = [
     { name: "camera-outline", kind: "camera" },
     { name: "image-outline", kind: "library" },
-    { name: "document-text-outline", kind: "file" },
+    ...(allowPdf ? [{ name: "document-text-outline" as const, kind: "file" as const }] : []),
   ];
   return (
     <View style={{ marginTop: 8, gap: 8 }}>
@@ -69,12 +73,16 @@ export function Composer({
           </Pressable>
         ) : (
           <>
-            <Pressable onPress={onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-              <Icon name="mic-outline" color={colors.ink} size={20} />
-            </Pressable>
-            <Pressable onPress={onCall ?? onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-              <Icon name="call-outline" color={colors.ink} size={18} />
-            </Pressable>
+            {voice ? (
+              <>
+                <Pressable onPress={onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="mic-outline" color={colors.ink} size={20} />
+                </Pressable>
+                <Pressable onPress={onCall ?? onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="call-outline" color={colors.ink} size={18} />
+                </Pressable>
+              </>
+            ) : null}
             <Pressable onPress={onSend} accessibilityLabel="send" style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
               <Icon name="arrow-up" color={colors.onAccent} size={18} />
             </Pressable>

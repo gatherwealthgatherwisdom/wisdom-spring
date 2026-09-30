@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
-import { hkDayKey, hkMonthRange } from "../src/lib/hk-time";
+import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
+import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
@@ -73,6 +74,28 @@ describe("Hong Kong calendar", () => {
     const range = hkMonthRange(new Date("2026-09-23T04:00:00.000Z"));
     expect(range.start.toISOString()).toBe("2026-08-31T16:00:00.000Z");
     expect(range.end.toISOString()).toBe("2026-09-30T16:00:00.000Z");
+  });
+
+  it("parses a YYYY-MM key", () => {
+    const range = hkMonthRangeFromKey("2026-09");
+    expect(range.start.toISOString()).toBe("2026-08-31T16:00:00.000Z");
+    expect(range.end.toISOString()).toBe("2026-09-30T16:00:00.000Z");
+  });
+
+  it("rejects a bad month key", () => {
+    expect(() => hkMonthRangeFromKey("2026-13")).toThrow("month");
+  });
+});
+
+describe("public flags", () => {
+  it("fills missing keys from defaults", () => {
+    expect(publicFlagItems([])).toEqual(
+      Object.values(FeatureFlagKey).map((key) => ({ key, enabled: FLAG_DEFAULTS[key] })),
+    );
+    expect(publicFlagItems([{ key: FeatureFlagKey.WEB_SEARCH, enabled: false }]).find((item) => item.key === FeatureFlagKey.WEB_SEARCH)).toEqual({
+      key: FeatureFlagKey.WEB_SEARCH,
+      enabled: false,
+    });
   });
 });
 

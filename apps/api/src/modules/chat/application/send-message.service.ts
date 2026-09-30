@@ -9,6 +9,7 @@ import {
   type SendMessageRequest,
 } from "@spring/shared";
 import type { SseSink } from "../../../http/sse";
+import { assertCapabilityFlags } from "../../admin/feature-flags";
 import type { QuotaService } from "../../billing/application/quota.service";
 import type { ActingUser } from "../../auth/acting-user";
 import { chargeGuest, prepareCharge } from "./charge-generation";
@@ -47,13 +48,18 @@ export class SendMessageService {
     if (attachmentIds.length > 0 && conversationMode === "image") {
       throw new AppError(ErrorCode.VALIDATION, IMAGE_MODE_NO_UPLOAD_COPY);
     }
-    if (attachmentIds.length > 0) {
-      const owned = await this.prisma.asset.findMany({
-        where: { id: { in: attachmentIds }, userId: user.id },
-        select: { id: true },
-      });
-      if (owned.length !== attachmentIds.length) throw new AppError(ErrorCode.NOT_FOUND);
-    }
+    const owned =
+      attachmentIds.length > 0
+        ? await this.prisma.asset.findMany({
+            where: { id: { in: attachmentIds }, userId: user.id },
+            select: { id: true, mime: true },
+          })
+        : [];
+    if (owned.length !== attachmentIds.length) throw new AppError(ErrorCode.NOT_FOUND);
+    await assertCapabilityFlags(this.prisma, {
+      mode: conversationMode,
+      mimes: owned.map((row) => row.mime),
+    });
 
     const now = this.generation.now();
     const charge = await prepareCharge(this.prisma, this.quota, user.id, user.planTier, now);

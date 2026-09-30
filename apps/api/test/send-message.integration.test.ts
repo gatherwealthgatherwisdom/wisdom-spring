@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { ProbeHkAvailabilityJob } from "../src/modules/catalog/application/probe-hk-availability.job";
@@ -55,6 +55,7 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.refreshToken.deleteMany();
   await prisma.oAuthAccount.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.featureFlag.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
 }
@@ -174,6 +175,30 @@ describe("POST /v1/messages", () => {
     expect(response.body).toContain("event: done");
     expect(client.last?.plugins).toEqual([{ id: "web", max_results: 5 }]);
     expect(client.last?.messages.some((row) => typeof row.content === "string" && row.content.includes("即時網頁搜尋"))).toBe(true);
+  });
+
+  it("omits the web plugin when web_search is off", async () => {
+    await app.ctx.prisma.featureFlag.upsert({
+      where: { key: FeatureFlagKey.WEB_SEARCH },
+      create: { key: FeatureFlagKey.WEB_SEARCH, enabled: false },
+      update: { enabled: false },
+    });
+    const registered = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `noweb-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = registered.json().accessToken as string;
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "今日香港天氣", clientMessageId: randomUUID(), templateId: "search" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain("event: done");
+    expect(client.last?.plugins).toBeUndefined();
+    await app.ctx.prisma.featureFlag.deleteMany({ where: { key: FeatureFlagKey.WEB_SEARCH } });
   });
 
   it("uses the memo write template without a web plugin", async () => {

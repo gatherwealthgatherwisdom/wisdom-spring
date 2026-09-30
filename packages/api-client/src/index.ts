@@ -1,5 +1,6 @@
 import type {
   AdminUpdateUserRequest,
+  AdminUserRow,
   AnnouncementView,
   CatalogAidesResponse,
   CatalogToolsResponse,
@@ -181,7 +182,7 @@ export class SpringClient {
     return this.request(`/v1/messages/${messageId}/abort`, { method: "POST" });
   }
 
-  adminUsers(q?: string): Promise<PageOf<UserPublic>> {
+  adminUsers(q?: string): Promise<PageOf<AdminUserRow>> {
     return this.request(`/admin/users${queryString(q ? { q } : undefined)}`);
   }
 
@@ -212,8 +213,16 @@ export class SpringClient {
     return this.request("/admin/models/simulate-draw", { method: "POST", body: JSON.stringify(body) });
   }
 
-  adminUsage(): Promise<UsageReport> {
-    return this.request("/admin/usage");
+  adminUsage(month?: string): Promise<UsageReport> {
+    return this.request(`/admin/usage${queryString(month ? { month } : undefined)}`);
+  }
+
+  adminCatalogSync(): Promise<{ upserted: number }> {
+    return this.request("/admin/jobs/catalog-sync", { method: "POST" });
+  }
+
+  adminCatalogProbe(): Promise<{ probed: number }> {
+    return this.request("/admin/jobs/catalog-probe", { method: "POST" });
   }
 
   adminFlags(): Promise<{ items: FeatureFlagView[] }> {
@@ -227,8 +236,8 @@ export class SpringClient {
     });
   }
 
-  adminAudit(): Promise<{ items: AuditLogView[] }> {
-    return this.request("/admin/audit");
+  adminAudit(action?: string): Promise<{ items: AuditLogView[] }> {
+    return this.request(`/admin/audit${queryString(action ? { action } : undefined)}`);
   }
 
   adminAnnouncements(): Promise<PageOf<AnnouncementView>> {
@@ -241,6 +250,10 @@ export class SpringClient {
 
   adminUpdateAnnouncement(id: string, body: UpsertAnnouncementRequest): Promise<AnnouncementView> {
     return this.request(`/admin/announcements/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  }
+
+  adminDeleteAnnouncement(id: string): Promise<{ ok: true }> {
+    return this.request(`/admin/announcements/${id}`, { method: "DELETE" });
   }
 
   private async authPost(path: string, body: unknown): Promise<AuthResponse> {
@@ -336,13 +349,12 @@ function splitSlug(slug: string): [string, string] {
   return [slug.slice(0, index), slug.slice(index + 1)];
 }
 
-function queryString(query?: { q?: string; cursor?: string; mode?: string; limit?: string }): string {
+function queryString(query?: Record<string, string | undefined>): string {
   if (!query) return "";
   const params = new URLSearchParams();
-  if (query.q) params.set("q", query.q);
-  if (query.cursor) params.set("cursor", query.cursor);
-  if (query.mode) params.set("mode", query.mode);
-  if (query.limit) params.set("limit", query.limit);
+  for (const [key, value] of Object.entries(query)) {
+    if (value) params.set(key, value);
+  }
   const text = params.toString();
   return text ? `?${text}` : "";
 }

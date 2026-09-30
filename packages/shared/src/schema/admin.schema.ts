@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PlanTier } from "../enums/plan-tier";
+import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
 import { PaginationQuerySchema } from "./pagination.schema";
 import { UserPublicSchema } from "./auth.schema";
@@ -12,8 +13,33 @@ export const AdminUpdateUserSchema = z
   .object({
     planTier: z.nativeEnum(PlanTier).optional(),
     status: z.enum([UserStatus.ACTIVE, UserStatus.SUSPENDED]).optional(),
+    role: z.nativeEnum(UserRole).optional(),
+    resetGuestUses: z.boolean().optional(),
   })
-  .refine((value) => value.planTier !== undefined || value.status !== undefined, { message: "empty" });
+  .refine(
+    (value) =>
+      value.planTier !== undefined ||
+      value.status !== undefined ||
+      value.role !== undefined ||
+      value.resetGuestUses === true,
+    { message: "empty" },
+  );
+
+export const AdminUserRowSchema = UserPublicSchema.extend({
+  monthRequests: z.number().int(),
+  monthCostUsdMicros: z.string(),
+});
+
+export const AdminUsageQuerySchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+});
+
+export const AdminAuditQuerySchema = z.object({
+  action: z.string().trim().min(1).max(64).optional(),
+});
 
 export const FeatureFlagViewSchema = z.object({
   key: z.string(),

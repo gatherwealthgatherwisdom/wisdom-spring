@@ -23,6 +23,7 @@ export const ModelPoolViewSchema = z.object({
   lastErrorCode: z.string().nullable(),
   contextLength: z.number().int(),
   supportsImageOutput: z.boolean(),
+  supportsVision: z.boolean(),
 });
 
 export const UpdateModelPoolSchema = z

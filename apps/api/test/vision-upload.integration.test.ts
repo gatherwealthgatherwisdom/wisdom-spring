@@ -4,8 +4,10 @@ import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   ErrorCode,
+  FEATURE_OFF_COPY,
   FILE_LATER_COPY,
   FILE_PROMPT,
+  FeatureFlagKey,
   IMAGE_MODE_NO_UPLOAD_COPY,
   IMAGE_TOO_LARGE_COPY,
   LIMITS,
@@ -83,6 +85,7 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.refreshToken.deleteMany();
   await prisma.oAuthAccount.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.featureFlag.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
 }
@@ -385,5 +388,46 @@ describe("photo uploads and vision", () => {
           part.file.file_data.startsWith("data:application/pdf;base64,"),
       ),
     ).toBe(true);
+  });
+
+  it("rejects pdf uploads when pdf_upload is off", async () => {
+    await app.ctx.prisma.featureFlag.upsert({
+      where: { key: FeatureFlagKey.PDF_UPLOAD },
+      create: { key: FeatureFlagKey.PDF_UPLOAD, enabled: false },
+      update: { enabled: false },
+    });
+    const bytes = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { mime: "application/pdf", data: bytes.toString("base64") },
+    });
+    expect(created.statusCode).toBe(400);
+    expect(created.json().error.message).toBe(FEATURE_OFF_COPY);
+    await app.ctx.prisma.featureFlag.deleteMany({ where: { key: FeatureFlagKey.PDF_UPLOAD } });
+  });
+
+  it("hides vision capability when the flag is off", async () => {
+    await app.ctx.prisma.featureFlag.upsert({
+      where: { key: FeatureFlagKey.VISION },
+      create: { key: FeatureFlagKey.VISION, enabled: false },
+      update: { enabled: false },
+    });
+    const caps = await app.inject({
+      method: "GET",
+      url: "/v1/capabilities",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(caps.json().vision).toBe(false);
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { mime: "image/png", data: PIXEL },
+    });
+    expect(created.statusCode).toBe(400);
+    expect(created.json().error.message).toBe(FEATURE_OFF_COPY);
+    await app.ctx.prisma.featureFlag.deleteMany({ where: { key: FeatureFlagKey.VISION } });
   });
 });

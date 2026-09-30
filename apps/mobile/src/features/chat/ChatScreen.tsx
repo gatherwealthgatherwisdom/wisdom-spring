@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, LIMITS, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, LIMITS, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -64,6 +64,9 @@ export function ChatScreen({ navigation, route }: Props) {
     queryFn: () => spring.capabilities(),
     enabled: Boolean(token),
   });
+  const flags = useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
+  const flagOn = (key: FeatureFlagKey, fallback = true) =>
+    flags.data?.items.find((item) => item.key === key)?.enabled ?? fallback;
   const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
 
   const searching = searchOpen && trimmedSearch.length > 0;
@@ -407,6 +410,8 @@ export function ChatScreen({ navigation, route }: Props) {
               setGuestBlocked(false);
               void attach(kind);
             }}
+            voice={flagOn(FeatureFlagKey.VOICE_UI)}
+            allowPdf={flagOn(FeatureFlagKey.PDF_UPLOAD)}
             onMic={() => {
               const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
               if (!heard) setBanner(text.voiceMissing);

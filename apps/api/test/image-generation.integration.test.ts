@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm } from "node:fs/promises";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, createId } from "@spring/shared";
+import { ErrorCode, FEATURE_OFF_COPY, FeatureFlagKey, createId } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { ProbeHkAvailabilityJob } from "../src/modules/catalog/application/probe-hk-availability.job";
@@ -54,6 +54,7 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.refreshToken.deleteMany();
   await prisma.oAuthAccount.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.featureFlag.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
 }
@@ -198,6 +199,29 @@ describe("image generation", () => {
     });
     const messages = chat.json().items as Array<{ role: string; imageUrl: string | null }>;
     expect(messages.some((row) => row.role === "ASSISTANT" && row.imageUrl === "https://cdn.example/spring.png")).toBe(true);
+  });
+
+  it("rejects image mode when image_gen is off", async () => {
+    await app.ctx.prisma.featureFlag.upsert({
+      where: { key: FeatureFlagKey.IMAGE_GEN },
+      create: { key: FeatureFlagKey.IMAGE_GEN, enabled: false },
+      update: { enabled: false },
+    });
+    const caps = await app.inject({
+      method: "GET",
+      url: "/v1/capabilities",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(caps.json().image).toBe(false);
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "一枝松", clientMessageId: randomUUID(), mode: "image" },
+    });
+    expect(sent.statusCode).toBe(400);
+    expect(sent.json().error.message).toBe(FEATURE_OFF_COPY);
+    await app.ctx.prisma.featureFlag.deleteMany({ where: { key: FeatureFlagKey.IMAGE_GEN } });
   });
 
   it("writes b64 images and serves them at /v1/generated/:id", async () => {

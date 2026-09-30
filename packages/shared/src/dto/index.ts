@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type {
   AdminUpdateUserSchema,
   AdminUserQuerySchema,
+  AdminUserRowSchema,
   AnnouncementViewSchema,
   AuditLogViewSchema,
   FeatureFlagViewSchema,
@@ -95,6 +96,7 @@ export type SimulateDrawRequest = z.infer<typeof SimulateDrawRequestSchema>;
 export type SimulateDrawResponse = z.infer<typeof SimulateDrawResponseSchema>;
 export type AdminUpdateUserRequest = z.infer<typeof AdminUpdateUserSchema>;
 export type AdminUserQuery = z.infer<typeof AdminUserQuerySchema>;
+export type AdminUserRow = z.infer<typeof AdminUserRowSchema>;
 export type FeatureFlagView = z.infer<typeof FeatureFlagViewSchema>;
 export type UpdateFeatureFlagRequest = z.infer<typeof UpdateFeatureFlagSchema>;
 export type AnnouncementView = z.infer<typeof AnnouncementViewSchema>;

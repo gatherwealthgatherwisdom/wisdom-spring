@@ -1,6 +1,9 @@
 import type { FastifyInstance } from "fastify";
+import type { PrismaClient } from "@prisma/client";
 import {
+  AdminAuditQuerySchema,
   AdminUpdateUserSchema,
+  AdminUsageQuerySchema,
   AdminUserQuerySchema,
   AppError,
   ErrorCode,
@@ -9,14 +12,19 @@ import {
   UpdateFeatureFlagSchema,
   UpdateModelPoolSchema,
   UpsertAnnouncementSchema,
+  UserRole,
   createId,
   hkMonthRange,
+  hkMonthRangeFromKey,
+  isAllowlisted,
+  isFeatureFlagKey,
   usdPerTokenToMicrosPerMillion,
 } from "@spring/shared";
 import { requireAdmin } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
 import { writeAudit } from "./audit";
+import { mergeFlagViews } from "./feature-flags";
 
 function stringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -29,6 +37,107 @@ function pricingOf(value: unknown): { prompt: string; completion: string } {
   return {
     prompt: usdPerTokenToMicrosPerMillion(typeof record.prompt === "string" ? record.prompt : "0").toString(),
     completion: usdPerTokenToMicrosPerMillion(typeof record.completion === "string" ? record.completion : "0").toString(),
+  };
+}
+
+async function usageReport(
+  prisma: PrismaClient,
+  range: { start: Date; end: Date },
+): Promise<{
+  from: string;
+  to: string;
+  totals: {
+    costUsdMicros: string;
+    promptTokens: number;
+    completionTokens: number;
+    requests: number;
+    regionBlockRate: number;
+    fallbackRate: number;
+  };
+  byModel: Array<{
+    model: string;
+    costUsdMicros: string;
+    promptTokens: number;
+    completionTokens: number;
+    requests: number;
+  }>;
+  byPlan: Array<{
+    planTier: PlanTier;
+    costUsdMicros: string;
+    promptTokens: number;
+    completionTokens: number;
+    requests: number;
+  }>;
+}> {
+  const ledger = await prisma.usageLedger.findMany({
+    where: { occurredAt: { gte: range.start, lt: range.end } },
+  });
+  const users = await prisma.user.findMany({ select: { id: true, planTier: true } });
+  const planOf = new Map(users.map((user) => [user.id, user.planTier]));
+  const byModel = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
+  const byPlan = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
+  let cost = 0n;
+  let prompt = 0;
+  let completion = 0;
+  for (const row of ledger) {
+    cost += row.costUsdMicros;
+    prompt += row.promptTokens;
+    completion += row.completionTokens;
+    const model = byModel.get(row.model) ?? { cost: 0n, prompt: 0, completion: 0, requests: 0 };
+    model.cost += row.costUsdMicros;
+    model.prompt += row.promptTokens;
+    model.completion += row.completionTokens;
+    model.requests += 1;
+    byModel.set(row.model, model);
+    const plan = planOf.get(row.userId) ?? PlanTier.FREE;
+    const bucket = byPlan.get(plan) ?? { cost: 0n, prompt: 0, completion: 0, requests: 0 };
+    bucket.cost += row.costUsdMicros;
+    bucket.prompt += row.promptTokens;
+    bucket.completion += row.completionTokens;
+    bucket.requests += 1;
+    byPlan.set(plan, bucket);
+  }
+  const assistants = await prisma.message.count({
+    where: {
+      role: "ASSISTANT",
+      createdAt: { gte: range.start, lt: range.end },
+      status: { in: ["COMPLETED", "FAILED", "CANCELLED"] },
+    },
+  });
+  const blocked = await prisma.message.count({
+    where: { errorCode: ErrorCode.UPSTREAM_REGION_BLOCKED, createdAt: { gte: range.start, lt: range.end } },
+  });
+  const completed = await prisma.message.count({
+    where: { role: "ASSISTANT", status: "COMPLETED", createdAt: { gte: range.start, lt: range.end } },
+  });
+  const fallbacks = await prisma.message.count({
+    where: { fallbackUsed: true, status: "COMPLETED", createdAt: { gte: range.start, lt: range.end } },
+  });
+  return {
+    from: range.start.toISOString(),
+    to: range.end.toISOString(),
+    totals: {
+      costUsdMicros: cost.toString(),
+      promptTokens: prompt,
+      completionTokens: completion,
+      requests: ledger.length,
+      regionBlockRate: assistants === 0 ? 0 : blocked / assistants,
+      fallbackRate: completed === 0 ? 0 : fallbacks / completed,
+    },
+    byModel: [...byModel.entries()].map(([model, bucket]) => ({
+      model,
+      costUsdMicros: bucket.cost.toString(),
+      promptTokens: bucket.prompt,
+      completionTokens: bucket.completion,
+      requests: bucket.requests,
+    })),
+    byPlan: [...byPlan.entries()].map(([planTier, bucket]) => ({
+      planTier: planTier as PlanTier,
+      costUsdMicros: bucket.cost.toString(),
+      promptTokens: bucket.prompt,
+      completionTokens: bucket.completion,
+      requests: bucket.requests,
+    })),
   };
 }
 
@@ -52,7 +161,29 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       orderBy: { createdAt: "desc" },
       take: query.limit,
     });
-    return { items: rows.map((row) => toPublic(toActingUser(row))), nextCursor: null };
+    const range = hkMonthRange(new Date());
+    const ids = rows.map((row) => row.id);
+    const usage =
+      ids.length === 0
+        ? []
+        : await app.ctx.prisma.usageLedger.groupBy({
+            by: ["userId"],
+            where: { userId: { in: ids }, occurredAt: { gte: range.start, lt: range.end } },
+            _count: { _all: true },
+            _sum: { costUsdMicros: true },
+          });
+    const usageOf = new Map(usage.map((row) => [row.userId, row]));
+    return {
+      items: rows.map((row) => {
+        const bucket = usageOf.get(row.id);
+        return {
+          ...toPublic(toActingUser(row)),
+          monthRequests: bucket?._count._all ?? 0,
+          monthCostUsdMicros: (bucket?._sum.costUsdMicros ?? 0n).toString(),
+        };
+      }),
+      nextCursor: null,
+    };
   });
 
   app.patch("/admin/users/:id", async (request) => {
@@ -61,11 +192,19 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const body = AdminUpdateUserSchema.parse(request.body ?? {});
     const existing = await app.ctx.prisma.user.findUnique({ where: { id } });
     if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
+    if (existing.role === UserRole.ADMIN && body.role === UserRole.USER) {
+      const remaining = await app.ctx.prisma.user.count({
+        where: { role: UserRole.ADMIN, id: { not: id }, status: { not: "DELETED" } },
+      });
+      if (remaining === 0) throw new AppError(ErrorCode.FORBIDDEN, "最後一個管理員唔可以降級。");
+    }
     const updated = await app.ctx.prisma.user.update({
       where: { id },
       data: {
         ...(body.planTier !== undefined ? { planTier: body.planTier } : {}),
         ...(body.status !== undefined ? { status: body.status } : {}),
+        ...(body.role !== undefined ? { role: body.role } : {}),
+        ...(body.resetGuestUses ? { guestUses: 0 } : {}),
       },
     });
     await writeAudit(app.ctx.prisma, actor.id, "user.update", { id, ...body });
@@ -101,6 +240,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           lastErrorCode: pool.lastErrorCode,
           contextLength: catalog?.contextLength ?? 0,
           supportsImageOutput: stringList(catalog?.outputModalities).includes("image"),
+          supportsVision: stringList(catalog?.inputModalities).includes("image"),
         };
       }),
     };
@@ -113,6 +253,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const body = UpdateModelPoolSchema.parse(request.body ?? {});
     const existing = await app.ctx.prisma.modelPoolEntry.findUnique({ where: { slug } });
     if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
+    if (body.enabled === true && !isAllowlisted(slug)) {
+      await writeAudit(app.ctx.prisma, actor.id, "model.enable.denied", { slug });
+      throw new AppError(ErrorCode.FORBIDDEN, "呢個模型唔喺香港可用名單。");
+    }
     await app.ctx.prisma.modelPoolEntry.update({
       where: { slug },
       data: {
@@ -153,83 +297,33 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     };
   });
 
-  app.get("/admin/usage", async () => {
-    const now = new Date();
-    const range = hkMonthRange(now);
-    const ledger = await app.ctx.prisma.usageLedger.findMany({
-      where: { occurredAt: { gte: range.start, lt: range.end } },
-    });
-    const users = await app.ctx.prisma.user.findMany({ select: { id: true, planTier: true } });
-    const planOf = new Map(users.map((user) => [user.id, user.planTier]));
-    const byModel = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
-    const byPlan = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
-    let cost = 0n;
-    let prompt = 0;
-    let completion = 0;
-    for (const row of ledger) {
-      cost += row.costUsdMicros;
-      prompt += row.promptTokens;
-      completion += row.completionTokens;
-      const model = byModel.get(row.model) ?? { cost: 0n, prompt: 0, completion: 0, requests: 0 };
-      model.cost += row.costUsdMicros;
-      model.prompt += row.promptTokens;
-      model.completion += row.completionTokens;
-      model.requests += 1;
-      byModel.set(row.model, model);
-      const plan = planOf.get(row.userId) ?? PlanTier.FREE;
-      const bucket = byPlan.get(plan) ?? { cost: 0n, prompt: 0, completion: 0, requests: 0 };
-      bucket.cost += row.costUsdMicros;
-      bucket.prompt += row.promptTokens;
-      bucket.completion += row.completionTokens;
-      bucket.requests += 1;
-      byPlan.set(plan, bucket);
-    }
-    const assistants = await app.ctx.prisma.message.count({
-      where: {
-        role: "ASSISTANT",
-        createdAt: { gte: range.start, lt: range.end },
-        status: { in: ["COMPLETED", "FAILED", "CANCELLED"] },
-      },
-    });
-    const blocked = await app.ctx.prisma.message.count({
-      where: { errorCode: ErrorCode.UPSTREAM_REGION_BLOCKED, createdAt: { gte: range.start, lt: range.end } },
-    });
-    const completed = await app.ctx.prisma.message.count({
-      where: { role: "ASSISTANT", status: "COMPLETED", createdAt: { gte: range.start, lt: range.end } },
-    });
-    const fallbacks = await app.ctx.prisma.message.count({
-      where: { fallbackUsed: true, status: "COMPLETED", createdAt: { gte: range.start, lt: range.end } },
-    });
-    return {
-      from: range.start.toISOString(),
-      to: range.end.toISOString(),
-      totals: {
-        costUsdMicros: cost.toString(),
-        promptTokens: prompt,
-        completionTokens: completion,
-        requests: ledger.length,
-        regionBlockRate: assistants === 0 ? 0 : blocked / assistants,
-        fallbackRate: completed === 0 ? 0 : fallbacks / completed,
-      },
-      byModel: [...byModel.entries()].map(([model, bucket]) => ({
-        model,
-        costUsdMicros: bucket.cost.toString(),
-        promptTokens: bucket.prompt,
-        completionTokens: bucket.completion,
-        requests: bucket.requests,
-      })),
-      byPlan: [...byPlan.entries()].map(([planTier, bucket]) => ({
-        planTier,
-        costUsdMicros: bucket.cost.toString(),
-        promptTokens: bucket.prompt,
-        completionTokens: bucket.completion,
-        requests: bucket.requests,
-      })),
-    };
+  app.post("/admin/jobs/catalog-sync", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const result = await app.ctx.sync.run();
+    await writeAudit(app.ctx.prisma, actor.id, "catalog.sync", result);
+    return result;
   });
 
-  app.get("/admin/audit", async () => {
-    const rows = await app.ctx.prisma.adminAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 100 });
+  app.post("/admin/jobs/catalog-probe", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const result = await app.ctx.probe.run();
+    await writeAudit(app.ctx.prisma, actor.id, "catalog.probe", result);
+    return result;
+  });
+
+  app.get("/admin/usage", async (request) => {
+    const query = AdminUsageQuerySchema.parse(request.query);
+    const range = query.month ? hkMonthRangeFromKey(query.month) : hkMonthRange(new Date());
+    return usageReport(app.ctx.prisma, range);
+  });
+
+  app.get("/admin/audit", async (request) => {
+    const query = AdminAuditQuerySchema.parse(request.query);
+    const rows = await app.ctx.prisma.adminAuditLog.findMany({
+      where: query.action ? { action: query.action } : {},
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
     return {
       items: rows.map((row) => ({
         id: row.id,
@@ -243,23 +337,21 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/admin/flags", async () => {
     const rows = await app.ctx.prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
-    return {
-      items: rows.map((row) => ({
-        key: row.key,
-        enabled: row.enabled,
-        payload: row.payload,
-        updatedAt: row.updatedAt.toISOString(),
-      })),
-    };
+    return { items: mergeFlagViews(rows) };
   });
 
   app.patch("/admin/flags/:key", async (request) => {
     const actor = await requireAdmin(request, app.ctx.auth);
     const key = (request.params as { key: string }).key;
+    if (!isFeatureFlagKey(key)) throw new AppError(ErrorCode.VALIDATION);
     const body = UpdateFeatureFlagSchema.parse(request.body ?? {});
     const row = await app.ctx.prisma.featureFlag.upsert({
       where: { key },
-      create: { key, enabled: body.enabled, payload: body.payload === undefined ? undefined : (body.payload as object) },
+      create: {
+        key,
+        enabled: body.enabled,
+        payload: body.payload === undefined ? undefined : (body.payload as object),
+      },
       update: { enabled: body.enabled, ...(body.payload !== undefined ? { payload: body.payload as object } : {}) },
     });
     await writeAudit(app.ctx.prisma, actor.id, "flag.update", { key, enabled: body.enabled });
@@ -313,5 +405,15 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       active: row.active,
       createdAt: row.createdAt.toISOString(),
     };
+  });
+
+  app.delete("/admin/announcements/:id", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const { id } = request.params as { id: string };
+    const existing = await app.ctx.prisma.announcement.findUnique({ where: { id } });
+    if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
+    await app.ctx.prisma.announcement.delete({ where: { id } });
+    await writeAudit(app.ctx.prisma, actor.id, "announcement.delete", { id });
+    return { ok: true };
   });
 }

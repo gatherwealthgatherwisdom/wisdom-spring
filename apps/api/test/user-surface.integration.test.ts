@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, FeatureFlagKey, createId, hkMonthRange } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, createId, hkMonthRange, publicFlagItems } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
@@ -83,11 +83,11 @@ describe("home and me live data", () => {
     expect(items[0]?.active).toBe(true);
   });
 
-  it("returns user_model_picker false when the flag row is missing", async () => {
+  it("returns default public flags when the flag rows are missing", async () => {
     await app.ctx.prisma.featureFlag.deleteMany();
     const response = await app.inject({ method: "GET", url: "/v1/flags" });
     expect(response.statusCode).toBe(200);
-    expect(response.json().items).toEqual([{ key: FeatureFlagKey.USER_MODEL_PICKER, enabled: false }]);
+    expect(response.json().items).toEqual(publicFlagItems([]));
   });
 
   it("reads the stored flag without exposing payload", async () => {
@@ -98,7 +98,7 @@ describe("home and me live data", () => {
     });
     const response = await app.inject({ method: "GET", url: "/v1/flags" });
     expect(response.statusCode).toBe(200);
-    expect(response.json().items).toEqual([{ key: FeatureFlagKey.USER_MODEL_PICKER, enabled: true }]);
+    expect(response.json().items).toEqual(publicFlagItems([{ key: FeatureFlagKey.USER_MODEL_PICKER, enabled: true }]));
     expect(JSON.stringify(response.json())).not.toContain("secret");
   });
 
