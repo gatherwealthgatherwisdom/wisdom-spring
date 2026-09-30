@@ -98,16 +98,23 @@ export class SyncOpenRouterCatalogJob {
           syncedAt: new Date(),
         },
       });
+      const allowlisted = isAllowlisted(slug);
       await this.prisma.modelPoolEntry.upsert({
         where: { slug },
         create: {
           slug,
-          enabled: isAllowlisted(slug),
+          enabled: allowlisted,
           regionStatus: "UNKNOWN",
           healthStatus: "DOWN",
         },
-        update: {},
+        update: allowlisted ? {} : { enabled: false },
       });
+      if (allowlisted) {
+        await this.prisma.modelPoolEntry.updateMany({
+          where: { slug, enabled: false, regionStatus: "UNKNOWN" },
+          data: { enabled: true },
+        });
+      }
       upserted += 1;
     }
     return { upserted };

@@ -41,16 +41,25 @@ describe("allowlist", () => {
     expect(isAllowlisted("google/gemini-2.5-flash")).toBe(false);
     expect(isAllowlisted("x-ai/grok-2")).toBe(false);
     expect(isAllowlisted("openai/gpt-oss-20b")).toBe(true);
+    expect(isAllowlisted("openai/gpt-oss-20b:free")).toBe(true);
+    expect(isAllowlisted("openai/gpt-oss-20b:batch")).toBe(false);
     expect(isAllowlisted("google/gemma-2-9b-it")).toBe(true);
     expect(isAllowlisted("google/gemma-2-9b-it:free")).toBe(true);
+    expect(isAllowlisted("google/gemma-3-12b-it")).toBe(true);
     expect(isAllowlisted("deepseek/deepseek-chat")).toBe(true);
     expect(isAllowlisted("qwen/qwen-2.5-72b-instruct")).toBe(true);
     expect(isAllowlisted("qwen/qwen-image-3")).toBe(true);
     expect(isAllowlisted("qwen/qwen-2.5-vl-7b-instruct")).toBe(true);
+    expect(isAllowlisted("qwen/qwen3.7-flash:batch")).toBe(false);
     expect(isAllowlisted("openai/gpt-image-2")).toBe(false);
     expect(isAllowlisted("google/gemini-3.1-flash-image")).toBe(false);
     expect(isAllowlisted("x-ai/grok-imagine-image-quality")).toBe(false);
     expect(isAllowlisted("meta-llama/llama-3.3-70b-instruct:free")).toBe(true);
+    expect(isAllowlisted("inclusionai/ling-3.0-flash")).toBe(true);
+    expect(isAllowlisted("poolside/laguna-s-2.1")).toBe(true);
+    expect(isAllowlisted("thinkingmachines/inkling")).toBe(true);
+    expect(isAllowlisted("thinkingmachines/inkling:free")).toBe(true);
+    expect(isAllowlisted("thinkingmachines/inkling:batch")).toBe(false);
   });
 });
 

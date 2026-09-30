@@ -9,6 +9,7 @@ export function modelAuthor(slug: string): string {
 /** First-insert enablement. Region stays UNKNOWN until a Hong Kong probe passes. */
 export function isAllowlisted(slug: string): boolean {
   const lower = slug.toLowerCase();
+  if (lower.endsWith(":batch")) return false;
   const author = modelAuthor(lower);
   if (author === "anthropic") return false;
   if (author === "openai") return lower.startsWith("openai/gpt-oss");

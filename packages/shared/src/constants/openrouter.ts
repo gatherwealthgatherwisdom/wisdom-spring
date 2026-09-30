@@ -30,4 +30,7 @@ export const ALLOWLIST_AUTHORS = [
   "meta-llama",
   "mistralai",
   "nvidia",
+  "inclusionai",
+  "poolside",
+  "thinkingmachines",
 ] as const;
