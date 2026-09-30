@@ -11,6 +11,7 @@ import {
 } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { seedCatalog } from "../src/modules/catalog/catalog-store";
 import type { OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
 function fakeClient(): OpenRouterClient & { last?: StreamChatInput } {
@@ -321,6 +322,13 @@ describe("admin panel", () => {
     expect(removed.statusCode).toBe(200);
     const listed = await app.inject({ method: "GET", url: "/admin/announcements", headers: auth() });
     expect((listed.json().items as Array<{ id: string }>).some((item) => item.id === id)).toBe(false);
+  });
+
+  it("seeds catalog rows twice without unique errors", async () => {
+    await seedCatalog(app.ctx.prisma);
+    await seedCatalog(app.ctx.prisma);
+    const listed = await app.inject({ method: "GET", url: "/admin/catalog?kind=tool", headers: auth() });
+    expect((listed.json().items as Array<{ id: string }>).some((item) => item.id === "rewrite")).toBe(true);
   });
 
   it("hides an unlisted tool from the public catalog", async () => {

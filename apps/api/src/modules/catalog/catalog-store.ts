@@ -309,20 +309,9 @@ export async function createCatalogEntry(
 }
 
 export async function seedCatalog(prisma: PrismaClient): Promise<void> {
-  for (const [index, item] of SPRING_TOOLS.entries()) {
-    const data = toData(toolFromConstant(item, index));
-    await prisma.catalogEntry.upsert({
-      where: { kind_id: { kind: data.kind, id: data.id } },
-      create: data,
-      update: {},
-    });
-  }
-  for (const [index, item] of SPRING_AIDES.entries()) {
-    const data = toData(aideFromConstant(item, index));
-    await prisma.catalogEntry.upsert({
-      where: { kind_id: { kind: data.kind, id: data.id } },
-      create: data,
-      update: {},
-    });
-  }
+  const data = [
+    ...SPRING_TOOLS.map((item, index) => toData(toolFromConstant(item, index))),
+    ...SPRING_AIDES.map((item, index) => toData(aideFromConstant(item, index))),
+  ];
+  await prisma.catalogEntry.createMany({ data, skipDuplicates: true });
 }
