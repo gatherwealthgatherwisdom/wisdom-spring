@@ -1,5 +1,14 @@
 import type { QuotaPolicy } from "@spring/domain";
-import { AppError, ErrorCode, hkDayKey, hkMonthRange, limitsFor, type PlanTier, type QuotaSnapshot } from "@spring/shared";
+import {
+  AppError,
+  ErrorCode,
+  hkDayKey,
+  hkMonthRange,
+  limitsFor,
+  type PlanLimits,
+  type PlanTier,
+  type QuotaSnapshot,
+} from "@spring/shared";
 
 export interface DailyQuotaCounter {
   get(userId: string, day: string): Promise<number>;
@@ -36,19 +45,20 @@ export class QuotaService implements QuotaPolicy {
   constructor(
     private readonly daily: DailyQuotaCounter,
     private readonly monthlySpend: (userId: string, now: Date) => Promise<bigint>,
+    private readonly planLimits: (plan: PlanTier) => Promise<PlanLimits> = async (plan) => limitsFor(plan),
   ) {}
 
   async assertCanSend(input: { userId: string; planTier: PlanTier; now: Date }): Promise<void> {
     await this.assertMonthly(input.userId, input.planTier, input.now);
     const used = await this.daily.get(input.userId, hkDayKey(input.now));
-    if (used >= limitsFor(input.planTier).dailyMessages) {
+    if (used >= (await this.planLimits(input.planTier)).dailyMessages) {
       throw new AppError(ErrorCode.QUOTA_DAILY_MESSAGE);
     }
   }
 
   async consumeDaily(userId: string, planTier: PlanTier, now: Date): Promise<void> {
     const used = await this.daily.increment(userId, hkDayKey(now));
-    if (used > limitsFor(planTier).dailyMessages) {
+    if (used > (await this.planLimits(planTier)).dailyMessages) {
       await this.daily.decrement(userId, hkDayKey(now));
       throw new AppError(ErrorCode.QUOTA_DAILY_MESSAGE);
     }
@@ -59,7 +69,7 @@ export class QuotaService implements QuotaPolicy {
   }
 
   async snapshot(userId: string, planTier: PlanTier, now: Date): Promise<QuotaSnapshot> {
-    const limits = limitsFor(planTier);
+    const limits = await this.planLimits(planTier);
     const spent = await this.monthlySpend(userId, now);
     return {
       dailyUsed: await this.daily.get(userId, hkDayKey(now)),
@@ -71,7 +81,7 @@ export class QuotaService implements QuotaPolicy {
 
   private async assertMonthly(userId: string, planTier: PlanTier, now: Date): Promise<void> {
     const spent = await this.monthlySpend(userId, now);
-    if (spent >= limitsFor(planTier).monthlyUsdMicros) {
+    if (spent >= (await this.planLimits(planTier)).monthlyUsdMicros) {
       throw new AppError(ErrorCode.QUOTA_MONTHLY_COST);
     }
   }

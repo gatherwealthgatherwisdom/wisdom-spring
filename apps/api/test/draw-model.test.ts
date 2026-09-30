@@ -7,6 +7,7 @@ import {
   ModelRegionStatus,
   PlanTier,
   isAllowlisted,
+  type PlanLimits,
 } from "@spring/shared";
 import { describe, expect, it } from "vitest";
 import { drawModel } from "../src/modules/catalog/application/draw-model";
@@ -170,5 +171,32 @@ describe("drawModel", () => {
     expect(seen.has("qwen/expensive")).toBe(false);
     expect(seen.has("qwen/plus-only")).toBe(false);
     expect(seen.has("deepseek/cheap") || seen.has("meta-llama/free")).toBe(true);
+  });
+
+  it("uses overlay caps so a cheap slug drops while :free stays", () => {
+    const rows = [
+      row({ slug: "qwen/mid" }),
+      row({
+        slug: "qwen/mid:free",
+        promptUsdMicrosPerMillion: 9_000_000n,
+        completionUsdMicrosPerMillion: 9_000_000n,
+      }),
+    ];
+    const tight: PlanLimits = {
+      dailyMessages: 20,
+      monthlyUsdMicros: 500_000n,
+      maxPromptUsdMicrosPerMillion: 1n,
+      maxCompletionUsdMicrosPerMillion: 1n,
+    };
+    const pick = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero, tight);
+    expect(pick.primary).toBe("qwen/mid:free");
+    expect(() =>
+      drawModel(
+        [row({ slug: "qwen/mid" })],
+        { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] },
+        zero,
+        tight,
+      ),
+    ).toThrow(AppError);
   });
 });

@@ -1,8 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, FeatureFlagKey, createId, hkMonthRange, publicFlagItems } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, LIMITS, createId, hkMonthRange, publicFlagItems } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits } from "../src/modules/admin/app-limits";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
 
 function unusedClient(): OpenRouterClient {
@@ -39,6 +40,8 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.catalogEntry.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
+  invalidateAppLimits();
 }
 
 async function register(app: Awaited<ReturnType<typeof buildApp>>, email: string): Promise<string> {
@@ -82,6 +85,17 @@ describe("home and me live data", () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.bodyZh).toBe("維修今晚");
     expect(items[0]?.active).toBe(true);
+  });
+
+  it("returns public guest and upload limits without monthly caps", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/limits" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      guestTrialMessages: LIMITS.guestTrialMessages,
+      uploadMaxBytes: LIMITS.uploadMaxBytes,
+    });
+    expect(JSON.stringify(response.json())).not.toContain("monthly");
+    expect(JSON.stringify(response.json())).not.toContain("Prompt");
   });
 
   it("returns default public flags when the flag rows are missing", async () => {

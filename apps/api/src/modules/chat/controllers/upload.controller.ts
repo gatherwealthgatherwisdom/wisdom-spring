@@ -7,7 +7,6 @@ import {
   FeatureFlagKey,
   IMAGE_FORMAT_COPY,
   IMAGE_TOO_LARGE_COPY,
-  LIMITS,
   UploadRequestSchema,
   createId,
   isImageMime,
@@ -16,6 +15,7 @@ import {
 } from "@spring/shared";
 import { requireUser } from "../../../http/auth-guard";
 import { env } from "../../../env";
+import { loadAppLimits } from "../../admin/app-limits";
 import { isFlagEnabled } from "../../admin/feature-flags";
 import { mimeFromMagic, persistUpload, readUpload, removeUpload } from "../infra/upload.store";
 
@@ -24,7 +24,7 @@ function uploadLimit(): {
   config: { rateLimit: { max: number; timeWindow: string; keyGenerator: (request: FastifyRequest) => string } };
 } {
   return {
-    bodyLimit: 6_291_456,
+    bodyLimit: 50 * 1024 * 1024,
     config: {
       rateLimit: {
         max: env.nodeEnv === "test" ? 10_000 : 30,
@@ -42,7 +42,8 @@ export async function uploadRoutes(app: FastifyInstance): Promise<void> {
     if (!isUploadMime(body.mime)) throw new AppError(ErrorCode.VALIDATION, FILE_LATER_COPY);
     const bytes = Buffer.from(body.data.replace(/\s/g, ""), "base64");
     if (bytes.length === 0) throw new AppError(ErrorCode.VALIDATION, IMAGE_FORMAT_COPY);
-    if (bytes.length > LIMITS.uploadMaxBytes) throw new AppError(ErrorCode.VALIDATION, IMAGE_TOO_LARGE_COPY);
+    const { uploadMaxBytes } = await loadAppLimits(app.ctx.prisma);
+    if (bytes.length > uploadMaxBytes) throw new AppError(ErrorCode.VALIDATION, IMAGE_TOO_LARGE_COPY);
     const mime = mimeFromMagic(bytes, body.mime);
     if (!mime) throw new AppError(ErrorCode.VALIDATION, IMAGE_FORMAT_COPY);
     if (isPdfMime(mime) && !(await isFlagEnabled(app.ctx.prisma, FeatureFlagKey.PDF_UPLOAD))) {

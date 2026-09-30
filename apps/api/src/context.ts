@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { EstimatedContextWindow } from "@spring/domain";
-import { FLAG_DEFAULTS, FeatureFlagKey, hkMonthRange } from "@spring/shared";
+import { FLAG_DEFAULTS, FeatureFlagKey, hkMonthRange, limitsFor, type PlanTier } from "@spring/shared";
+import { loadAppLimits, seedAppSettings } from "./modules/admin/app-limits";
 import { seedCatalog } from "./modules/catalog/catalog-store";
 import type { Redis } from "ioredis";
 import { env } from "./env";
@@ -53,15 +54,20 @@ export async function createContext(options?: {
   await redis.connect();
   const openrouter = options?.openrouter ?? new FetchOpenRouterClient(env.openRouterApiKey);
   const reader = new PrismaModelPoolReader(prisma);
-  const picker = new WeightedModelPicker(reader);
-  const quota = new QuotaService(new RedisDailyCounter(redis), async (userId, now) => {
-    const range = hkMonthRange(now);
-    const aggregate = await prisma.usageLedger.aggregate({
-      where: { userId, occurredAt: { gte: range.start, lt: range.end } },
-      _sum: { costUsdMicros: true },
-    });
-    return aggregate._sum.costUsdMicros ?? 0n;
-  });
+  const planLimits = async (plan: PlanTier) => limitsFor(plan, await loadAppLimits(prisma));
+  const picker = new WeightedModelPicker(reader, Math.random, planLimits);
+  const quota = new QuotaService(
+    new RedisDailyCounter(redis),
+    async (userId, now) => {
+      const range = hkMonthRange(now);
+      const aggregate = await prisma.usageLedger.aggregate({
+        where: { userId, occurredAt: { gte: range.start, lt: range.end } },
+        _sum: { costUsdMicros: true },
+      });
+      return aggregate._sum.costUsdMicros ?? 0n;
+    },
+    planLimits,
+  );
   const aborts = new AbortRegistry(redis);
   const title = new GenerateTitleService(prisma, openrouter);
   const titles = options?.titles ?? {
@@ -115,6 +121,7 @@ export async function bootstrap(prisma: PrismaClient): Promise<void> {
     });
   }
   await seedCatalog(prisma);
+  await seedAppSettings(prisma);
 }
 
 declare module "fastify" {

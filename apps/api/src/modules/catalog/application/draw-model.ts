@@ -8,9 +8,10 @@ import {
   ModelRegionStatus,
   limitsFor,
   planRank,
+  type PlanLimits,
 } from "@spring/shared";
 
-export function isEligible(row: PickerCandidate, input: PickInput): boolean {
+export function isEligible(row: PickerCandidate, input: PickInput, limits?: PlanLimits): boolean {
   if (!row.enabled) return false;
   if (row.regionStatus !== ModelRegionStatus.HK_SAFE) return false;
   if (row.healthStatus !== ModelHealthStatus.HEALTHY && row.healthStatus !== ModelHealthStatus.DEGRADED) {
@@ -21,12 +22,12 @@ export function isEligible(row: PickerCandidate, input: PickInput): boolean {
   if (input.requireImageOutput && !row.supportsImageOutput) return false;
   if (input.capability === ModelCapability.TEXT && !input.requireImageOutput && !row.supportsText) return false;
 
-  const limits = limitsFor(input.planTier);
-  if (limits.maxPromptUsdMicrosPerMillion !== null && limits.maxCompletionUsdMicrosPerMillion !== null) {
+  const planLimits = limits ?? limitsFor(input.planTier);
+  if (planLimits.maxPromptUsdMicrosPerMillion !== null && planLimits.maxCompletionUsdMicrosPerMillion !== null) {
     const free = row.isFreeRoute || row.slug.endsWith(":free");
     const cheap =
-      row.promptUsdMicrosPerMillion <= limits.maxPromptUsdMicrosPerMillion &&
-      row.completionUsdMicrosPerMillion <= limits.maxCompletionUsdMicrosPerMillion;
+      row.promptUsdMicrosPerMillion <= planLimits.maxPromptUsdMicrosPerMillion &&
+      row.completionUsdMicrosPerMillion <= planLimits.maxCompletionUsdMicrosPerMillion;
     if (!free && !cheap) return false;
   }
   return true;
@@ -93,8 +94,9 @@ export function drawModel(
   rows: PickerCandidate[],
   input: PickInput,
   rng: () => number = Math.random,
+  limits?: PlanLimits,
 ): ModelPick {
-  const eligible = rows.filter((row) => isEligible(row, input));
+  const eligible = rows.filter((row) => isEligible(row, input, limits));
   let pool = eligible.filter((row) => !input.excludeSlugs.includes(row.slug));
   if (pool.length === 0) pool = eligible;
   if (

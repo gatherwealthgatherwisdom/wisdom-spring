@@ -1,5 +1,6 @@
 import type {
   AdminCatalogItem,
+  AdminLimits,
   AdminUpdateUserRequest,
   AdminUserRow,
   AnnouncementView,
@@ -22,6 +23,7 @@ import type {
   MeUsage,
   PhoneCodeRequest,
   PublicFlagsResponse,
+  PublicLimits,
   PhoneRegisterRequest,
   PhoneVerifyRequest,
   MessageView,
@@ -39,6 +41,7 @@ import type {
   UpdateCatalogEntryRequest,
   UpdateConversationRequest,
   UpdateFeatureFlagRequest,
+  UpdateLimitsRequest,
   UpdateMeRequest,
   UpdateModelPoolRequest,
   UpsertAnnouncementRequest,
@@ -127,6 +130,10 @@ export class SpringClient {
 
   flags(): Promise<PublicFlagsResponse> {
     return this.request("/v1/flags");
+  }
+
+  limits(): Promise<PublicLimits> {
+    return this.request("/v1/limits");
   }
 
   announcements(): Promise<PageOf<AnnouncementView>> {
@@ -253,6 +260,14 @@ export class SpringClient {
       method: "PATCH",
       body: JSON.stringify(body),
     });
+  }
+
+  adminLimits(): Promise<AdminLimits> {
+    return this.request("/admin/limits");
+  }
+
+  adminUpdateLimits(body: UpdateLimitsRequest): Promise<AdminLimits> {
+    return this.request("/admin/limits", { method: "PATCH", body: JSON.stringify(body) });
   }
 
   adminAudit(action?: string): Promise<{ items: AuditLogView[] }> {

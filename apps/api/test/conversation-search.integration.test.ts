@@ -11,6 +11,7 @@ import {
 } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits } from "../src/modules/admin/app-limits";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
 
 function unusedClient(): OpenRouterClient {
@@ -46,6 +47,8 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.user.deleteMany();
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
+  invalidateAppLimits();
 }
 
 async function register(app: Awaited<ReturnType<typeof buildApp>>, email: string): Promise<{ token: string; userId: string }> {

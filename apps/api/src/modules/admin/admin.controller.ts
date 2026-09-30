@@ -14,6 +14,7 @@ import {
   SimulateDrawRequestSchema,
   UpdateCatalogEntrySchema,
   UpdateFeatureFlagSchema,
+  UpdateLimitsSchema,
   UpdateModelPoolSchema,
   UpsertAnnouncementSchema,
   UserRole,
@@ -22,12 +23,14 @@ import {
   hkMonthRangeFromKey,
   isAllowlisted,
   isFeatureFlagKey,
+  limitsFor,
   usdPerTokenToMicrosPerMillion,
 } from "@spring/shared";
 import { requireAdmin } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
 import { createCatalogEntry, listCatalog, patchCatalogEntry } from "../catalog/catalog-store";
+import { loadAppLimits, patchAppLimits } from "./app-limits";
 import { writeAudit } from "./audit";
 import { mergeFlagViews } from "./feature-flags";
 
@@ -178,11 +181,12 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
             _sum: { costUsdMicros: true },
           });
     const usageOf = new Map(usage.map((row) => [row.userId, row]));
+    const guestLimit = (await loadAppLimits(app.ctx.prisma)).guestTrialMessages;
     return {
       items: rows.map((row) => {
         const bucket = usageOf.get(row.id);
         return {
-          ...toPublic(toActingUser(row)),
+          ...toPublic(toActingUser(row), guestLimit),
           monthRequests: bucket?._count._all ?? 0,
           monthCostUsdMicros: (bucket?._sum.costUsdMicros ?? 0n).toString(),
         };
@@ -213,7 +217,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       },
     });
     await writeAudit(app.ctx.prisma, actor.id, "user.update", { id, ...body });
-    return toPublic(toActingUser(updated));
+    return toPublic(toActingUser(updated), (await loadAppLimits(app.ctx.prisma)).guestTrialMessages);
   });
 
   app.get("/admin/models", async () => {
@@ -289,9 +293,15 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.post("/admin/models/simulate-draw", async (request) => {
     const body = SimulateDrawRequestSchema.parse(request.body ?? {});
     const rows = await app.ctx.reader.listPickerCandidates();
+    const limits = limitsFor(body.planTier, await loadAppLimits(app.ctx.prisma));
     const counts = new Map<string, number>();
     for (let index = 0; index < body.draws; index += 1) {
-      const pick = drawModel(rows, { planTier: body.planTier, capability: body.capability, excludeSlugs: [] });
+      const pick = drawModel(
+        rows,
+        { planTier: body.planTier, capability: body.capability, excludeSlugs: [] },
+        Math.random,
+        limits,
+      );
       counts.set(pick.primary, (counts.get(pick.primary) ?? 0) + 1);
     }
     return {
@@ -343,6 +353,16 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.get("/admin/flags", async () => {
     const rows = await app.ctx.prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
     return { items: mergeFlagViews(rows) };
+  });
+
+  app.get("/admin/limits", async () => loadAppLimits(app.ctx.prisma));
+
+  app.patch("/admin/limits", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const body = UpdateLimitsSchema.parse(request.body ?? {});
+    const settings = await patchAppLimits(app.ctx.prisma, body);
+    await writeAudit(app.ctx.prisma, actor.id, "limits.update", body);
+    return settings;
   });
 
   app.patch("/admin/flags/:key", async (request) => {

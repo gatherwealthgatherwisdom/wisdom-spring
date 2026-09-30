@@ -18,6 +18,7 @@ import {
   usdToMicros,
   type PlanTier,
 } from "@spring/shared";
+import { loadAppLimits } from "../../admin/app-limits";
 import { assertCapabilityFlags } from "../../admin/feature-flags";
 import { catalogImageHint, catalogInstruction, isWebToolLive } from "../../catalog/catalog-store";
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
@@ -121,7 +122,8 @@ export async function runGeneration(
     catalogImageHint(deps.prisma, modeFields.imageStyle),
   ]);
   const emptyPrompt = hasPdf && !hasVision ? FILE_PROMPT : LOOK_PROMPT;
-  const turns = history.slice(-LIMITS.historyMaxMessages).map((row) => {
+  const { historyMaxMessages } = await loadAppLimits(deps.prisma);
+  const turns = history.slice(-historyMaxMessages).map((row) => {
     const attached = assetIdsOf(row.attachments).length > 0;
     const text =
       row.role === "USER" && row.content.trim().length === 0 && attached ? emptyPrompt : row.content;

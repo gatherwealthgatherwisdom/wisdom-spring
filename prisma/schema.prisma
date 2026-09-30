@@ -236,6 +236,12 @@ model FeatureFlag {
   updatedAt DateTime @updatedAt
 }
 
+model AppSetting {
+  key       String   @id @db.VarChar(64)
+  value     String   @db.VarChar(32)
+  updatedAt DateTime @updatedAt
+}
+
 model AdminAuditLog {
   id        String   @id
   actorId   String

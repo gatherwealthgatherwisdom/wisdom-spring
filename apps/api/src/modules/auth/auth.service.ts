@@ -13,6 +13,7 @@ import {
   type RegisterRequest,
 } from "@spring/shared";
 import type { AppEnv } from "../../env";
+import { loadAppLimits } from "../admin/app-limits";
 import { toActingUser, toPublic, type ActingUser } from "./acting-user";
 
 const ACCESS_SECONDS = 15 * 60;
@@ -141,7 +142,7 @@ export class AuthService {
       accessToken,
       refreshToken,
       expiresIn: ACCESS_SECONDS,
-      user: toPublic(toActingUser(user)),
+      user: toPublic(toActingUser(user), (await loadAppLimits(this.prisma)).guestTrialMessages),
     };
   }
 }

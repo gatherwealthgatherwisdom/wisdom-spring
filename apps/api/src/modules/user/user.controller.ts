@@ -1,15 +1,24 @@
 import type { FastifyInstance } from "fastify";
-import { FeatureFlagKey, ModelCapability, UpdateMeRequestSchema, hkMonthRange, publicFlagItems } from "@spring/shared";
+import {
+  FeatureFlagKey,
+  ModelCapability,
+  UpdateMeRequestSchema,
+  hkMonthRange,
+  limitsFor,
+  publicFlagItems,
+} from "@spring/shared";
 import { isEligible } from "../catalog/application/draw-model";
 import { requireUser } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
+import { loadAppLimits, publicLimitsOf } from "../admin/app-limits";
 import { isFlagEnabled } from "../admin/feature-flags";
 
 export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/me", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
+    const settings = await loadAppLimits(app.ctx.prisma);
     const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date());
-    return { user: toPublic(user), quota };
+    return { user: toPublic(user, settings.guestTrialMessages), quota };
   });
 
   app.patch("/v1/me", async (request) => {
@@ -23,8 +32,9 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       },
     });
     const acting = toActingUser(updated);
+    const settings = await loadAppLimits(app.ctx.prisma);
     const quota = await app.ctx.quota.snapshot(acting.id, acting.planTier, new Date());
-    return { user: toPublic(acting), quota };
+    return { user: toPublic(acting, settings.guestTrialMessages), quota };
   });
 
   app.delete("/v1/me", async (request) => {
@@ -45,6 +55,8 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/capabilities", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
     const rows = await app.ctx.reader.listPickerCandidates();
+    const settings = await loadAppLimits(app.ctx.prisma);
+    const planLimits = limitsFor(user.planTier, settings);
     const [imageOn, visionOn] = await Promise.all([
       isFlagEnabled(app.ctx.prisma, FeatureFlagKey.IMAGE_GEN),
       isFlagEnabled(app.ctx.prisma, FeatureFlagKey.VISION),
@@ -52,21 +64,29 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     const image =
       imageOn &&
       rows.some((row) =>
-        isEligible(row, {
-          planTier: user.planTier,
-          capability: ModelCapability.TEXT,
-          excludeSlugs: [],
-          requireImageOutput: true,
-        }),
+        isEligible(
+          row,
+          {
+            planTier: user.planTier,
+            capability: ModelCapability.TEXT,
+            excludeSlugs: [],
+            requireImageOutput: true,
+          },
+          planLimits,
+        ),
       );
     const vision =
       visionOn &&
       rows.some((row) =>
-        isEligible(row, {
-          planTier: user.planTier,
-          capability: ModelCapability.VISION,
-          excludeSlugs: [],
-        }),
+        isEligible(
+          row,
+          {
+            planTier: user.planTier,
+            capability: ModelCapability.VISION,
+            excludeSlugs: [],
+          },
+          planLimits,
+        ),
       );
     return { image, vision };
   });
@@ -93,6 +113,8 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     const rows = await app.ctx.prisma.featureFlag.findMany({ orderBy: { key: "asc" } });
     return { items: publicFlagItems(rows) };
   });
+
+  app.get("/v1/limits", async () => publicLimitsOf(await loadAppLimits(app.ctx.prisma)));
 
   app.get("/v1/announcements", async () => {
     const rows = await app.ctx.prisma.announcement.findMany({

@@ -120,6 +120,11 @@ export const PublicFlagsResponseSchema = z.object({
   items: z.array(PublicFlagSchema),
 });
 
+export const PublicLimitsSchema = z.object({
+  guestTrialMessages: z.number().int(),
+  uploadMaxBytes: z.number().int(),
+});
+
 export const AuthResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),

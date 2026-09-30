@@ -2,6 +2,17 @@ import { IMAGE_TOO_LARGE_COPY, LIMITS } from "@spring/shared";
 import * as DocumentPicker from "expo-document-picker";
 import { EncodingType, readAsStringAsync } from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
+import { spring } from "./api";
+
+async function uploadMaxBytes(): Promise<number> {
+  try {
+    const limits = await spring.limits();
+    if (limits.uploadMaxBytes > 0) return limits.uploadMaxBytes;
+  } catch {
+    // keep LIMITS
+  }
+  return LIMITS.uploadMaxBytes;
+}
 
 export type AttachKind = "camera" | "library";
 
@@ -29,6 +40,10 @@ export async function pickPhoto(
     asset.mimeType === "image/png" || asset.mimeType === "image/webp" || asset.mimeType === "image/jpeg"
       ? asset.mimeType
       : "image/jpeg";
+  const max = await uploadMaxBytes();
+  if (Math.floor(asset.base64.replace(/\s/g, "").length * 0.75) > max) {
+    throw new Error(IMAGE_TOO_LARGE_COPY);
+  }
   return { mime, data: asset.base64 };
 }
 
@@ -42,7 +57,8 @@ export async function pickPdf(): Promise<{ mime: "application/pdf"; data: string
   if (result.canceled) return null;
   const asset = result.assets[0];
   if (!asset) return null;
-  if (asset.size != null && asset.size > LIMITS.uploadMaxBytes) {
+  const max = await uploadMaxBytes();
+  if (asset.size != null && asset.size > max) {
     throw new Error(IMAGE_TOO_LARGE_COPY);
   }
   const name = asset.name && asset.name.toLowerCase().endsWith(".pdf") ? asset.name : "document.pdf";
@@ -58,7 +74,7 @@ export async function pickPdf(): Promise<{ mime: "application/pdf"; data: string
     data = await readAsStringAsync(asset.uri, { encoding: EncodingType.Base64 });
   }
   if (!data) return null;
-  if (Math.floor(data.length * 0.75) > LIMITS.uploadMaxBytes) {
+  if (Math.floor(data.length * 0.75) > max) {
     throw new Error(IMAGE_TOO_LARGE_COPY);
   }
   return { mime: "application/pdf", data, name };

@@ -4,6 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   ErrorCode,
   FeatureFlagKey,
+  IMAGE_TOO_LARGE_COPY,
+  LIMITS,
   UserRole,
   createId,
   hkMonthRangeFromKey,
@@ -11,6 +13,7 @@ import {
 } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits, seedAppSettings } from "../src/modules/admin/app-limits";
 import { seedCatalog } from "../src/modules/catalog/catalog-store";
 import type { GenerateImageInput, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
@@ -77,9 +80,11 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.user.deleteMany();
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
+  invalidateAppLimits();
 }
 
 describe("admin panel", () => {
@@ -561,5 +566,223 @@ describe("admin panel", () => {
       headers: auth(),
       payload: { live: true },
     });
+  });
+
+  it("seeds app settings twice without unique errors", async () => {
+    await seedAppSettings(app.ctx.prisma);
+    await seedAppSettings(app.ctx.prisma);
+    const listed = await app.inject({ method: "GET", url: "/admin/limits", headers: auth() });
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().guestTrialMessages).toBe(LIMITS.guestTrialMessages);
+    expect(listed.json().freeDailyMessages).toBe(LIMITS.freeDailyMessages);
+    expect(listed.json().uploadMaxBytes).toBe(LIMITS.uploadMaxBytes);
+  });
+
+  it("lets admin lower FREE daily messages and blocks the next turn", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { freeDailyMessages: 1 },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().freeDailyMessages).toBe(1);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `quota-daily-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = member.json().accessToken as string;
+    const me = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+    expect(me.json().quota.dailyLimit).toBe(1);
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "一", clientMessageId: randomUUID() },
+    });
+    expect(first.statusCode).toBe(200);
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "二", clientMessageId: randomUUID() },
+    });
+    expect(second.statusCode).toBe(429);
+    expect(second.json().error.code).toBe(ErrorCode.QUOTA_DAILY_MESSAGE);
+    const audit = await app.inject({ method: "GET", url: "/admin/audit?action=limits.update", headers: auth() });
+    expect((audit.json().items as Array<{ action: string }>).some((item) => item.action === "limits.update")).toBe(true);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { freeDailyMessages: 20 },
+    });
+  });
+
+  it("lets admin lower guest trial uses and blocks the next unregistered turn", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { guestTrialMessages: 1 },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `quota-guest-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = member.json().accessToken as string;
+    const userId = member.json().user.id as string;
+    await app.ctx.prisma.user.update({ where: { id: userId }, data: { registeredAt: null } });
+    const me = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+    expect(me.json().user.guestLimit).toBe(1);
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "試用一", clientMessageId: randomUUID() },
+    });
+    expect(first.statusCode).toBe(200);
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "試用二", clientMessageId: randomUUID() },
+    });
+    expect(second.statusCode).toBe(429);
+    expect(second.json().error.code).toBe(ErrorCode.QUOTA_GUEST);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { guestTrialMessages: 5 },
+    });
+  });
+
+  it("rejects uploads above the admin byte cap", async () => {
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { uploadMaxBytes: 64 * 1024 },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `quota-upload-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const huge = Buffer.alloc(64 * 1024 + 1, 0xff);
+    huge[0] = 0xff;
+    huge[1] = 0xd8;
+    huge[2] = 0xff;
+    const oversize = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+      payload: { mime: "image/jpeg", data: huge.toString("base64") },
+    });
+    expect(oversize.statusCode).toBe(400);
+    expect(oversize.json().error.message).toBe(IMAGE_TOO_LARGE_COPY);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { uploadMaxBytes: LIMITS.uploadMaxBytes },
+    });
+  });
+
+  it("drops expensive FREE slugs when caps are lowered and keeps :free", async () => {
+    await ensureTextPool();
+    await app.ctx.prisma.modelCatalog.create({
+      data: {
+        slug: "qwen/cap-mid",
+        name: "Cap Mid",
+        author: "qwen",
+        contextLength: 8_192,
+        inputModalities: ["text"],
+        outputModalities: ["text"],
+        pricing: { prompt: "0.0000001", completion: "0.0000001" },
+        isFreeRoute: false,
+        raw: {},
+        syncedAt: new Date(),
+      },
+    });
+    await app.ctx.prisma.modelPoolEntry.create({
+      data: {
+        slug: "qwen/cap-mid",
+        enabled: true,
+        regionStatus: "HK_SAFE",
+        healthStatus: "HEALTHY",
+        weight: 100,
+        qualityScore: 80,
+        minPlanTier: "FREE",
+      },
+    });
+    await app.ctx.prisma.modelCatalog.create({
+      data: {
+        slug: "qwen/cap-mid:free",
+        name: "Cap Mid Free",
+        author: "qwen",
+        contextLength: 8_192,
+        inputModalities: ["text"],
+        outputModalities: ["text"],
+        pricing: { prompt: "0.000009", completion: "0.000009" },
+        isFreeRoute: false,
+        raw: {},
+        syncedAt: new Date(),
+      },
+    });
+    await app.ctx.prisma.modelPoolEntry.create({
+      data: {
+        slug: "qwen/cap-mid:free",
+        enabled: true,
+        regionStatus: "HK_SAFE",
+        healthStatus: "HEALTHY",
+        weight: 100,
+        qualityScore: 80,
+        minPlanTier: "FREE",
+      },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { freeMaxPromptUsdMicrosPerMillion: 1, freeMaxCompletionUsdMicrosPerMillion: 1 },
+    });
+    const drawn = await app.inject({
+      method: "POST",
+      url: "/admin/models/simulate-draw",
+      headers: auth(),
+      payload: { planTier: "FREE", draws: 30, capability: "TEXT" },
+    });
+    expect(drawn.statusCode).toBe(200);
+    const slugs = (drawn.json().histogram as Array<{ slug: string }>).map((item) => item.slug);
+    expect(slugs).toContain("qwen/cap-mid:free");
+    expect(slugs).not.toContain("qwen/cap-mid");
+    expect(slugs).not.toContain("deepseek/deepseek-chat");
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: {
+        freeMaxPromptUsdMicrosPerMillion: LIMITS.freeMaxPromptUsdMicrosPerMillion,
+        freeMaxCompletionUsdMicrosPerMillion: LIMITS.freeMaxCompletionUsdMicrosPerMillion,
+      },
+    });
+  });
+
+  it("rejects out-of-range limit patches", async () => {
+    const denied = await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { guestTrialMessages: 101 },
+    });
+    expect(denied.statusCode).toBe(400);
   });
 });

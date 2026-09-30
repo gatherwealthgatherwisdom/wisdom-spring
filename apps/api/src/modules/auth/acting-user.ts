@@ -43,7 +43,7 @@ export function toActingUser(user: User): ActingUser {
   };
 }
 
-export function toPublic(user: ActingUser): UserPublic {
+export function toPublic(user: ActingUser, guestLimit: number = LIMITS.guestTrialMessages): UserPublic {
   return {
     id: user.id,
     email: user.email,
@@ -55,6 +55,6 @@ export function toPublic(user: ActingUser): UserPublic {
     status: user.status,
     registered: user.registeredAt != null,
     guestUses: user.guestUses,
-    guestLimit: LIMITS.guestTrialMessages,
+    guestLimit,
   };
 }

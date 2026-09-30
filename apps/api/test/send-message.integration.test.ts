@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ErrorCode, FeatureFlagKey } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits } from "../src/modules/admin/app-limits";
 import { ProbeHkAvailabilityJob } from "../src/modules/catalog/application/probe-hk-availability.job";
 import type { OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 import { UpstreamError } from "../src/modules/catalog/infra/openrouter-stream.parser";
@@ -57,8 +58,10 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.user.deleteMany();
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
+  invalidateAppLimits();
 }
 
 describe("POST /v1/messages", () => {

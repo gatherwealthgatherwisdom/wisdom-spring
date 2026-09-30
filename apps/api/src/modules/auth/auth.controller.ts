@@ -11,6 +11,7 @@ import {
 } from "@spring/shared";
 import { env } from "../../env";
 import { optionalUser, requireUser } from "../../http/auth-guard";
+import { loadAppLimits } from "../admin/app-limits";
 import { toActingUser, toPublic } from "./acting-user";
 
 function limit(max: number, timeWindow: string) {
@@ -74,7 +75,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const actor = await requireUser(request, app.ctx.auth);
     const body = PhoneRegisterRequestSchema.parse(request.body ?? {});
     const updated = await app.ctx.phone.complete(actor.id, body.displayName);
-    const user = toPublic(toActingUser(updated));
+    const user = toPublic(toActingUser(updated), (await loadAppLimits(app.ctx.prisma)).guestTrialMessages);
     const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date());
     return { user, quota };
   });

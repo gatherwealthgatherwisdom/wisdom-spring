@@ -5,6 +5,7 @@ import { AuditPage } from "./pages/AuditPage";
 import { FlagsPage } from "./pages/FlagsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ModelsPage } from "./pages/ModelsPage";
+import { QuotasPage } from "./pages/QuotasPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { UsagePage } from "./pages/UsagePage";
@@ -36,6 +37,7 @@ export function App() {
         <NavLink to="/users">用戶</NavLink>
         <NavLink to="/usage">用量</NavLink>
         <NavLink to="/flags">旗標</NavLink>
+        <NavLink to="/quotas">配額</NavLink>
         <NavLink to="/tools">工具</NavLink>
         <NavLink to="/templates">模板</NavLink>
         <NavLink to="/announcements">公告</NavLink>
@@ -57,6 +59,7 @@ export function App() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/flags" element={<FlagsPage />} />
+          <Route path="/quotas" element={<QuotasPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />

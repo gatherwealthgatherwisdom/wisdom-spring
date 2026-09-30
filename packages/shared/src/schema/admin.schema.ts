@@ -55,6 +55,50 @@ export const UpdateFeatureFlagSchema = z.object({
   payload: z.unknown().optional(),
 });
 
+export const AdminLimitsSchema = z.object({
+  guestTrialMessages: z.number().int(),
+  freeDailyMessages: z.number().int(),
+  plusDailyMessages: z.number().int(),
+  internalDailyMessages: z.number().int(),
+  freeMonthlyUsdMicros: z.number().int(),
+  plusMonthlyUsdMicros: z.number().int(),
+  internalMonthlyUsdMicros: z.number().int(),
+  freeMaxPromptUsdMicrosPerMillion: z.number().int(),
+  freeMaxCompletionUsdMicrosPerMillion: z.number().int(),
+  uploadMaxBytes: z.number().int(),
+  historyMaxMessages: z.number().int(),
+});
+
+export const UpdateLimitsSchema = z
+  .object({
+    guestTrialMessages: z.number().int().min(0).max(100).optional(),
+    freeDailyMessages: z.number().int().min(1).max(100_000).optional(),
+    plusDailyMessages: z.number().int().min(1).max(100_000).optional(),
+    internalDailyMessages: z.number().int().min(1).max(100_000).optional(),
+    freeMonthlyUsdMicros: z.number().int().min(1).optional(),
+    plusMonthlyUsdMicros: z.number().int().min(1).optional(),
+    internalMonthlyUsdMicros: z.number().int().min(1).optional(),
+    freeMaxPromptUsdMicrosPerMillion: z.number().int().min(1).optional(),
+    freeMaxCompletionUsdMicrosPerMillion: z.number().int().min(1).optional(),
+    uploadMaxBytes: z.number().int().min(64 * 1024).max(32 * 1024 * 1024).optional(),
+    historyMaxMessages: z.number().int().min(1).max(200).optional(),
+  })
+  .refine(
+    (value) =>
+      value.guestTrialMessages !== undefined ||
+      value.freeDailyMessages !== undefined ||
+      value.plusDailyMessages !== undefined ||
+      value.internalDailyMessages !== undefined ||
+      value.freeMonthlyUsdMicros !== undefined ||
+      value.plusMonthlyUsdMicros !== undefined ||
+      value.internalMonthlyUsdMicros !== undefined ||
+      value.freeMaxPromptUsdMicrosPerMillion !== undefined ||
+      value.freeMaxCompletionUsdMicrosPerMillion !== undefined ||
+      value.uploadMaxBytes !== undefined ||
+      value.historyMaxMessages !== undefined,
+    { message: "empty" },
+  );
+
 export const AnnouncementViewSchema = z.object({
   id: z.string().ulid(),
   bodyZh: z.string(),

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { AppError, ErrorCode, LIMITS, type PlanTier } from "@spring/shared";
+import { AppError, ErrorCode, type PlanTier } from "@spring/shared";
+import { loadAppLimits } from "../../admin/app-limits";
 import type { QuotaService } from "../../billing/application/quota.service";
 
 export async function prepareCharge(
@@ -12,7 +13,8 @@ export async function prepareCharge(
   const account = await prisma.user.findUnique({ where: { id: userId } });
   if (!account || account.status !== "ACTIVE") throw new AppError(ErrorCode.AUTH_INVALID);
   if (account.registeredAt == null) {
-    if (account.guestUses >= LIMITS.guestTrialMessages) throw new AppError(ErrorCode.QUOTA_GUEST);
+    const { guestTrialMessages } = await loadAppLimits(prisma);
+    if (account.guestUses >= guestTrialMessages) throw new AppError(ErrorCode.QUOTA_GUEST);
     return "guest";
   }
   await quota.assertCanSend({ userId, planTier, now });
@@ -21,8 +23,9 @@ export async function prepareCharge(
 }
 
 export async function chargeGuest(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+  const { guestTrialMessages } = await loadAppLimits(tx);
   const updated = await tx.user.updateMany({
-    where: { id: userId, registeredAt: null, guestUses: { lt: LIMITS.guestTrialMessages } },
+    where: { id: userId, registeredAt: null, guestUses: { lt: guestTrialMessages } },
     data: { guestUses: { increment: 1 } },
   });
   if (updated.count === 1) return;

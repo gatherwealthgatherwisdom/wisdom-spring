@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
+import { APP_SETTING_DEFAULTS, limitsFor } from "../src/constants/limits";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
+import { PlanTier } from "../src/enums/plan-tier";
+import { UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
@@ -85,6 +88,27 @@ describe("Hong Kong calendar", () => {
 
   it("rejects a bad month key", () => {
     expect(() => hkMonthRangeFromKey("2026-13")).toThrow("month");
+  });
+});
+
+describe("plan limits overlay", () => {
+  it("keeps PLUS and INTERNAL price caps null when settings change", () => {
+    expect(limitsFor(PlanTier.FREE).dailyMessages).toBe(20);
+    expect(limitsFor(PlanTier.FREE, { ...APP_SETTING_DEFAULTS, freeDailyMessages: 1 }).dailyMessages).toBe(1);
+    const plus = limitsFor(PlanTier.PLUS, { ...APP_SETTING_DEFAULTS, plusDailyMessages: 3, plusMonthlyUsdMicros: 2 });
+    expect(plus.dailyMessages).toBe(3);
+    expect(plus.monthlyUsdMicros).toBe(2n);
+    expect(plus.maxPromptUsdMicrosPerMillion).toBeNull();
+    expect(plus.maxCompletionUsdMicrosPerMillion).toBeNull();
+    expect(limitsFor(PlanTier.INTERNAL).maxPromptUsdMicrosPerMillion).toBeNull();
+  });
+
+  it("rejects empty and out-of-range admin limit patches", () => {
+    expect(UpdateLimitsSchema.safeParse({}).success).toBe(false);
+    expect(UpdateLimitsSchema.safeParse({ guestTrialMessages: 101 }).success).toBe(false);
+    expect(UpdateLimitsSchema.safeParse({ freeDailyMessages: 0 }).success).toBe(false);
+    expect(UpdateLimitsSchema.safeParse({ uploadMaxBytes: 1024 }).success).toBe(false);
+    expect(UpdateLimitsSchema.safeParse({ freeDailyMessages: 1 }).success).toBe(true);
   });
 });
 

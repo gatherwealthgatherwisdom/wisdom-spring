@@ -15,6 +15,7 @@ import {
 } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits } from "../src/modules/admin/app-limits";
 import { env } from "../src/env";
 import type { ChatMessage, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
@@ -87,8 +88,10 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.user.deleteMany();
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
+  invalidateAppLimits();
 }
 
 async function seedText(prisma: PrismaClient): Promise<void> {

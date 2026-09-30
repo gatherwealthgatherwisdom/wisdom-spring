@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ErrorCode, LIMITS } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
+import { invalidateAppLimits } from "../src/modules/admin/app-limits";
 import type { SmsSender } from "../src/modules/auth/sms-sender";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
 
@@ -59,8 +60,10 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.user.deleteMany();
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
+  await prisma.appSetting.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
+  invalidateAppLimits();
 }
 
 describe("phone login", () => {

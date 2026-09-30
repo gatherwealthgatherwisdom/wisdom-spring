@@ -8,9 +8,11 @@ import type {
   AnnouncementViewSchema,
   AuditLogViewSchema,
   CreateCatalogEntrySchema,
+  AdminLimitsSchema,
   FeatureFlagViewSchema,
   UpdateCatalogEntrySchema,
   UpdateFeatureFlagSchema,
+  UpdateLimitsSchema,
   UpsertAnnouncementSchema,
   UsageReportSchema,
 } from "../schema/admin.schema";
@@ -26,6 +28,7 @@ import type {
   PhoneVerifyRequestSchema,
   PublicFlagsResponseSchema,
   PublicFlagSchema,
+  PublicLimitsSchema,
   QuotaSnapshotSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
@@ -86,6 +89,7 @@ export type MeResponse = z.infer<typeof MeResponseSchema>;
 export type MeUsage = z.infer<typeof MeUsageSchema>;
 export type PublicFlag = z.infer<typeof PublicFlagSchema>;
 export type PublicFlagsResponse = z.infer<typeof PublicFlagsResponseSchema>;
+export type PublicLimits = z.infer<typeof PublicLimitsSchema>;
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 export type CreateConversationRequest = z.infer<typeof CreateConversationSchema>;
@@ -109,6 +113,8 @@ export type AdminUserQuery = z.infer<typeof AdminUserQuerySchema>;
 export type AdminUserRow = z.infer<typeof AdminUserRowSchema>;
 export type FeatureFlagView = z.infer<typeof FeatureFlagViewSchema>;
 export type UpdateFeatureFlagRequest = z.infer<typeof UpdateFeatureFlagSchema>;
+export type AdminLimits = z.infer<typeof AdminLimitsSchema>;
+export type UpdateLimitsRequest = z.infer<typeof UpdateLimitsSchema>;
 export type AnnouncementView = z.infer<typeof AnnouncementViewSchema>;
 export type UpsertAnnouncementRequest = z.infer<typeof UpsertAnnouncementSchema>;
 export type AuditLogView = z.infer<typeof AuditLogViewSchema>;
