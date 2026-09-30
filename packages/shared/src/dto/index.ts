@@ -2,7 +2,11 @@ import type { z } from "zod";
 import type {
   AdminCatalogItemSchema,
   AdminCatalogQuerySchema,
+  AdminConversationDetailSchema,
+  AdminConversationViewSchema,
+  AdminMessageViewSchema,
   AdminUpdateUserSchema,
+  AdminUserDetailSchema,
   AdminUserQuerySchema,
   AdminUserRowSchema,
   AnnouncementViewSchema,
@@ -117,6 +121,10 @@ export type SimulateDrawResponse = z.infer<typeof SimulateDrawResponseSchema>;
 export type AdminUpdateUserRequest = z.infer<typeof AdminUpdateUserSchema>;
 export type AdminUserQuery = z.infer<typeof AdminUserQuerySchema>;
 export type AdminUserRow = z.infer<typeof AdminUserRowSchema>;
+export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>;
+export type AdminConversationView = z.infer<typeof AdminConversationViewSchema>;
+export type AdminMessageView = z.infer<typeof AdminMessageViewSchema>;
+export type AdminConversationDetail = z.infer<typeof AdminConversationDetailSchema>;
 export type FeatureFlagView = z.infer<typeof FeatureFlagViewSchema>;
 export type UpdateFeatureFlagRequest = z.infer<typeof UpdateFeatureFlagSchema>;
 export type AdminLimits = z.infer<typeof AdminLimitsSchema>;

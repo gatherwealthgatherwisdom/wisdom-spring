@@ -48,17 +48,22 @@ export class QuotaService implements QuotaPolicy {
     private readonly planLimits: (plan: PlanTier) => Promise<PlanLimits> = async (plan) => limitsFor(plan),
   ) {}
 
-  async assertCanSend(input: { userId: string; planTier: PlanTier; now: Date }): Promise<void> {
+  async assertCanSend(input: {
+    userId: string;
+    planTier: PlanTier;
+    now: Date;
+    bonusDailyMessages?: number;
+  }): Promise<void> {
     await this.assertMonthly(input.userId, input.planTier, input.now);
     const used = await this.daily.get(input.userId, hkDayKey(input.now));
-    if (used >= (await this.planLimits(input.planTier)).dailyMessages) {
+    if (used >= (await this.dailyLimit(input.planTier, input.bonusDailyMessages))) {
       throw new AppError(ErrorCode.QUOTA_DAILY_MESSAGE);
     }
   }
 
-  async consumeDaily(userId: string, planTier: PlanTier, now: Date): Promise<void> {
+  async consumeDaily(userId: string, planTier: PlanTier, now: Date, bonusDailyMessages = 0): Promise<void> {
     const used = await this.daily.increment(userId, hkDayKey(now));
-    if (used > (await this.planLimits(planTier)).dailyMessages) {
+    if (used > (await this.dailyLimit(planTier, bonusDailyMessages))) {
       await this.daily.decrement(userId, hkDayKey(now));
       throw new AppError(ErrorCode.QUOTA_DAILY_MESSAGE);
     }
@@ -68,15 +73,19 @@ export class QuotaService implements QuotaPolicy {
     await this.daily.decrement(userId, hkDayKey(now));
   }
 
-  async snapshot(userId: string, planTier: PlanTier, now: Date): Promise<QuotaSnapshot> {
+  async snapshot(userId: string, planTier: PlanTier, now: Date, bonusDailyMessages = 0): Promise<QuotaSnapshot> {
     const limits = await this.planLimits(planTier);
     const spent = await this.monthlySpend(userId, now);
     return {
       dailyUsed: await this.daily.get(userId, hkDayKey(now)),
-      dailyLimit: limits.dailyMessages,
+      dailyLimit: await this.dailyLimit(planTier, bonusDailyMessages),
       monthlyUsdMicros: spent.toString(),
       monthlyLimitUsdMicros: limits.monthlyUsdMicros.toString(),
     };
+  }
+
+  private async dailyLimit(planTier: PlanTier, bonusDailyMessages = 0): Promise<number> {
+    return (await this.planLimits(planTier)).dailyMessages + Math.max(0, bonusDailyMessages);
   }
 
   private async assertMonthly(userId: string, planTier: PlanTier, now: Date): Promise<void> {

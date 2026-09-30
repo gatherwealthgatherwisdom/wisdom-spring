@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { client } from "../session";
 
 function dollars(micros: string): string {
@@ -60,6 +61,27 @@ export function UsagePage() {
                 {data.byModel.map((row) => (
                   <tr key={row.model}>
                     <td>{row.model}</td>
+                    <td>{dollars(row.costUsdMicros)}</td>
+                    <td>{row.requests}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <h2>按用戶</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>用戶</th>
+                  <th>USD</th>
+                  <th>requests</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.byUser.map((row) => (
+                  <tr key={row.userId}>
+                    <td>
+                      <Link to={`/users/${row.userId}`}>{row.email ?? row.phone ?? row.displayName ?? row.userId}</Link>
+                    </td>
                     <td>{dollars(row.costUsdMicros)}</td>
                     <td>{row.requests}</td>
                   </tr>

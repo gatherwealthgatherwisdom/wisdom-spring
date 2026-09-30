@@ -75,8 +75,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const actor = await requireUser(request, app.ctx.auth);
     const body = PhoneRegisterRequestSchema.parse(request.body ?? {});
     const updated = await app.ctx.phone.complete(actor.id, body.displayName);
-    const user = toPublic(toActingUser(updated), (await loadAppLimits(app.ctx.prisma)).guestTrialMessages);
-    const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date());
+    const acting = toActingUser(updated);
+    const user = toPublic(acting, (await loadAppLimits(app.ctx.prisma)).guestTrialMessages);
+    const quota = await app.ctx.quota.snapshot(acting.id, acting.planTier, new Date(), acting.bonusDailyMessages);
     return { user, quota };
   });
 }

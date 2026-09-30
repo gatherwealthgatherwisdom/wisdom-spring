@@ -18,7 +18,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/me", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
     const settings = await loadAppLimits(app.ctx.prisma);
-    const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date());
+    const quota = await app.ctx.quota.snapshot(user.id, user.planTier, new Date(), user.bonusDailyMessages);
     return { user: toPublic(user, settings.guestTrialMessages), quota };
   });
 
@@ -34,7 +34,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     });
     const acting = toActingUser(updated);
     const settings = await loadAppLimits(app.ctx.prisma);
-    const quota = await app.ctx.quota.snapshot(acting.id, acting.planTier, new Date());
+    const quota = await app.ctx.quota.snapshot(acting.id, acting.planTier, new Date(), acting.bonusDailyMessages);
     return { user: toPublic(acting, settings.guestTrialMessages), quota };
   });
 

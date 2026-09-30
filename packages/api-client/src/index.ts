@@ -1,8 +1,11 @@
 import type {
   AdminCatalogItem,
+  AdminConversationDetail,
+  AdminConversationView,
   AdminCopy,
   AdminLimits,
   AdminUpdateUserRequest,
+  AdminUserDetail,
   AdminUserRow,
   AnnouncementView,
   CreateCatalogEntryRequest,
@@ -222,6 +225,18 @@ export class SpringClient {
 
   adminUsers(q?: string): Promise<PageOf<AdminUserRow>> {
     return this.request(`/admin/users${queryString(q ? { q } : undefined)}`);
+  }
+
+  adminUser(id: string): Promise<AdminUserDetail> {
+    return this.request(`/admin/users/${encodeURIComponent(id)}`);
+  }
+
+  adminUserConversations(id: string, cursor?: string): Promise<PageOf<AdminConversationView>> {
+    return this.request(`/admin/users/${encodeURIComponent(id)}/conversations${queryString(cursor ? { cursor } : undefined)}`);
+  }
+
+  adminConversation(id: string): Promise<AdminConversationDetail> {
+    return this.request(`/admin/conversations/${encodeURIComponent(id)}`);
   }
 
   adminUpdateUser(id: string, body: AdminUpdateUserRequest): Promise<UserPublic> {

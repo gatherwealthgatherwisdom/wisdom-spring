@@ -4,9 +4,10 @@ import { DISCOVER_ART_IDS, DISCOVER_SECTIONS, DISCOVER_TONE_RE } from "../consta
 import { PlanTier } from "../enums/plan-tier";
 import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
-import { ConversationModeSchema } from "./conversation.schema";
+import { ConversationModeSchema, ConversationViewSchema } from "./conversation.schema";
+import { MessageViewSchema } from "./message.schema";
 import { PaginationQuerySchema } from "./pagination.schema";
-import { UserPublicSchema } from "./auth.schema";
+import { QuotaSnapshotSchema, UserPublicSchema } from "./auth.schema";
 
 export const AdminUserQuerySchema = PaginationQuerySchema.extend({
   q: z.string().max(200).optional(),
@@ -18,19 +19,49 @@ export const AdminUpdateUserSchema = z
     status: z.enum([UserStatus.ACTIVE, UserStatus.SUSPENDED]).optional(),
     role: z.nativeEnum(UserRole).optional(),
     resetGuestUses: z.boolean().optional(),
+    bonusDailyMessages: z.number().int().min(0).max(10_000).optional(),
   })
   .refine(
     (value) =>
       value.planTier !== undefined ||
       value.status !== undefined ||
       value.role !== undefined ||
-      value.resetGuestUses === true,
+      value.resetGuestUses === true ||
+      value.bonusDailyMessages !== undefined,
     { message: "empty" },
   );
 
 export const AdminUserRowSchema = UserPublicSchema.extend({
   monthRequests: z.number().int(),
   monthCostUsdMicros: z.string(),
+});
+
+export const AdminUserDetailSchema = z.object({
+  user: UserPublicSchema.extend({ bonusDailyMessages: z.number().int() }),
+  quota: QuotaSnapshotSchema,
+  monthUsage: z.object({
+    requests: z.number().int(),
+    costUsdMicros: z.string(),
+    promptTokens: z.number().int(),
+    completionTokens: z.number().int(),
+  }),
+  thumbs: z.object({
+    up: z.number().int(),
+    down: z.number().int(),
+  }),
+});
+
+export const AdminConversationViewSchema = ConversationViewSchema.extend({
+  userId: z.string(),
+});
+
+export const AdminMessageViewSchema = MessageViewSchema.extend({
+  costUsdMicros: z.string(),
+});
+
+export const AdminConversationDetailSchema = z.object({
+  conversation: AdminConversationViewSchema,
+  messages: z.array(AdminMessageViewSchema),
 });
 
 export const AdminUsageQuerySchema = z.object({
@@ -175,6 +206,16 @@ export const UsageReportSchema = z.object({
       promptTokens: z.number().int(),
       completionTokens: z.number().int(),
       requests: z.number().int(),
+    }),
+  ),
+  byUser: z.array(
+    z.object({
+      userId: z.string(),
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+      displayName: z.string().nullable(),
+      requests: z.number().int(),
+      costUsdMicros: z.string(),
     }),
   ),
 });

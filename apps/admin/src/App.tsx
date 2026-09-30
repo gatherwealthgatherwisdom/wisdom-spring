@@ -10,6 +10,7 @@ import { QuotasPage } from "./pages/QuotasPage";
 import { DiscoverPage } from "./pages/DiscoverPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { ToolsPage } from "./pages/ToolsPage";
+import { UserDetailPage, UserThreadPage } from "./pages/UserDetailPage";
 import { UsagePage } from "./pages/UsagePage";
 import { UsersPage } from "./pages/UsersPage";
 import { clearSession, client, getSession, subscribeSession } from "./session";
@@ -61,6 +62,8 @@ export function App() {
           <Route path="/" element={<Navigate to="/models" replace />} />
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/users/:id" element={<UserDetailPage />} />
+          <Route path="/users/:id/c/:conversationId" element={<UserThreadPage />} />
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/flags" element={<FlagsPage />} />
           <Route path="/quotas" element={<QuotasPage />} />

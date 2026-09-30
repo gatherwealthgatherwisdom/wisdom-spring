@@ -17,8 +17,8 @@ export async function prepareCharge(
     if (account.guestUses >= guestTrialMessages) throw new AppError(ErrorCode.QUOTA_GUEST);
     return "guest";
   }
-  await quota.assertCanSend({ userId, planTier, now });
-  await quota.consumeDaily(userId, planTier, now);
+  await quota.assertCanSend({ userId, planTier, now, bonusDailyMessages: account.bonusDailyMessages });
+  await quota.consumeDaily(userId, planTier, now, account.bonusDailyMessages);
   return "plan";
 }
 

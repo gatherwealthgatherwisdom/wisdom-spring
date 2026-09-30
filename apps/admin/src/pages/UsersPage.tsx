@@ -2,6 +2,7 @@ import { ApiError } from "@spring/api-client";
 import { PlanTier, UserRole, UserStatus, microsToUsd, type AdminUpdateUserRequest, type AdminUserRow } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { client } from "../session";
 
 export function UsersPage() {
@@ -37,6 +38,7 @@ export function UsersPage() {
               <th>計劃</th>
               <th>狀態</th>
               <th></th>
+              <th>詳情</th>
             </tr>
           </thead>
           <tbody>
@@ -99,6 +101,9 @@ function UserRow({
             暫停
           </button>
         )}
+      </td>
+      <td>
+        <Link to={`/users/${user.id}`}>詳情</Link>
       </td>
     </tr>
   );

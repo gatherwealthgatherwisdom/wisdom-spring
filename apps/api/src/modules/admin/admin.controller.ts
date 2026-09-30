@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import type { PrismaClient } from "@prisma/client";
+import type { Conversation, PrismaClient } from "@prisma/client";
 import {
   AdminAuditQuerySchema,
   AdminCatalogQuerySchema,
@@ -8,8 +8,10 @@ import {
   AdminUserQuerySchema,
   AppError,
   CatalogKindSchema,
+  ConversationStatus,
   CreateCatalogEntrySchema,
   ErrorCode,
+  PaginationQuerySchema,
   PlanTier,
   SimulateDrawRequestSchema,
   UpdateCatalogEntrySchema,
@@ -20,6 +22,8 @@ import {
   UpsertAnnouncementSchema,
   UserRole,
   createId,
+  decodeCursor,
+  encodeCursor,
   hkMonthRange,
   hkMonthRangeFromKey,
   isAllowlisted,
@@ -31,6 +35,7 @@ import { requireAdmin } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
 import { createCatalogEntry, listCatalog, patchCatalogEntry } from "../catalog/catalog-store";
+import { messageViews } from "../chat/application/message-view";
 import { loadAppLimits, patchAppLimits } from "./app-limits";
 import { writeAudit } from "./audit";
 import { adminCopyOf, loadPromptDocs, patchPromptDocs } from "./prompt-docs";
@@ -78,14 +83,26 @@ async function usageReport(
     completionTokens: number;
     requests: number;
   }>;
+  byUser: Array<{
+    userId: string;
+    email: string | null;
+    phone: string | null;
+    displayName: string | null;
+    requests: number;
+    costUsdMicros: string;
+  }>;
 }> {
   const ledger = await prisma.usageLedger.findMany({
     where: { occurredAt: { gte: range.start, lt: range.end } },
   });
-  const users = await prisma.user.findMany({ select: { id: true, planTier: true } });
+  const users = await prisma.user.findMany({
+    select: { id: true, planTier: true, email: true, phone: true, displayName: true },
+  });
   const planOf = new Map(users.map((user) => [user.id, user.planTier]));
+  const profileOf = new Map(users.map((user) => [user.id, user]));
   const byModel = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
   const byPlan = new Map<string, { cost: bigint; prompt: number; completion: number; requests: number }>();
+  const byUser = new Map<string, { cost: bigint; requests: number }>();
   let cost = 0n;
   let prompt = 0;
   let completion = 0;
@@ -106,6 +123,10 @@ async function usageReport(
     bucket.completion += row.completionTokens;
     bucket.requests += 1;
     byPlan.set(plan, bucket);
+    const person = byUser.get(row.userId) ?? { cost: 0n, requests: 0 };
+    person.cost += row.costUsdMicros;
+    person.requests += 1;
+    byUser.set(row.userId, person);
   }
   const assistants = await prisma.message.count({
     where: {
@@ -148,6 +169,38 @@ async function usageReport(
       completionTokens: bucket.completion,
       requests: bucket.requests,
     })),
+    byUser: [...byUser.entries()]
+      .sort((left, right) => (right[1].cost > left[1].cost ? 1 : right[1].cost < left[1].cost ? -1 : 0))
+      .slice(0, 50)
+      .map(([userId, bucket]) => {
+        const profile = profileOf.get(userId);
+        return {
+          userId,
+          email: profile?.email ?? null,
+          phone: profile?.phone ?? null,
+          displayName: profile?.displayName ?? null,
+          requests: bucket.requests,
+          costUsdMicros: bucket.cost.toString(),
+        };
+      }),
+  };
+}
+
+function adminConversationView(row: Conversation) {
+  return {
+    id: row.id,
+    userId: row.userId,
+    title: row.title,
+    status: row.status,
+    mode: row.mode,
+    templateId: row.templateId,
+    sourceLang: row.sourceLang,
+    targetLang: row.targetLang,
+    imageStyle: row.imageStyle,
+    lastImageUrl: row.lastImageUrl,
+    pinnedAt: row.pinnedAt?.toISOString() ?? null,
+    lastMessageAt: row.lastMessageAt.toISOString(),
+    createdAt: row.createdAt.toISOString(),
   };
 }
 
@@ -216,10 +269,96 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
         ...(body.status !== undefined ? { status: body.status } : {}),
         ...(body.role !== undefined ? { role: body.role } : {}),
         ...(body.resetGuestUses ? { guestUses: 0 } : {}),
+        ...(body.bonusDailyMessages !== undefined ? { bonusDailyMessages: body.bonusDailyMessages } : {}),
       },
     });
     await writeAudit(app.ctx.prisma, actor.id, "user.update", { id, ...body });
     return toPublic(toActingUser(updated), (await loadAppLimits(app.ctx.prisma)).guestTrialMessages);
+  });
+
+  app.get("/admin/users/:id", async (request) => {
+    const { id } = request.params as { id: string };
+    const row = await app.ctx.prisma.user.findUnique({ where: { id } });
+    if (!row) throw new AppError(ErrorCode.NOT_FOUND);
+    const guestLimit = (await loadAppLimits(app.ctx.prisma)).guestTrialMessages;
+    const acting = toActingUser(row);
+    const range = hkMonthRange(new Date());
+    const [quota, month, thumbs] = await Promise.all([
+      app.ctx.quota.snapshot(row.id, acting.planTier, new Date(), row.bonusDailyMessages),
+      app.ctx.prisma.usageLedger.aggregate({
+        where: { userId: id, occurredAt: { gte: range.start, lt: range.end } },
+        _count: { _all: true },
+        _sum: { costUsdMicros: true, promptTokens: true, completionTokens: true },
+      }),
+      app.ctx.prisma.message.groupBy({
+        by: ["feedback"],
+        where: { conversation: { userId: id }, feedback: { in: ["up", "down"] } },
+        _count: { _all: true },
+      }),
+    ]);
+    const thumbOf = new Map(thumbs.map((item) => [item.feedback, item._count._all]));
+    return {
+      user: { ...toPublic(acting, guestLimit), bonusDailyMessages: row.bonusDailyMessages },
+      quota,
+      monthUsage: {
+        requests: month._count._all,
+        costUsdMicros: (month._sum.costUsdMicros ?? 0n).toString(),
+        promptTokens: month._sum.promptTokens ?? 0,
+        completionTokens: month._sum.completionTokens ?? 0,
+      },
+      thumbs: { up: thumbOf.get("up") ?? 0, down: thumbOf.get("down") ?? 0 },
+    };
+  });
+
+  app.get("/admin/users/:id/conversations", async (request) => {
+    const { id } = request.params as { id: string };
+    const existing = await app.ctx.prisma.user.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
+    const query = PaginationQuerySchema.parse(request.query ?? {});
+    const cursor = query.cursor ? decodeCursor(query.cursor) : null;
+    const cursorClause =
+      cursor?.lastMessageAt && cursor.id
+        ? {
+            OR: [
+              { lastMessageAt: { lt: new Date(cursor.lastMessageAt) } },
+              { lastMessageAt: new Date(cursor.lastMessageAt), id: { lt: cursor.id } },
+            ],
+          }
+        : {};
+    const rows = await app.ctx.prisma.conversation.findMany({
+      where: { userId: id, status: { not: ConversationStatus.DELETED }, ...cursorClause },
+      orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
+      take: query.limit + 1,
+    });
+    const page = rows.slice(0, query.limit);
+    const last = page[page.length - 1];
+    return {
+      items: page.map(adminConversationView),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeCursor({ lastMessageAt: last.lastMessageAt.toISOString(), id: last.id })
+          : null,
+    };
+  });
+
+  app.get("/admin/conversations/:id", async (request) => {
+    const { id } = request.params as { id: string };
+    const conversation = await app.ctx.prisma.conversation.findFirst({
+      where: { id, status: { not: ConversationStatus.DELETED } },
+    });
+    if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
+    const rows = await app.ctx.prisma.message.findMany({
+      where: { conversationId: id },
+      orderBy: { createdAt: "asc" },
+    });
+    const views = await messageViews(app.ctx.prisma, rows);
+    return {
+      conversation: adminConversationView(conversation),
+      messages: views.map((view, index) => ({
+        ...view,
+        costUsdMicros: (rows[index]?.costUsdMicros ?? 0n).toString(),
+      })),
+    };
   });
 
   app.get("/admin/models", async () => {

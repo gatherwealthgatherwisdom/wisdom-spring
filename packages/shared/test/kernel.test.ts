@@ -8,7 +8,7 @@ import { SYSTEM_PROMPT } from "../src/constants/openrouter";
 import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
-import { CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
+import { AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
@@ -284,6 +284,14 @@ describe("tool catalog", () => {
     expect(UpdateCatalogEntrySchema.safeParse({ section: "banner" }).success).toBe(false);
     expect(UpdateCatalogEntrySchema.safeParse({ tone: "pine" }).success).toBe(false);
     expect(UpdateCatalogEntrySchema.safeParse({ section: "hero" }).success).toBe(true);
+  });
+
+  it("accepts a per-user bonus daily quota patch", () => {
+    expect(AdminUpdateUserSchema.safeParse({ bonusDailyMessages: 1 }).success).toBe(true);
+    expect(AdminUpdateUserSchema.safeParse({ bonusDailyMessages: 0 }).success).toBe(true);
+    expect(AdminUpdateUserSchema.safeParse({ bonusDailyMessages: -1 }).success).toBe(false);
+    expect(AdminUpdateUserSchema.safeParse({ bonusDailyMessages: 10_001 }).success).toBe(false);
+    expect(AdminUpdateUserSchema.safeParse({}).success).toBe(false);
   });
 
   it("accepts pdf uploads separately from images", () => {

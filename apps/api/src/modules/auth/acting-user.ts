@@ -12,6 +12,7 @@ export interface ActingUser {
   status: UserStatus;
   registeredAt: Date | null;
   guestUses: number;
+  bonusDailyMessages: number;
 }
 
 function asPlan(value: string): PlanTier {
@@ -40,6 +41,7 @@ export function toActingUser(user: User): ActingUser {
     status: asStatus(user.status),
     registeredAt: user.registeredAt,
     guestUses: user.guestUses,
+    bonusDailyMessages: user.bonusDailyMessages,
   };
 }
 

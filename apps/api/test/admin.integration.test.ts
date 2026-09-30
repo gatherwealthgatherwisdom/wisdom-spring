@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  ConversationStatus,
   ErrorCode,
   FeatureFlagKey,
   IMAGE_TOO_LARGE_COPY,
@@ -337,6 +338,11 @@ describe("admin panel", () => {
     expect(report.json().to).toBe(august.end.toISOString());
     expect(report.json().totals.requests).toBe(1);
     expect(report.json().totals.costUsdMicros).toBe("900");
+    expect(
+      (report.json().byUser as Array<{ userId: string; requests: number; costUsdMicros: string }>).some(
+        (row) => row.userId === adminId && row.requests === 1 && row.costUsdMicros === "900",
+      ),
+    ).toBe(true);
   });
 
   it("edits and deletes announcements", async () => {
@@ -1070,5 +1076,268 @@ describe("admin panel", () => {
       payload: { emptyHero: [] },
     });
     expect(emptyList.statusCode).toBe(400);
+  });
+
+  it("lets admin grant extra daily messages on top of the plan cap", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { freeDailyMessages: 1 },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `bonus-daily-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = member.json().accessToken as string;
+    const userId = member.json().user.id as string;
+    const granted = await app.inject({
+      method: "PATCH",
+      url: `/admin/users/${userId}`,
+      headers: auth(),
+      payload: { bonusDailyMessages: 1 },
+    });
+    expect(granted.statusCode).toBe(200);
+    const me = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+    expect(me.json().quota.dailyLimit).toBe(2);
+    const detail = await app.inject({ method: "GET", url: `/admin/users/${userId}`, headers: auth() });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().user.bonusDailyMessages).toBe(1);
+    expect(detail.json().quota.dailyLimit).toBe(2);
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "一", clientMessageId: randomUUID() },
+    });
+    expect(first.statusCode).toBe(200);
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "二", clientMessageId: randomUUID() },
+    });
+    expect(second.statusCode).toBe(200);
+    const third = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "三", clientMessageId: randomUUID() },
+    });
+    expect(third.statusCode).toBe(429);
+    expect(third.json().error.code).toBe(ErrorCode.QUOTA_DAILY_MESSAGE);
+    const cleared = await app.inject({
+      method: "PATCH",
+      url: `/admin/users/${userId}`,
+      headers: auth(),
+      payload: { bonusDailyMessages: 0 },
+    });
+    expect(cleared.statusCode).toBe(200);
+    const after = await app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${token}` } });
+    expect(after.json().quota.dailyLimit).toBe(1);
+    expect(after.json().quota.dailyUsed).toBe(2);
+    const fourth = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "四", clientMessageId: randomUUID() },
+    });
+    expect(fourth.statusCode).toBe(429);
+    const audit = await app.inject({ method: "GET", url: "/admin/audit?action=user.update", headers: auth() });
+    expect(
+      (audit.json().items as Array<{ action: string; payload: { bonusDailyMessages?: number } }>).some(
+        (item) => item.action === "user.update" && item.payload.bonusDailyMessages === 0,
+      ),
+    ).toBe(true);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { freeDailyMessages: 20 },
+    });
+  });
+
+  it("ignores bonus daily messages for an unregistered guest", async () => {
+    await ensureTextPool();
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { guestTrialMessages: 1 },
+    });
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `bonus-guest-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = member.json().accessToken as string;
+    const userId = member.json().user.id as string;
+    await app.ctx.prisma.user.update({
+      where: { id: userId },
+      data: { registeredAt: null, bonusDailyMessages: 10 },
+    });
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "試用一", clientMessageId: randomUUID() },
+    });
+    expect(first.statusCode).toBe(200);
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "試用二", clientMessageId: randomUUID() },
+    });
+    expect(second.statusCode).toBe(429);
+    expect(second.json().error.code).toBe(ErrorCode.QUOTA_GUEST);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/limits",
+      headers: auth(),
+      payload: { guestTrialMessages: 5 },
+    });
+  });
+
+  it("lets admin inspect one user's threads, messages, and thumbs", async () => {
+    const owner = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `inspect-owner-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const other = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `inspect-other-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const ownerId = owner.json().user.id as string;
+    const otherId = other.json().user.id as string;
+    const ownerConversationId = createId();
+    const otherConversationId = createId();
+    const deletedConversationId = createId();
+    const upId = createId();
+    const downId = createId();
+    await app.ctx.prisma.conversation.createMany({
+      data: [
+        { id: ownerConversationId, userId: ownerId, title: "松樹" },
+        { id: otherConversationId, userId: otherId, title: "別人" },
+        { id: deletedConversationId, userId: ownerId, title: "已刪", status: ConversationStatus.DELETED },
+      ],
+    });
+    await app.ctx.prisma.message.createMany({
+      data: [
+        {
+          id: createId(),
+          conversationId: ownerConversationId,
+          role: MessageRole.USER,
+          status: MessageStatus.COMPLETED,
+          content: "講下松樹",
+        },
+        {
+          id: upId,
+          conversationId: ownerConversationId,
+          role: MessageRole.ASSISTANT,
+          status: MessageStatus.COMPLETED,
+          content: "松樹常配淡墨。",
+          servedModel: "deepseek/deepseek-chat",
+          fallbackUsed: false,
+          costUsdMicros: 210n,
+          feedback: "up",
+        },
+        {
+          id: downId,
+          conversationId: ownerConversationId,
+          role: MessageRole.ASSISTANT,
+          status: MessageStatus.COMPLETED,
+          content: "另一句。",
+          servedModel: "deepseek/deepseek-chat",
+          feedback: "down",
+        },
+        {
+          id: createId(),
+          conversationId: otherConversationId,
+          role: MessageRole.ASSISTANT,
+          status: MessageStatus.COMPLETED,
+          content: "唔屬於呢個用戶。",
+          servedModel: "deepseek/deepseek-chat",
+        },
+      ],
+    });
+    const listed = await app.inject({
+      method: "GET",
+      url: `/admin/users/${ownerId}/conversations`,
+      headers: auth(),
+    });
+    expect(listed.statusCode).toBe(200);
+    const ids = (listed.json().items as Array<{ id: string; userId: string }>).map((item) => item.id);
+    expect(ids).toContain(ownerConversationId);
+    expect(ids).not.toContain(otherConversationId);
+    expect(ids).not.toContain(deletedConversationId);
+    expect((listed.json().items as Array<{ userId: string }>).every((item) => item.userId === ownerId)).toBe(true);
+    const thread = await app.inject({
+      method: "GET",
+      url: `/admin/conversations/${ownerConversationId}`,
+      headers: auth(),
+    });
+    expect(thread.statusCode).toBe(200);
+    expect(thread.json().conversation.id).toBe(ownerConversationId);
+    const messages = thread.json().messages as Array<{
+      id: string;
+      content: string;
+      servedModel: string | null;
+      feedback: string | null;
+      costUsdMicros: string;
+    }>;
+    const up = messages.find((item) => item.id === upId);
+    expect(up?.servedModel).toBe("deepseek/deepseek-chat");
+    expect(up?.feedback).toBe("up");
+    expect(up?.costUsdMicros).toBe("210");
+    expect(messages.some((item) => item.content === "唔屬於呢個用戶。")).toBe(false);
+    const missing = await app.inject({
+      method: "GET",
+      url: `/admin/conversations/${createId()}`,
+      headers: auth(),
+    });
+    expect(missing.statusCode).toBe(404);
+    const deleted = await app.inject({
+      method: "GET",
+      url: `/admin/conversations/${deletedConversationId}`,
+      headers: auth(),
+    });
+    expect(deleted.statusCode).toBe(404);
+    const detail = await app.inject({ method: "GET", url: `/admin/users/${ownerId}`, headers: auth() });
+    expect(detail.json().thumbs).toEqual({ up: 1, down: 1 });
+    const missingUser = await app.inject({
+      method: "GET",
+      url: `/admin/users/${createId()}`,
+      headers: auth(),
+    });
+    expect(missingUser.statusCode).toBe(404);
+  });
+
+  it("rejects non-admin user inspection", async () => {
+    const unauth = await app.inject({ method: "GET", url: `/admin/users/${adminId}` });
+    expect(unauth.statusCode).toBe(401);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `inspect-denied-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const forbidden = await app.inject({
+      method: "GET",
+      url: `/admin/users/${adminId}`,
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+    });
+    expect(forbidden.statusCode).toBe(403);
+    const over = await app.inject({
+      method: "PATCH",
+      url: `/admin/users/${adminId}`,
+      headers: auth(),
+      payload: { bonusDailyMessages: 10_001 },
+    });
+    expect(over.statusCode).toBe(400);
   });
 });
