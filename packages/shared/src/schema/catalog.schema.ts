@@ -11,6 +11,8 @@ export const CatalogToolViewSchema = z.object({
   mode: ConversationModeSchema.optional(),
   templateId: z.string().optional(),
   imageStyle: z.string().optional(),
+  icon: z.string().optional(),
+  page: z.number().int().optional(),
 });
 
 export const CatalogAideViewSchema = z.object({

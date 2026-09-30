@@ -64,6 +64,7 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.refreshToken.deleteMany();
   await prisma.oAuthAccount.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
@@ -320,5 +321,113 @@ describe("admin panel", () => {
     expect(removed.statusCode).toBe(200);
     const listed = await app.inject({ method: "GET", url: "/admin/announcements", headers: auth() });
     expect((listed.json().items as Array<{ id: string }>).some((item) => item.id === id)).toBe(false);
+  });
+
+  it("hides an unlisted tool from the public catalog", async () => {
+    const before = await app.inject({ method: "GET", url: "/v1/catalog/tools" });
+    expect((before.json().items as Array<{ id: string }>).some((item) => item.id === "rewrite")).toBe(true);
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/tool/rewrite",
+      headers: auth(),
+      payload: { live: false },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().live).toBe(false);
+    const publicTools = await app.inject({ method: "GET", url: "/v1/catalog/tools" });
+    expect((publicTools.json().items as Array<{ id: string }>).some((item) => item.id === "rewrite")).toBe(false);
+    const adminTools = await app.inject({ method: "GET", url: "/admin/catalog?kind=tool", headers: auth() });
+    expect((adminTools.json().items as Array<{ id: string; live: boolean }>).some((item) => item.id === "rewrite" && item.live === false)).toBe(true);
+    expect(JSON.stringify(publicTools.json())).not.toContain("instruction");
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/tool/rewrite",
+      headers: auth(),
+      payload: { live: true },
+    });
+  });
+
+  async function ensureTextPool(): Promise<void> {
+    await app.ctx.prisma.modelPoolEntry.updateMany({
+      where: { slug: "deepseek/deepseek-chat" },
+      data: { enabled: true, regionStatus: "HK_SAFE", healthStatus: "HEALTHY", minPlanTier: "FREE" },
+    });
+  }
+
+  it("applies an aide instruction change to the next conversation", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/aide/biz",
+      headers: auth(),
+      payload: { instruction: "你而家係測試商務助手，每句以「好的」開頭。" },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `aide-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+      payload: { content: "寫一封覆信", clientMessageId: randomUUID(), templateId: "biz" },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("event: done");
+    expect(
+      openrouter.last?.messages.some(
+        (row) => typeof row.content === "string" && row.content.includes("每句以「好的」開頭"),
+      ),
+    ).toBe(true);
+    const logs = await app.inject({ method: "GET", url: "/admin/audit?action=catalog.update", headers: auth() });
+    expect((logs.json().items as Array<{ action: string }>).some((item) => item.action === "catalog.update")).toBe(true);
+  });
+
+  it("skips the web plugin when search is unlisted", async () => {
+    await ensureTextPool();
+    await app.inject({
+      method: "PATCH",
+      url: `/admin/flags/${FeatureFlagKey.WEB_SEARCH}`,
+      headers: auth(),
+      payload: { enabled: true },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/tool/search",
+      headers: auth(),
+      payload: { live: false },
+    });
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `search-off-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = member.json().accessToken as string;
+    const search = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "今日香港天氣", clientMessageId: randomUUID(), templateId: "search" },
+    });
+    expect(search.statusCode).toBe(200);
+    expect(search.body).toContain("event: done");
+    expect(openrouter.last?.plugins).toBeUndefined();
+    const webchat = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "https://example.com", clientMessageId: randomUUID(), templateId: "webchat" },
+    });
+    expect(webchat.statusCode).toBe(200);
+    expect(webchat.body).toContain("event: done");
+    expect(openrouter.last?.plugins).toEqual([{ id: "web", max_results: 5 }]);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/tool/search",
+      headers: auth(),
+      payload: { live: true },
+    });
   });
 });

@@ -5,6 +5,7 @@ import { AuditPage } from "./pages/AuditPage";
 import { FlagsPage } from "./pages/FlagsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ModelsPage } from "./pages/ModelsPage";
+import { ToolsPage } from "./pages/ToolsPage";
 import { UsagePage } from "./pages/UsagePage";
 import { UsersPage } from "./pages/UsersPage";
 import { clearSession, client, getSession, subscribeSession } from "./session";
@@ -34,6 +35,7 @@ export function App() {
         <NavLink to="/users">用戶</NavLink>
         <NavLink to="/usage">用量</NavLink>
         <NavLink to="/flags">旗標</NavLink>
+        <NavLink to="/tools">工具</NavLink>
         <NavLink to="/announcements">公告</NavLink>
         <NavLink to="/audit">審計</NavLink>
         <button
@@ -53,6 +55,7 @@ export function App() {
           <Route path="/users" element={<UsersPage />} />
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/flags" element={<FlagsPage />} />
+          <Route path="/tools" element={<ToolsPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/models" replace />} />

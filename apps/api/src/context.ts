@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { EstimatedContextWindow } from "@spring/domain";
 import { FLAG_DEFAULTS, FeatureFlagKey, hkMonthRange } from "@spring/shared";
+import { seedCatalog } from "./modules/catalog/catalog-store";
 import type { Redis } from "ioredis";
 import { env } from "./env";
 import { getPrisma } from "./infra/prisma";
@@ -113,6 +114,7 @@ export async function bootstrap(prisma: PrismaClient): Promise<void> {
       update: {},
     });
   }
+  await seedCatalog(prisma);
 }
 
 declare module "fastify" {

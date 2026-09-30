@@ -253,3 +253,29 @@ model Announcement {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 }
+
+enum CatalogKind {
+  TOOL
+  AIDE
+}
+
+model CatalogEntry {
+  kind        CatalogKind
+  id          String      @db.VarChar(64)
+  zh          String      @db.VarChar(80)
+  en          String      @db.VarChar(80)
+  blurbZh     String      @db.VarChar(500)
+  blurbEn     String      @db.VarChar(500)
+  live        Boolean     @default(true)
+  sort        Int         @default(0)
+  mode        String?     @db.VarChar(16)
+  templateId  String?     @db.VarChar(32)
+  imageStyle  String?     @db.VarChar(32)
+  instruction String?     @db.Text
+  icon        String?     @db.VarChar(64)
+  page        Int?
+  updatedAt   DateTime    @updatedAt
+
+  @@id([kind, id])
+  @@index([kind, live, sort])
+}

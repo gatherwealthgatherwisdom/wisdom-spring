@@ -1,15 +1,17 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
 import { paramsForLiveTool, type AppStackParamList, type MainTabParamList } from "../../navigation/MainTabs";
+import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
-import { HEROES, RECOS, TOOLS, type CardItem } from "./catalog";
+import { HEROES, RECOS, toolsFromCatalog, type CardItem } from "./catalog";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Discover">;
 const SCREEN_W = Dimensions.get("window").width;
@@ -21,8 +23,10 @@ export function DiscoverScreen({ navigation }: Props) {
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
+  const catalog = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
+  const tools = toolsFromCatalog(catalog.data?.items);
   const [page, setPage] = useState(0);
-  const pages = [0, 1, 2];
+  const pages = [...new Set(tools.map((tool) => tool.page))].sort((a, b) => a - b);
   const featured = RECOS.slice(0, 2);
   const rest = RECOS.slice(2);
 
@@ -31,10 +35,13 @@ export function DiscoverScreen({ navigation }: Props) {
   }
 
   function openTool(id: string) {
-    const params = paramsForLiveTool(id, locale);
-    if (params) {
-      stack?.navigate("Chat", params);
-      return;
+    const tool = tools.find((item) => item.id === id);
+    if (tool) {
+      const params = paramsForLiveTool({ ...tool, live: true }, locale);
+      if (params) {
+        stack?.navigate("Chat", params);
+        return;
+      }
     }
     stack?.navigate("Tool", { id });
   }
@@ -61,7 +68,7 @@ export function DiscoverScreen({ navigation }: Props) {
           <ScrollView horizontal pagingEnabled decelerationRate="fast" showsHorizontalScrollIndicator={false} onMomentumScrollEnd={onToolsScroll}>
             {pages.map((index) => (
               <View key={index} style={{ width: PAGE_W, flexDirection: "row", flexWrap: "wrap" }}>
-                {TOOLS.filter((tool) => tool.page === index).map((tool) => (
+                {tools.filter((tool) => tool.page === index).map((tool) => (
                   <Pressable key={tool.id} onPress={() => openTool(tool.id)} style={{ width: "25%", alignItems: "center", marginBottom: 18, gap: 8 }}>
                     <Icon name={tool.icon} color={colors.accent} size={28} />
                     <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>

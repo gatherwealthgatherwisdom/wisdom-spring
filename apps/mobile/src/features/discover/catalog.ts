@@ -1,3 +1,4 @@
+import { SPRING_TOOLS, type CatalogAideView, type CatalogToolView } from "@spring/shared";
 import type { ImageSourcePropType } from "react-native";
 import type { IconName } from "../../shared/ui/Icon";
 
@@ -24,28 +25,26 @@ export type CardItem = {
   art: ImageSourcePropType;
 };
 
-export const TOOLS: ToolItem[] = [
-  { id: "rewrite", zh: "改寫", en: "Rewrite", icon: "refresh-outline", blurbZh: "保留原意，句子更清楚。", blurbEn: "Clearer sentences, same meaning.", page: 0, mode: "write", templateId: "rewrite" },
-  { id: "solve", zh: "解答", en: "Solve", icon: "bulb-outline", blurbZh: "把問題拆開，逐步講清楚。", blurbEn: "Break a problem into clear steps.", page: 0 },
-  { id: "search", zh: "搜尋", en: "Search", icon: "search-outline", blurbZh: "用即時網頁搜尋，有就列真實連結。", blurbEn: "Search the live web and list real links.", page: 0 },
-  { id: "memo", zh: "備忘", en: "Memo", icon: "bookmark-outline", blurbZh: "寫一則短備忘。", blurbEn: "Write a short memo.", page: 0 },
-  { id: "voice", zh: "即時語音", en: "Voice", icon: "call-outline", blurbZh: "用裝置咪同智泉傾。", blurbEn: "Talk with the device microphone.", page: 0 },
-  { id: "pdf", zh: "聊天 PDF", en: "Chat PDF", icon: "document-text-outline", blurbZh: "上傳 PDF，用繁體中文講重點。", blurbEn: "Upload a PDF and summarise it.", page: 0 },
-  { id: "artifacts", zh: "創作", en: "Compose", icon: "color-wand-outline", blurbZh: "開一張寫作卡。", blurbEn: "Open a writing card.", page: 0, mode: "write", templateId: "email" },
-  { id: "plain", zh: "淺白", en: "Plain", icon: "chatbox-outline", blurbZh: "改成淺白短句。", blurbEn: "Turn it into plain speech.", page: 0, mode: "write", templateId: "plain" },
-  { id: "mind", zh: "大綱", en: "Outline", icon: "git-network-outline", blurbZh: "整理成要點大綱。", blurbEn: "Turn notes into an outline.", page: 1, mode: "write", templateId: "report" },
-  { id: "bot", zh: "助手", en: "Aide", icon: "happy-outline", blurbZh: "用固定語氣回覆。", blurbEn: "Reply in a set tone.", page: 1 },
-  { id: "photo", zh: "睇圖", en: "Look", icon: "camera-outline", blurbZh: "上傳相片，用繁體中文講你見到乜。", blurbEn: "Upload a photo and say what you see.", page: 1, mode: "chat" },
-  { id: "interpret", zh: "口譯", en: "Interpret", icon: "language-outline", blurbZh: "即時對譯。", blurbEn: "Spoken translation.", page: 1, mode: "translate" },
-  { id: "detect", zh: "文風檢查", en: "Style check", icon: "search-circle-outline", blurbZh: "指出語氣同病句。唔會聲稱可以避開偵測。", blurbEn: "Point out tone and broken sentences. It does not claim to hide detection.", page: 1 },
-  { id: "summary", zh: "摘要", en: "Summary", icon: "book-outline", blurbZh: "把長文收短。", blurbEn: "Shorten a long text.", page: 1 },
-  { id: "webchat", zh: "網頁聊天", en: "Page chat", icon: "globe-outline", blurbZh: "貼網址，用網頁內容講重點。", blurbEn: "Paste a URL and talk through the page.", page: 1 },
-  { id: "email", zh: "電郵", en: "Email", icon: "mail-outline", blurbZh: "穩重有禮的短電郵。", blurbEn: "A short, polite email.", page: 1, mode: "write", templateId: "email" },
-  { id: "more", zh: "使其更多", en: "Make more", icon: "images-outline", blurbZh: "用同一風格再寫一版。", blurbEn: "Write another version in the same style.", page: 2, mode: "write", templateId: "rewrite" },
-  { id: "cantonese", zh: "廣東話", en: "Cantonese", icon: "chatbubbles-outline", blurbZh: "改成香港廣東話。", blurbEn: "Turn it into Hong Kong Cantonese.", page: 2, mode: "write", templateId: "cantonese" },
-  { id: "translate", zh: "翻譯", en: "Translate", icon: "language-outline", blurbZh: "由一種語言譯去另一種。", blurbEn: "Translate from one language to another.", page: 2, mode: "translate" },
-  { id: "formal", zh: "正式", en: "Formal", icon: "document-text-outline", blurbZh: "改成書面語。", blurbEn: "Turn it into formal writing.", page: 2, mode: "write", templateId: "formal" },
-];
+function asIcon(name: string | undefined): IconName {
+  return (name ?? "apps-outline") as IconName;
+}
+
+export function toolsFromCatalog(items: CatalogToolView[] | undefined): ToolItem[] {
+  const source = items ?? SPRING_TOOLS.filter((item) => item.live);
+  return source.map((item) => ({
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    icon: asIcon(item.icon),
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+    page: item.page ?? 0,
+    mode: item.mode,
+    templateId: item.templateId,
+  }));
+}
+
+export const TOOLS: ToolItem[] = toolsFromCatalog(undefined);
 
 const art = {
   devices: require("../../../assets/art/hero-devices.jpg"),
@@ -79,6 +78,23 @@ export const BOTS: CardItem[] = [
   { id: "family", zh: "家庭行程", en: "Family planner", blurbZh: "幫你排一日嘅家務同外出。", blurbEn: "Plan a day of errands and outings.", tone: "#3D9B6E", art: art.botFamily },
   { id: "tutor", zh: "寫作導師", en: "Writing tutor", blurbZh: "改結構、改語氣，唔改原意。", blurbEn: "Fix structure and tone, keep the meaning.", tone: "#2F6F4E", art: art.botTutor },
 ];
+
+export function aidesFromCatalog(items: CatalogAideView[] | undefined): CardItem[] {
+  if (items === undefined) return BOTS;
+  return items.map((item) => {
+    const local = BOTS.find((bot) => bot.id === item.id);
+    return {
+      id: item.id,
+      zh: item.zh,
+      en: item.en,
+      blurbZh: item.blurbZh,
+      blurbEn: item.blurbEn,
+      tone: local?.tone ?? "#1F6B4A",
+      toolId: item.id,
+      art: local?.art ?? art.botBiz,
+    };
+  });
+}
 
 export const HEROES: CardItem[] = [
   { id: "devices", zh: "在所有設備上使用智泉", en: "Use Wisdom Spring on every device", blurbZh: "手機、電腦同一口井。", blurbEn: "Phone and computer, one spring.", tone: "#1C1B19", art: art.devices },

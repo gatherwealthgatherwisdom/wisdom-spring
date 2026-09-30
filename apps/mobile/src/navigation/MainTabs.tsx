@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
 import { useColors } from "../shared/theme";
-import { springTool } from "@spring/shared";
+import { springTool, type SpringTool } from "@spring/shared";
 
 export type MainTabParamList = {
   Inbox: undefined;
@@ -57,16 +57,23 @@ export function openAuth(navigation: NavigationProp<MainTabParamList>): void {
   parent?.navigate("Auth");
 }
 
-export function paramsForLiveTool(id: string, locale: "zh-HK" | "en"): ChatParams | null {
-  const spec = springTool(id);
-  if (!spec?.live) return null;
-  if (spec.id === "photo") return { mode: spec.mode ?? "chat", attach: "library" };
-  if (spec.id === "pdf") return { mode: spec.mode ?? "chat", attach: "file" };
-  const seed = spec.id === "search" || spec.id === "webchat" ? undefined : locale === "en" ? spec.blurbEn : spec.blurbZh;
+type LiveToolSpec = Pick<SpringTool, "id" | "blurbZh" | "blurbEn"> & {
+  live?: boolean;
+  mode?: SpringTool["mode"];
+  templateId?: string;
+  imageStyle?: string;
+};
+
+export function paramsForLiveTool(spec: LiveToolSpec | string, locale: "zh-HK" | "en"): ChatParams | null {
+  const tool = typeof spec === "string" ? springTool(spec) : spec;
+  if (!tool || tool.live === false) return null;
+  if (tool.id === "photo") return { mode: tool.mode ?? "chat", attach: "library" };
+  if (tool.id === "pdf") return { mode: tool.mode ?? "chat", attach: "file" };
+  const seed = tool.id === "search" || tool.id === "webchat" ? undefined : locale === "en" ? tool.blurbEn : tool.blurbZh;
   return {
-    mode: spec.mode ?? "chat",
-    ...(spec.templateId ? { templateId: spec.templateId } : {}),
-    ...(spec.imageStyle ? { imageStyle: spec.imageStyle } : {}),
+    mode: tool.mode ?? "chat",
+    ...(tool.templateId ? { templateId: tool.templateId } : {}),
+    ...(tool.imageStyle ? { imageStyle: tool.imageStyle } : {}),
     ...(seed ? { seed } : {}),
   };
 }

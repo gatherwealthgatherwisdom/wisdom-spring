@@ -1,14 +1,16 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { copy } from "../../shared/lib/i18n";
+import { spring } from "../../shared/lib/api";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Screen } from "../../shared/ui/Screen";
 import { paramsForLiveTool } from "../../navigation/MainTabs";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
-import { TOOLS } from "./catalog";
+import { toolsFromCatalog } from "./catalog";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Tool">;
 
@@ -16,7 +18,8 @@ export function ToolScreen({ navigation, route }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
-  const tool = TOOLS.find((item) => item.id === route.params.id);
+  const catalog = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
+  const tool = toolsFromCatalog(catalog.data?.items).find((item) => item.id === route.params.id);
   const [draft, setDraft] = useState("");
   const [shown, setShown] = useState("");
   if (!tool) {
@@ -44,7 +47,7 @@ export function ToolScreen({ navigation, route }: Props) {
       />
       <Pressable
         onPress={() => {
-          const live = paramsForLiveTool(tool.id, locale);
+          const live = paramsForLiveTool({ ...tool, live: true }, locale);
           if (live) {
             navigation.navigate("Chat", live.attach ? live : { ...live, seed: draft.trim() || live.seed });
             return;

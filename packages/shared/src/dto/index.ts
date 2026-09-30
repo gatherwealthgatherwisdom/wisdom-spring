@@ -1,11 +1,15 @@
 import type { z } from "zod";
 import type {
+  AdminCatalogItemSchema,
+  AdminCatalogQuerySchema,
   AdminUpdateUserSchema,
   AdminUserQuerySchema,
   AdminUserRowSchema,
   AnnouncementViewSchema,
   AuditLogViewSchema,
+  CreateCatalogEntrySchema,
   FeatureFlagViewSchema,
+  UpdateCatalogEntrySchema,
   UpdateFeatureFlagSchema,
   UpsertAnnouncementSchema,
   UsageReportSchema,
@@ -107,5 +111,9 @@ export type CatalogToolView = z.infer<typeof CatalogToolViewSchema>;
 export type CatalogAideView = z.infer<typeof CatalogAideViewSchema>;
 export type CatalogToolsResponse = z.infer<typeof CatalogToolsResponseSchema>;
 export type CatalogAidesResponse = z.infer<typeof CatalogAidesResponseSchema>;
+export type AdminCatalogItem = z.infer<typeof AdminCatalogItemSchema>;
+export type AdminCatalogQuery = z.infer<typeof AdminCatalogQuerySchema>;
+export type UpdateCatalogEntryRequest = z.infer<typeof UpdateCatalogEntrySchema>;
+export type CreateCatalogEntryRequest = z.infer<typeof CreateCatalogEntrySchema>;
 export type UploadRequest = z.infer<typeof UploadRequestSchema>;
 export type AssetView = z.infer<typeof AssetViewSchema>;

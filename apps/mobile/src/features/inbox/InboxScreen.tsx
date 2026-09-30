@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
-import { BOTS, DRAW_CARDS, HEROES, TOOLS } from "../discover/catalog";
+import { aidesFromCatalog, DRAW_CARDS, HEROES, toolsFromCatalog } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
 import { DrawerMenu } from "./DrawerMenu";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -29,6 +29,9 @@ export function InboxScreen({ navigation }: Props) {
   const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
   useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
   const notices = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
+  const catalogTools = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
+  const catalogAides = useQuery({ queryKey: ["catalog-aides"], queryFn: () => spring.catalogAides() });
+  const bots = aidesFromCatalog(catalogAides.data?.items);
   const dismissedAnnouncementId = usePrefs((state) => state.dismissedAnnouncementId);
   const setDismissedAnnouncementId = usePrefs((state) => state.setDismissedAnnouncementId);
   const last = chats.data?.items[0];
@@ -40,7 +43,7 @@ export function InboxScreen({ navigation }: Props) {
   const [draft, setDraft] = useState("");
   const [attachOpen, setAttachOpen] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
-  const homeTools = TOOLS.filter((tool) => tool.page === 0).slice(0, 4);
+  const homeTools = toolsFromCatalog(catalogTools.data?.items).filter((tool) => tool.page === 0).slice(0, 4);
 
   function sendHome() {
     const seed = draft.trim();
@@ -131,7 +134,7 @@ export function InboxScreen({ navigation }: Props) {
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.bots}</Text>
             <Pressable onPress={() => stack?.navigate("AllBots")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
-          {BOTS.map((bot) => (
+          {bots.map((bot) => (
             <Pressable
               key={bot.id}
               onPress={() =>

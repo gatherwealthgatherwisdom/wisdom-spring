@@ -14,6 +14,8 @@ const ACTIONS = [
   "announcement.delete",
   "catalog.sync",
   "catalog.probe",
+  "catalog.update",
+  "catalog.create",
 ];
 
 export function AuditPage() {

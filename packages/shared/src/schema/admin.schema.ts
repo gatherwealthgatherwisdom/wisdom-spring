@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { CATALOG_KINDS } from "../constants/catalog";
 import { PlanTier } from "../enums/plan-tier";
 import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
+import { ConversationModeSchema } from "./conversation.schema";
 import { PaginationQuerySchema } from "./pagination.schema";
 import { UserPublicSchema } from "./auth.schema";
 
@@ -107,3 +109,80 @@ export const UsageReportSchema = z.object({
 });
 
 export const AdminUserViewSchema = UserPublicSchema;
+
+export const CatalogKindSchema = z.enum(CATALOG_KINDS);
+
+export const AdminCatalogItemSchema = z.object({
+  kind: CatalogKindSchema,
+  id: z.string(),
+  zh: z.string(),
+  en: z.string(),
+  blurbZh: z.string(),
+  blurbEn: z.string(),
+  live: z.boolean(),
+  sort: z.number().int(),
+  mode: ConversationModeSchema.optional(),
+  templateId: z.string().optional(),
+  imageStyle: z.string().optional(),
+  instruction: z.string().optional(),
+  icon: z.string().optional(),
+  page: z.number().int().optional(),
+});
+
+export const AdminCatalogQuerySchema = z.object({
+  kind: CatalogKindSchema.optional(),
+});
+
+export const UpdateCatalogEntrySchema = z
+  .object({
+    zh: z.string().trim().min(1).max(80).optional(),
+    en: z.string().trim().min(1).max(80).optional(),
+    blurbZh: z.string().trim().min(1).max(500).optional(),
+    blurbEn: z.string().trim().min(1).max(500).optional(),
+    live: z.boolean().optional(),
+    sort: z.number().int().optional(),
+    mode: ConversationModeSchema.nullable().optional(),
+    templateId: z.string().trim().min(1).max(32).nullable().optional(),
+    imageStyle: z.string().trim().min(1).max(32).nullable().optional(),
+    instruction: z.string().max(8_000).nullable().optional(),
+    icon: z.string().trim().min(1).max(64).nullable().optional(),
+    page: z.number().int().min(0).max(9).nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      value.zh !== undefined ||
+      value.en !== undefined ||
+      value.blurbZh !== undefined ||
+      value.blurbEn !== undefined ||
+      value.live !== undefined ||
+      value.sort !== undefined ||
+      value.mode !== undefined ||
+      value.templateId !== undefined ||
+      value.imageStyle !== undefined ||
+      value.instruction !== undefined ||
+      value.icon !== undefined ||
+      value.page !== undefined,
+    { message: "empty" },
+  );
+
+export const CreateCatalogEntrySchema = z.object({
+  kind: CatalogKindSchema,
+  id: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/),
+  zh: z.string().trim().min(1).max(80),
+  en: z.string().trim().min(1).max(80),
+  blurbZh: z.string().trim().min(1).max(500),
+  blurbEn: z.string().trim().min(1).max(500),
+  live: z.boolean().default(true),
+  sort: z.number().int().default(100),
+  mode: ConversationModeSchema.optional(),
+  templateId: z.string().trim().min(1).max(32).optional(),
+  imageStyle: z.string().trim().min(1).max(32).optional(),
+  instruction: z.string().max(8_000).optional(),
+  icon: z.string().trim().min(1).max(64).optional(),
+  page: z.number().int().min(0).max(9).optional(),
+});

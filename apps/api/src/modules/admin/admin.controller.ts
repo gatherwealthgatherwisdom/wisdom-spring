@@ -2,13 +2,17 @@ import type { FastifyInstance } from "fastify";
 import type { PrismaClient } from "@prisma/client";
 import {
   AdminAuditQuerySchema,
+  AdminCatalogQuerySchema,
   AdminUpdateUserSchema,
   AdminUsageQuerySchema,
   AdminUserQuerySchema,
   AppError,
+  CatalogKindSchema,
+  CreateCatalogEntrySchema,
   ErrorCode,
   PlanTier,
   SimulateDrawRequestSchema,
+  UpdateCatalogEntrySchema,
   UpdateFeatureFlagSchema,
   UpdateModelPoolSchema,
   UpsertAnnouncementSchema,
@@ -23,6 +27,7 @@ import {
 import { requireAdmin } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
+import { createCatalogEntry, listCatalog, patchCatalogEntry } from "../catalog/catalog-store";
 import { writeAudit } from "./audit";
 import { mergeFlagViews } from "./feature-flags";
 
@@ -415,5 +420,34 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     await app.ctx.prisma.announcement.delete({ where: { id } });
     await writeAudit(app.ctx.prisma, actor.id, "announcement.delete", { id });
     return { ok: true };
+  });
+
+  app.get("/admin/catalog", async (request) => {
+    await requireAdmin(request, app.ctx.auth);
+    const query = AdminCatalogQuerySchema.parse(request.query ?? {});
+    const items = await listCatalog(app.ctx.prisma, query.kind);
+    return { items };
+  });
+
+  app.post("/admin/catalog", async (request, reply) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const body = CreateCatalogEntrySchema.parse(request.body ?? {});
+    const item = await createCatalogEntry(app.ctx.prisma, body);
+    await writeAudit(app.ctx.prisma, actor.id, "catalog.create", { kind: item.kind, id: item.id });
+    return reply.status(201).send(item);
+  });
+
+  app.patch("/admin/catalog/:kind/:id", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const params = request.params as { kind: string; id: string };
+    const kind = CatalogKindSchema.parse(params.kind);
+    const body = UpdateCatalogEntrySchema.parse(request.body ?? {});
+    const item = await patchCatalogEntry(app.ctx.prisma, kind, params.id, body);
+    await writeAudit(app.ctx.prisma, actor.id, "catalog.update", {
+      kind: item.kind,
+      id: item.id,
+      live: item.live,
+    });
+    return item;
   });
 }

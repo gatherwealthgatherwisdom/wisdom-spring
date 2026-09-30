@@ -1,7 +1,9 @@
 import type {
+  AdminCatalogItem,
   AdminUpdateUserRequest,
   AdminUserRow,
   AnnouncementView,
+  CreateCatalogEntryRequest,
   CatalogAidesResponse,
   CatalogToolsResponse,
   AuditLogView,
@@ -30,6 +32,7 @@ import type {
   SseDone,
   SseError,
   SseMeta,
+  UpdateCatalogEntryRequest,
   UpdateConversationRequest,
   UpdateFeatureFlagRequest,
   UpdateMeRequest,
@@ -254,6 +257,25 @@ export class SpringClient {
 
   adminDeleteAnnouncement(id: string): Promise<{ ok: true }> {
     return this.request(`/admin/announcements/${id}`, { method: "DELETE" });
+  }
+
+  adminCatalog(kind?: "tool" | "aide"): Promise<{ items: AdminCatalogItem[] }> {
+    return this.request(`/admin/catalog${queryString(kind ? { kind } : undefined)}`);
+  }
+
+  adminUpdateCatalog(
+    kind: "tool" | "aide",
+    id: string,
+    body: UpdateCatalogEntryRequest,
+  ): Promise<AdminCatalogItem> {
+    return this.request(`/admin/catalog/${encodeURIComponent(kind)}/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  }
+
+  adminCreateCatalog(body: CreateCatalogEntryRequest): Promise<AdminCatalogItem> {
+    return this.request("/admin/catalog", { method: "POST", body: JSON.stringify(body) });
   }
 
   private async authPost(path: string, body: unknown): Promise<AuthResponse> {
