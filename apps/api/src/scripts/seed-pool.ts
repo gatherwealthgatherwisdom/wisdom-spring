@@ -17,30 +17,39 @@ const models: Array<{
   outputs: string[];
 }> = [
   {
-    slug: "deepseek/deepseek-chat",
-    name: "DeepSeek",
-    author: "deepseek",
-    prompt: "0.00000014",
-    completion: "0.00000028",
-    inputs: ["text"],
+    slug: "google/gemma-3-12b-it",
+    name: "Gemma 3 12B",
+    author: "google",
+    prompt: "0.00000005",
+    completion: "0.00000015",
+    inputs: ["text", "image"],
     outputs: ["text"],
   },
   {
-    slug: "qwen/qwen-2.5-72b-instruct",
-    name: "Qwen",
+    slug: "qwen/qwen3.7-flash",
+    name: "Qwen 3.7 Flash",
     author: "qwen",
-    prompt: "0.0000002",
+    prompt: "0.00000003",
+    completion: "0.00000013",
+    inputs: ["text", "image"],
+    outputs: ["text"],
+  },
+  {
+    slug: "z-ai/glm-4.7-flash",
+    name: "GLM 4.7 Flash",
+    author: "z-ai",
+    prompt: "0.0000000605",
     completion: "0.0000004",
     inputs: ["text"],
     outputs: ["text"],
   },
   {
-    slug: "google/gemma-2-9b-it",
-    name: "Gemma",
-    author: "google",
-    prompt: "0.0000001",
-    completion: "0.0000002",
-    inputs: ["text"],
+    slug: "qwen/qwen3-vl-8b-instruct",
+    name: "Qwen VL 8B",
+    author: "qwen",
+    prompt: "0.000000117",
+    completion: "0.000000455",
+    inputs: ["text", "image"],
     outputs: ["text"],
   },
   {
@@ -53,12 +62,12 @@ const models: Array<{
     outputs: ["image"],
   },
   {
-    slug: "qwen/qwen-2.5-vl-7b-instruct",
-    name: "Qwen VL",
-    author: "qwen",
-    prompt: "0.0000002",
-    completion: "0.0000004",
-    inputs: ["text", "image"],
+    slug: "deepseek/deepseek-chat",
+    name: "DeepSeek",
+    author: "deepseek",
+    prompt: "0.0000002574",
+    completion: "0.0000010287",
+    inputs: ["text"],
     outputs: ["text"],
   },
 ];
@@ -103,5 +112,13 @@ for (const model of models) {
   });
 }
 
-console.log(JSON.stringify({ seeded: models.length }));
+const retired = ["google/gemma-2-9b-it", "qwen/qwen-2.5-vl-7b-instruct"];
+for (const slug of retired) {
+  await prisma.modelPoolEntry.updateMany({
+    where: { slug },
+    data: { enabled: false, healthStatus: "DOWN" },
+  });
+}
+
+console.log(JSON.stringify({ seeded: models.length, retired: retired.length }));
 await prisma.$disconnect();

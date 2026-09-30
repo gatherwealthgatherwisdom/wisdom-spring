@@ -47,4 +47,4 @@ For a local draw before a Hong Kong probe has run:
 SEED_TRUST_ALLOWLIST=true pnpm --filter @spring/api exec tsx src/scripts/seed-pool.ts
 ```
 
-That marks three allowlisted slugs `HK_SAFE` for a demo on a machine that is not exiting from Hong Kong. Do not use it in production.
+That marks the demo allowlisted slugs `HK_SAFE` on a machine that is not exiting from Hong Kong. Do not use it in production. Seed prices are bootstrap only; `catalog.sync` overwrites them from OpenRouter.
