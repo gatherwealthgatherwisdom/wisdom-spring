@@ -4,8 +4,6 @@ import {
   AppError,
   ErrorCode,
   LIMITS,
-  FILE_PROMPT,
-  LOOK_PROMPT,
   ModelCapability,
   OPENROUTER,
   assetIdsOf,
@@ -19,6 +17,7 @@ import {
   type PlanTier,
 } from "@spring/shared";
 import { loadAppLimits } from "../../admin/app-limits";
+import { loadPromptDocs } from "../../admin/prompt-docs";
 import { assertCapabilityFlags } from "../../admin/feature-flags";
 import { catalogImageHint, catalogInstruction, isWebToolLive } from "../../catalog/catalog-store";
 import { systemPromptFor, withImageStyle } from "./mode-prompt";
@@ -121,8 +120,11 @@ export async function runGeneration(
     isWebToolLive(deps.prisma, modeFields.templateId),
     catalogImageHint(deps.prisma, modeFields.imageStyle),
   ]);
-  const emptyPrompt = hasPdf && !hasVision ? FILE_PROMPT : LOOK_PROMPT;
-  const { historyMaxMessages } = await loadAppLimits(deps.prisma);
+  const [prompts, { historyMaxMessages }] = await Promise.all([
+    loadPromptDocs(deps.prisma),
+    loadAppLimits(deps.prisma),
+  ]);
+  const emptyPrompt = hasPdf && !hasVision ? prompts.file : prompts.look;
   const turns = history.slice(-historyMaxMessages).map((row) => {
     const attached = assetIdsOf(row.attachments).length > 0;
     const text =
@@ -168,7 +170,7 @@ export async function runGeneration(
         [
           {
             role: "system",
-            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint),
+            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint, prompts.system),
           },
           ...turns,
         ],

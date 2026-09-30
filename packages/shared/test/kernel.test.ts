@@ -3,9 +3,12 @@ import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
 import { APP_SETTING_DEFAULTS, limitsFor } from "../src/constants/limits";
+import { SUGGESTED_PROMPTS_ZH } from "../src/constants/brand";
+import { SYSTEM_PROMPT } from "../src/constants/openrouter";
+import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
-import { UpdateLimitsSchema } from "../src/schema/admin.schema";
+import { UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
@@ -109,6 +112,23 @@ describe("plan limits overlay", () => {
     expect(UpdateLimitsSchema.safeParse({ freeDailyMessages: 0 }).success).toBe(false);
     expect(UpdateLimitsSchema.safeParse({ uploadMaxBytes: 1024 }).success).toBe(false);
     expect(UpdateLimitsSchema.safeParse({ freeDailyMessages: 1 }).success).toBe(true);
+  });
+});
+
+describe("prompt docs overlay", () => {
+  it("keeps defaults when rows are empty or invalid", () => {
+    expect(mergePromptDocs([])).toEqual(PROMPT_DOC_DEFAULTS);
+    expect(mergePromptDocs([{ key: "system", body: "  " }]).system).toBe(SYSTEM_PROMPT);
+    expect(mergePromptDocs([{ key: "empty_hero", body: "not-json" }]).empty_hero).toEqual([...SUGGESTED_PROMPTS_ZH]);
+    expect(mergePromptDocs([{ key: "system", body: "新身份" }]).system).toBe("新身份");
+  });
+
+  it("rejects empty and out-of-range copy patches", () => {
+    expect(UpdateCopySchema.safeParse({}).success).toBe(false);
+    expect(UpdateCopySchema.safeParse({ system: "" }).success).toBe(false);
+    expect(UpdateCopySchema.safeParse({ emptyHero: [] }).success).toBe(false);
+    expect(UpdateCopySchema.safeParse({ emptyHero: ["x".repeat(81)] }).success).toBe(false);
+    expect(UpdateCopySchema.safeParse({ look: "睇下" }).success).toBe(true);
   });
 });
 

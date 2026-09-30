@@ -1,5 +1,6 @@
 import type {
   AdminCatalogItem,
+  AdminCopy,
   AdminLimits,
   AdminUpdateUserRequest,
   AdminUserRow,
@@ -22,6 +23,7 @@ import type {
   MeResponse,
   MeUsage,
   PhoneCodeRequest,
+  PublicCopy,
   PublicFlagsResponse,
   PublicLimits,
   PhoneRegisterRequest,
@@ -40,6 +42,7 @@ import type {
   SseMeta,
   UpdateCatalogEntryRequest,
   UpdateConversationRequest,
+  UpdateCopyRequest,
   UpdateFeatureFlagRequest,
   UpdateLimitsRequest,
   UpdateMeRequest,
@@ -134,6 +137,10 @@ export class SpringClient {
 
   limits(): Promise<PublicLimits> {
     return this.request("/v1/limits");
+  }
+
+  copy(): Promise<PublicCopy> {
+    return this.request("/v1/copy");
   }
 
   announcements(): Promise<PageOf<AnnouncementView>> {
@@ -268,6 +275,14 @@ export class SpringClient {
 
   adminUpdateLimits(body: UpdateLimitsRequest): Promise<AdminLimits> {
     return this.request("/admin/limits", { method: "PATCH", body: JSON.stringify(body) });
+  }
+
+  adminCopy(): Promise<AdminCopy> {
+    return this.request("/admin/copy");
+  }
+
+  adminUpdateCopy(body: UpdateCopyRequest): Promise<AdminCopy> {
+    return this.request("/admin/copy", { method: "PATCH", body: JSON.stringify(body) });
   }
 
   adminAudit(action?: string): Promise<{ items: AuditLogView[] }> {

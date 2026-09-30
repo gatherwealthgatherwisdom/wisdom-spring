@@ -11,6 +11,7 @@ import { isEligible } from "../catalog/application/draw-model";
 import { requireUser } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { loadAppLimits, publicLimitsOf } from "../admin/app-limits";
+import { loadPromptDocs, publicCopyOf } from "../admin/prompt-docs";
 import { isFlagEnabled } from "../admin/feature-flags";
 
 export async function userRoutes(app: FastifyInstance): Promise<void> {
@@ -115,6 +116,8 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get("/v1/limits", async () => publicLimitsOf(await loadAppLimits(app.ctx.prisma)));
+
+  app.get("/v1/copy", async () => publicCopyOf(await loadPromptDocs(app.ctx.prisma)));
 
   app.get("/v1/announcements", async () => {
     const rows = await app.ctx.prisma.announcement.findMany({

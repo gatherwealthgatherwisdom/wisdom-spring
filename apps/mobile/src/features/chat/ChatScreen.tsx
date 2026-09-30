@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, FeatureFlagKey, LIMITS, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -65,6 +65,8 @@ export function ChatScreen({ navigation, route }: Props) {
     enabled: Boolean(token),
   });
   const flags = useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
+  const copyQuery = useQuery({ queryKey: ["copy"], queryFn: () => spring.copy() });
+  const suggestions = copyQuery.data?.emptyHero ?? [...SUGGESTED_PROMPTS_ZH];
   const flagOn = (key: FeatureFlagKey, fallback = true) =>
     flags.data?.items.find((item) => item.key === key)?.enabled ?? fallback;
   const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
@@ -364,6 +366,8 @@ export function ChatScreen({ navigation, route }: Props) {
               if (card === "image") navigation.navigate("Main", { screen: "Image" });
               if (card === "resume") navigation.goBack();
             }}
+            suggestions={suggestions}
+            onSuggest={setDraft}
             onRegenerate={(id) => void regenerate(id)}
             onListen={(content) => speak(content, locale)}
             onFeedback={(id, rating) => void rate(id, rating)}

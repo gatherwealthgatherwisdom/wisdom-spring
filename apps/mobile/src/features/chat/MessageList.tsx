@@ -17,6 +17,8 @@ export function MessageList({
   listenLabel,
   emptyLabel,
   onCard,
+  suggestions,
+  onSuggest,
   onRegenerate,
   onListen,
   onFeedback,
@@ -29,6 +31,8 @@ export function MessageList({
   listenLabel: string;
   emptyLabel?: string;
   onCard: (card: "email" | "translate" | "image" | "resume") => void;
+  suggestions?: string[];
+  onSuggest?: (sentence: string) => void;
   onRegenerate: (messageId: string) => void;
   onListen: (content: string) => void;
   onFeedback?: (messageId: string, rating: "up" | "down") => void;
@@ -38,7 +42,7 @@ export function MessageList({
   const data = draft ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" }] : messages;
   if (data.length === 0) {
     if (emptyLabel) return <Text style={{ color: colors.muted, paddingVertical: 24, textAlign: "center" }}>{emptyLabel}</Text>;
-    return <EmptyHero text={text} onCard={onCard} />;
+    return <EmptyHero text={text} onCard={onCard} suggestions={suggestions} onSuggest={onSuggest} />;
   }
   return (
     <FlatList

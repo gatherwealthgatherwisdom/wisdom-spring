@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { EstimatedContextWindow } from "@spring/domain";
 import { FLAG_DEFAULTS, FeatureFlagKey, hkMonthRange, limitsFor, type PlanTier } from "@spring/shared";
 import { loadAppLimits, seedAppSettings } from "./modules/admin/app-limits";
+import { seedPromptDocs } from "./modules/admin/prompt-docs";
 import { seedCatalog } from "./modules/catalog/catalog-store";
 import type { Redis } from "ioredis";
 import { env } from "./env";
@@ -122,6 +123,7 @@ export async function bootstrap(prisma: PrismaClient): Promise<void> {
   }
   await seedCatalog(prisma);
   await seedAppSettings(prisma);
+  await seedPromptDocs(prisma);
 }
 
 declare module "fastify" {

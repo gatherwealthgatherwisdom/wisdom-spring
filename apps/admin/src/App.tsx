@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { AnnouncementsPage } from "./pages/AnnouncementsPage";
 import { AuditPage } from "./pages/AuditPage";
+import { CopyPage } from "./pages/CopyPage";
 import { FlagsPage } from "./pages/FlagsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ModelsPage } from "./pages/ModelsPage";
@@ -38,6 +39,7 @@ export function App() {
         <NavLink to="/usage">用量</NavLink>
         <NavLink to="/flags">旗標</NavLink>
         <NavLink to="/quotas">配額</NavLink>
+        <NavLink to="/copy">文案</NavLink>
         <NavLink to="/tools">工具</NavLink>
         <NavLink to="/templates">模板</NavLink>
         <NavLink to="/announcements">公告</NavLink>
@@ -60,6 +62,7 @@ export function App() {
           <Route path="/usage" element={<UsagePage />} />
           <Route path="/flags" element={<FlagsPage />} />
           <Route path="/quotas" element={<QuotasPage />} />
+          <Route path="/copy" element={<CopyPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />

@@ -14,6 +14,7 @@ import {
   SimulateDrawRequestSchema,
   UpdateCatalogEntrySchema,
   UpdateFeatureFlagSchema,
+  UpdateCopySchema,
   UpdateLimitsSchema,
   UpdateModelPoolSchema,
   UpsertAnnouncementSchema,
@@ -32,6 +33,7 @@ import { drawModel } from "../catalog/application/draw-model";
 import { createCatalogEntry, listCatalog, patchCatalogEntry } from "../catalog/catalog-store";
 import { loadAppLimits, patchAppLimits } from "./app-limits";
 import { writeAudit } from "./audit";
+import { adminCopyOf, loadPromptDocs, patchPromptDocs } from "./prompt-docs";
 import { mergeFlagViews } from "./feature-flags";
 
 function stringList(value: unknown): string[] {
@@ -363,6 +365,17 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const settings = await patchAppLimits(app.ctx.prisma, body);
     await writeAudit(app.ctx.prisma, actor.id, "limits.update", body);
     return settings;
+  });
+
+  app.get("/admin/copy", async () => adminCopyOf(await loadPromptDocs(app.ctx.prisma)));
+
+  app.patch("/admin/copy", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const body = UpdateCopySchema.parse(request.body ?? {});
+    const before = adminCopyOf(await loadPromptDocs(app.ctx.prisma));
+    const after = adminCopyOf(await patchPromptDocs(app.ctx.prisma, body));
+    await writeAudit(app.ctx.prisma, actor.id, "copy.update", { before, after });
+    return after;
   });
 
   app.patch("/admin/flags/:key", async (request) => {

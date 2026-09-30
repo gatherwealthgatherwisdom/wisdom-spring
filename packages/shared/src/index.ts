@@ -27,6 +27,7 @@ export * from "./constants/tools";
 export * from "./constants/catalog";
 export * from "./constants/uploads";
 export * from "./constants/feedback";
+export * from "./constants/prompts";
 export * from "./schema/catalog.schema";
 export * from "./schema/upload.schema";
 export * from "./lib/id";

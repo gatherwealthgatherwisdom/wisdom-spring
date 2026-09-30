@@ -16,6 +16,7 @@ import {
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
+import { invalidatePromptDocs } from "../src/modules/admin/prompt-docs";
 import { env } from "../src/env";
 import type { ChatMessage, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
 
@@ -89,9 +90,11 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
   await prisma.appSetting.deleteMany();
+  await prisma.promptDoc.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
   invalidateAppLimits();
+  invalidatePromptDocs();
 }
 
 async function seedText(prisma: PrismaClient): Promise<void> {
@@ -392,6 +395,61 @@ describe("photo uploads and vision", () => {
           part.file.file_data.startsWith("data:application/pdf;base64,"),
       ),
     ).toBe(true);
+  });
+
+  it("uses an admin look prompt for an empty caption", async () => {
+    await app.ctx.prisma.promptDoc.upsert({
+      where: { key: "look" },
+      create: { key: "look", body: "請描述呢張相。" },
+      update: { body: "請描述呢張相。" },
+    });
+    invalidatePromptDocs();
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { mime: "image/png", data: PIXEL },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "", clientMessageId: randomUUID(), attachments: [{ assetId: created.json().id }] },
+    });
+    expect(sent.statusCode).toBe(200);
+    const lastUser = [...client.lastMessages].reverse().find((row) => row.role === "user");
+    const overlay = lastUser?.content as Array<{ type?: string; text?: string }>;
+    expect(overlay.some((part) => part.type === "text" && part.text === "請描述呢張相。")).toBe(true);
+    await app.ctx.prisma.promptDoc.deleteMany({ where: { key: "look" } });
+    invalidatePromptDocs();
+  });
+
+  it("uses an admin file prompt for an empty pdf caption", async () => {
+    await app.ctx.prisma.promptDoc.upsert({
+      where: { key: "file" },
+      create: { key: "file", body: "請講呢份 PDF 重點。" },
+      update: { body: "請講呢份 PDF 重點。" },
+    });
+    invalidatePromptDocs();
+    const bytes = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+    const created = await app.inject({
+      method: "POST",
+      url: "/v1/uploads",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { mime: "application/pdf", data: bytes.toString("base64") },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "", clientMessageId: randomUUID(), attachments: [{ assetId: created.json().id }] },
+    });
+    expect(sent.statusCode).toBe(200);
+    const lastUser = [...client.lastMessages].reverse().find((row) => row.role === "user");
+    const overlay = lastUser?.content as Array<{ type?: string; text?: string }>;
+    expect(overlay.some((part) => part.type === "text" && part.text === "請講呢份 PDF 重點。")).toBe(true);
+    await app.ctx.prisma.promptDoc.deleteMany({ where: { key: "file" } });
+    invalidatePromptDocs();
   });
 
   it("rejects pdf uploads when pdf_upload is off", async () => {

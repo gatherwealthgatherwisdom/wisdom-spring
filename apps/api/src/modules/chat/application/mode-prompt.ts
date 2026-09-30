@@ -13,8 +13,9 @@ export function systemPromptFor(
   requestedModel: string,
   extraInstruction?: string,
   extraHint?: string,
+  systemPrompt = SYSTEM_PROMPT,
 ): string {
-  const identity = `${SYSTEM_PROMPT}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時先可以提及。`;
+  const identity = `${systemPrompt}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時先可以提及。`;
   const extra = extraInstruction || toolInstruction(conversation.templateId);
   if (extra) return `${identity}\n${extra}`;
   if (conversation.mode === "write") {

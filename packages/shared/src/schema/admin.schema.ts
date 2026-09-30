@@ -99,6 +99,32 @@ export const UpdateLimitsSchema = z
     { message: "empty" },
   );
 
+export const AdminCopySchema = z.object({
+  system: z.string(),
+  look: z.string(),
+  file: z.string(),
+  titleJob: z.string(),
+  emptyHero: z.array(z.string()),
+});
+
+export const UpdateCopySchema = z
+  .object({
+    system: z.string().trim().min(1).max(8_000).optional(),
+    look: z.string().trim().min(1).max(500).optional(),
+    file: z.string().trim().min(1).max(500).optional(),
+    titleJob: z.string().trim().min(1).max(500).optional(),
+    emptyHero: z.array(z.string().trim().min(1).max(80)).min(1).max(12).optional(),
+  })
+  .refine(
+    (value) =>
+      value.system !== undefined ||
+      value.look !== undefined ||
+      value.file !== undefined ||
+      value.titleJob !== undefined ||
+      value.emptyHero !== undefined,
+    { message: "empty" },
+  );
+
 export const AnnouncementViewSchema = z.object({
   id: z.string().ulid(),
   bodyZh: z.string(),

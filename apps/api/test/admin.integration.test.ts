@@ -6,6 +6,11 @@ import {
   FeatureFlagKey,
   IMAGE_TOO_LARGE_COPY,
   LIMITS,
+  MessageRole,
+  MessageStatus,
+  SUGGESTED_PROMPTS_ZH,
+  SYSTEM_PROMPT,
+  TITLE_JOB_PROMPT,
   UserRole,
   createId,
   hkMonthRangeFromKey,
@@ -14,17 +19,31 @@ import {
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits, seedAppSettings } from "../src/modules/admin/app-limits";
+import { invalidatePromptDocs, seedPromptDocs } from "../src/modules/admin/prompt-docs";
+import { GenerateTitleService } from "../src/modules/chat/application/generate-title.service";
 import { seedCatalog } from "../src/modules/catalog/catalog-store";
-import type { GenerateImageInput, OpenRouterClient, StreamChatInput } from "../src/modules/catalog/infra/openrouter.client";
+import type {
+  CompleteChatInput,
+  GenerateImageInput,
+  OpenRouterClient,
+  StreamChatInput,
+} from "../src/modules/catalog/infra/openrouter.client";
 
-function fakeClient(): OpenRouterClient & { last?: StreamChatInput; lastImagePrompt?: string } {
-  const state: { last?: StreamChatInput; lastImagePrompt?: string } = {};
+function fakeClient(): OpenRouterClient & {
+  last?: StreamChatInput;
+  lastImagePrompt?: string;
+  lastComplete?: CompleteChatInput;
+} {
+  const state: { last?: StreamChatInput; lastImagePrompt?: string; lastComplete?: CompleteChatInput } = {};
   return {
     get last() {
       return state.last;
     },
     get lastImagePrompt() {
       return state.lastImagePrompt;
+    },
+    get lastComplete() {
+      return state.lastComplete;
     },
     async listModels() {
       return [
@@ -40,8 +59,9 @@ function fakeClient(): OpenRouterClient & { last?: StreamChatInput; lastImagePro
     async listImageModels() {
       return [];
     },
-    async completeChat() {
-      return { text: "ok", model: "qwen/qwen3.7-flash", images: [] };
+    async completeChat(input) {
+      state.lastComplete = input;
+      return { text: "測試標題", model: "deepseek/deepseek-chat", images: [] };
     },
     async generateImage(input: GenerateImageInput) {
       state.lastImagePrompt = input.prompt;
@@ -81,10 +101,12 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
   await prisma.appSetting.deleteMany();
+  await prisma.promptDoc.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.modelPoolEntry.deleteMany();
   await prisma.modelCatalog.deleteMany();
   invalidateAppLimits();
+  invalidatePromptDocs();
 }
 
 describe("admin panel", () => {
@@ -784,5 +806,128 @@ describe("admin panel", () => {
       payload: { guestTrialMessages: 101 },
     });
     expect(denied.statusCode).toBe(400);
+  });
+
+  it("seeds prompt docs twice without unique errors", async () => {
+    await seedPromptDocs(app.ctx.prisma);
+    await seedPromptDocs(app.ctx.prisma);
+    const listed = await app.inject({ method: "GET", url: "/admin/copy", headers: auth() });
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().system).toBe(SYSTEM_PROMPT);
+    expect(listed.json().titleJob).toBe(TITLE_JOB_PROMPT);
+    expect(listed.json().emptyHero).toEqual([...SUGGESTED_PROMPTS_ZH]);
+  });
+
+  it("lets admin edit empty-state copy and hides system prompt from the public route", async () => {
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { emptyHero: ["幫我寫一封跟進電郵。", "用三點解釋聚智慧。"] },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().emptyHero).toEqual(["幫我寫一封跟進電郵。", "用三點解釋聚智慧。"]);
+    const publicCopy = await app.inject({ method: "GET", url: "/v1/copy" });
+    expect(publicCopy.statusCode).toBe(200);
+    expect(publicCopy.json()).toEqual({ emptyHero: ["幫我寫一封跟進電郵。", "用三點解釋聚智慧。"] });
+    expect(JSON.stringify(publicCopy.json())).not.toContain("系統");
+    expect(JSON.stringify(publicCopy.json())).not.toContain(SYSTEM_PROMPT.slice(0, 12));
+    const audit = await app.inject({ method: "GET", url: "/admin/audit?action=copy.update", headers: auth() });
+    const row = (audit.json().items as Array<{ action: string; payload: { before?: { emptyHero?: string[] } } }>)[0];
+    expect(row?.action).toBe("copy.update");
+    expect(row?.payload.before?.emptyHero).toEqual([...SUGGESTED_PROMPTS_ZH]);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { emptyHero: [...SUGGESTED_PROMPTS_ZH] },
+    });
+  });
+
+  it("lets admin change the system prompt for the next chat turn", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { system: "你是測試助手。只講測試。" },
+    });
+    expect(patched.statusCode).toBe(200);
+    const member = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `copy-system-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${member.json().accessToken}` },
+      payload: { content: "你係邊個", clientMessageId: randomUUID() },
+    });
+    expect(sent.statusCode).toBe(200);
+    const system = openrouter.last?.messages.find((row) => row.role === "system");
+    expect(typeof system?.content === "string" && system.content.startsWith("你是測試助手。")).toBe(true);
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { system: SYSTEM_PROMPT },
+    });
+  });
+
+  it("lets admin change the title job prompt", async () => {
+    await ensureTextPool();
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { titleJob: "只輸出四字標題。" },
+    });
+    expect(patched.statusCode).toBe(200);
+    const conversationId = createId();
+    await app.ctx.prisma.conversation.create({ data: { id: conversationId, userId: adminId } });
+    await app.ctx.prisma.message.createMany({
+      data: [
+        {
+          id: createId(),
+          conversationId,
+          role: MessageRole.USER,
+          status: MessageStatus.COMPLETED,
+          content: "講下松樹",
+        },
+        {
+          id: createId(),
+          conversationId,
+          role: MessageRole.ASSISTANT,
+          status: MessageStatus.COMPLETED,
+          content: "松樹常配淡墨。",
+        },
+      ],
+    });
+    await new GenerateTitleService(app.ctx.prisma, openrouter).run(conversationId, "deepseek/deepseek-chat");
+    expect(openrouter.lastComplete?.messages[0]?.content).toBe("只輸出四字標題。");
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { titleJob: TITLE_JOB_PROMPT },
+    });
+  });
+
+  it("rejects empty copy patches", async () => {
+    const denied = await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { system: "" },
+    });
+    expect(denied.statusCode).toBe(400);
+    const emptyList = await app.inject({
+      method: "PATCH",
+      url: "/admin/copy",
+      headers: auth(),
+      payload: { emptyHero: [] },
+    });
+    expect(emptyList.statusCode).toBe(400);
   });
 });

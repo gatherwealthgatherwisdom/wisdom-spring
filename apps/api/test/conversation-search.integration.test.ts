@@ -12,6 +12,7 @@ import {
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
+import { invalidatePromptDocs } from "../src/modules/admin/prompt-docs";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
 
 function unusedClient(): OpenRouterClient {
@@ -48,7 +49,9 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.catalogEntry.deleteMany();
   await prisma.featureFlag.deleteMany();
   await prisma.appSetting.deleteMany();
+  await prisma.promptDoc.deleteMany();
   invalidateAppLimits();
+  invalidatePromptDocs();
 }
 
 async function register(app: Awaited<ReturnType<typeof buildApp>>, email: string): Promise<{ token: string; userId: string }> {

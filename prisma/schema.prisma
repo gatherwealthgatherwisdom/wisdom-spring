@@ -242,6 +242,12 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model PromptDoc {
+  key       String   @id @db.VarChar(32)
+  body      String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 model AdminAuditLog {
   id        String   @id
   actorId   String

@@ -6,9 +6,13 @@ import { Icon, type IconName } from "../../shared/ui/Icon";
 export function EmptyHero({
   text,
   onCard,
+  suggestions,
+  onSuggest,
 }: {
   text: Copy;
   onCard: (card: "email" | "translate" | "image" | "resume") => void;
+  suggestions?: string[];
+  onSuggest?: (sentence: string) => void;
 }) {
   const colors = useColors();
   const cards = [
@@ -29,6 +33,26 @@ export function EmptyHero({
           </Pressable>
         ))}
       </View>
+      {suggestions && suggestions.length > 0 ? (
+        <View style={{ marginTop: 16, gap: 8 }}>
+          {suggestions.map((sentence) => (
+            <Pressable
+              key={sentence}
+              onPress={() => onSuggest?.(sentence)}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.line,
+                backgroundColor: colors.card,
+                borderRadius: 14,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <Text style={{ color: colors.ink, fontSize: 14 }}>{sentence}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

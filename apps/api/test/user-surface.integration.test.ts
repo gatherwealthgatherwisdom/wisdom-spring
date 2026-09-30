@@ -1,9 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, FeatureFlagKey, LIMITS, createId, hkMonthRange, publicFlagItems } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, createId, hkMonthRange, publicFlagItems } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
+import { invalidatePromptDocs } from "../src/modules/admin/prompt-docs";
 import type { OpenRouterClient } from "../src/modules/catalog/infra/openrouter.client";
 
 function unusedClient(): OpenRouterClient {
@@ -41,7 +42,9 @@ async function reset(prisma: PrismaClient): Promise<void> {
   await prisma.announcement.deleteMany();
   await prisma.featureFlag.deleteMany();
   await prisma.appSetting.deleteMany();
+  await prisma.promptDoc.deleteMany();
   invalidateAppLimits();
+  invalidatePromptDocs();
 }
 
 async function register(app: Awaited<ReturnType<typeof buildApp>>, email: string): Promise<string> {
@@ -96,6 +99,13 @@ describe("home and me live data", () => {
     });
     expect(JSON.stringify(response.json())).not.toContain("monthly");
     expect(JSON.stringify(response.json())).not.toContain("Prompt");
+  });
+
+  it("returns public empty-state copy without the system prompt", async () => {
+    const response = await app.inject({ method: "GET", url: "/v1/copy" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ emptyHero: [...SUGGESTED_PROMPTS_ZH] });
+    expect(JSON.stringify(response.json())).not.toContain("system");
   });
 
   it("returns default public flags when the flag rows are missing", async () => {

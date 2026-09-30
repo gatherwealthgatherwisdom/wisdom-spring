@@ -125,6 +125,10 @@ export const PublicLimitsSchema = z.object({
   uploadMaxBytes: z.number().int(),
 });
 
+export const PublicCopySchema = z.object({
+  emptyHero: z.array(z.string()),
+});
+
 export const AuthResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),

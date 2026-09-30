@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { FILE_TITLE, LOOK_TITLE, ModelCapability, PlanTier, assetIdsOf, isPdfMime } from "@spring/shared";
+import { loadPromptDocs } from "../../admin/prompt-docs";
 import type { OpenRouterClient } from "../../catalog/infra/openrouter.client";
 import { PrismaModelPoolReader } from "../../catalog/infra/pool.repository";
 import { isEligible } from "../../catalog/application/draw-model";
@@ -40,12 +41,13 @@ export class GenerateTitleService {
             .join("\n")
             .slice(0, 2_000);
     if (!transcript) return;
+    const { title_job: titleJob } = await loadPromptDocs(this.prisma);
     try {
       const result = await this.openrouter.completeChat({
         model: slug,
         maxTokens: 32,
         messages: [
-          { role: "system", content: "用最多20個字概括對話，只輸出標題本身，不要引號。" },
+          { role: "system", content: titleJob },
           { role: "user", content: `${transcript}\n（本輪模型：${servedModel}）` },
         ],
       });
