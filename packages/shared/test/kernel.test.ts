@@ -8,11 +8,12 @@ import { SYSTEM_PROMPT } from "../src/constants/openrouter";
 import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
-import { UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
+import { CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
 import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
+import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
@@ -243,11 +244,46 @@ describe("tool catalog", () => {
     expect(usesWebSearch("rewrite")).toBe(false);
   });
 
-  it("carries write, image, and translate catalog kinds", () => {
-    expect(CATALOG_KINDS).toEqual(["tool", "aide", "write", "image", "translate"]);
+  it("carries write, image, translate, and discover catalog kinds", () => {
+    expect(CATALOG_KINDS).toEqual(["tool", "aide", "write", "image", "translate", "discover"]);
     expect(WRITE_TEMPLATES.every((item) => item.blurbZh.length > 0 && item.instruction.length > 0)).toBe(true);
     expect(IMAGE_STYLES.map((item) => item.id)).toEqual(["ink", "paper", "night"]);
     expect(TRANSLATE_LANGUAGES.map((item) => item.id)).toEqual(["zh-HK", "zh-CN", "en", "ja"]);
+    expect(SPRING_DISCOVER_CARDS.filter((item) => item.section === "hero")).toHaveLength(3);
+    expect(SPRING_DISCOVER_CARDS.filter((item) => item.section === "reco")).toHaveLength(12);
+    expect(SPRING_DISCOVER_CARDS.filter((item) => item.section === "draw")).toHaveLength(2);
+    expect(
+      SPRING_DISCOVER_CARDS.every(
+        (item) => isDiscoverSection(item.section) && isDiscoverArtId(item.art) && DISCOVER_TONE_RE.test(item.tone),
+      ),
+    ).toBe(true);
+    expect(
+      CreateCatalogEntrySchema.safeParse({
+        kind: "discover",
+        id: "x",
+        zh: "甲",
+        en: "A",
+        blurbZh: "甲",
+        blurbEn: "A",
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateCatalogEntrySchema.safeParse({
+        kind: "discover",
+        id: "x",
+        zh: "甲",
+        en: "A",
+        blurbZh: "甲",
+        blurbEn: "A",
+        section: "reco",
+        tone: "#1F6B4A",
+        art: "recoWrite",
+      }).success,
+    ).toBe(true);
+    expect(UpdateCatalogEntrySchema.safeParse({ art: "not-an-art" }).success).toBe(false);
+    expect(UpdateCatalogEntrySchema.safeParse({ section: "banner" }).success).toBe(false);
+    expect(UpdateCatalogEntrySchema.safeParse({ tone: "pine" }).success).toBe(false);
+    expect(UpdateCatalogEntrySchema.safeParse({ section: "hero" }).success).toBe(true);
   });
 
   it("accepts pdf uploads separately from images", () => {

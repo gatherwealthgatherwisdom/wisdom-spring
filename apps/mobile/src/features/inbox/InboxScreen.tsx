@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
-import { aidesFromCatalog, DRAW_CARDS, HEROES, toolsFromCatalog } from "../discover/catalog";
+import { aidesFromCatalog, cardsFromDiscover, toolsFromCatalog } from "../discover/catalog";
 import { PoolSheet } from "../discover/PoolSheet";
 import { DrawerMenu } from "./DrawerMenu";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -31,7 +31,10 @@ export function InboxScreen({ navigation }: Props) {
   const notices = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
   const catalogTools = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
   const catalogAides = useQuery({ queryKey: ["catalog-aides"], queryFn: () => spring.catalogAides() });
+  const catalogDiscover = useQuery({ queryKey: ["catalog-discover"], queryFn: () => spring.catalogDiscover() });
   const bots = aidesFromCatalog(catalogAides.data?.items);
+  const inboxHero = cardsFromDiscover(catalogDiscover.data?.items, "hero")[0];
+  const draws = cardsFromDiscover(catalogDiscover.data?.items, "draw");
   const dismissedAnnouncementId = usePrefs((state) => state.dismissedAnnouncementId);
   const setDismissedAnnouncementId = usePrefs((state) => state.setDismissedAnnouncementId);
   const last = chats.data?.items[0];
@@ -89,14 +92,22 @@ export function InboxScreen({ navigation }: Props) {
             </Pressable>
           </View>
         ) : null}
-        <Cover source={HEROES[0].art} style={{ borderRadius: 16, minHeight: 124, marginBottom: 14 }} dim={0.42}>
-          <Pressable onPress={() => navigation.navigate("Discover")} style={{ minHeight: 124, padding: 16, justifyContent: "space-between" }}>
-            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? HEROES[0].en : HEROES[0].zh}</Text>
+        {inboxHero ? (
+        <Cover source={inboxHero.art} style={{ borderRadius: 16, minHeight: 124, marginBottom: 14 }} dim={0.42}>
+          <Pressable
+            onPress={() => {
+              if (inboxHero.toolId) stack?.navigate("Tool", { id: inboxHero.toolId });
+              else navigation.navigate("Discover");
+            }}
+            style={{ minHeight: 124, padding: 16, justifyContent: "space-between" }}
+          >
+            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? inboxHero.en : inboxHero.zh}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 }}>
               <Text style={{ color: colors.ink }}>{text.explore}</Text>
             </View>
           </Pressable>
         </Cover>
+        ) : null}
         <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 14 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.tools}</Text>
@@ -117,9 +128,9 @@ export function InboxScreen({ navigation }: Props) {
             <Pressable onPress={() => navigation.navigate("Image")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {DRAW_CARDS.map((card) => (
+            {draws.map((card) => (
               <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 132, borderRadius: 16 }} dim={0.18}>
-                <Pressable onPress={() => openChat(navigation, { mode: "image", imageStyle: card.id === "portrait" ? "paper" : "ink" })} style={{ minHeight: 132, padding: 12, justifyContent: "flex-end" }}>
+                <Pressable onPress={() => openChat(navigation, { mode: card.mode ?? "image", imageStyle: card.imageStyle ?? "ink" })} style={{ minHeight: 132, padding: 12, justifyContent: "flex-end" }}>
                   <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
                     <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
                   </View>

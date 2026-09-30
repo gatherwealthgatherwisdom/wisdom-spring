@@ -11,7 +11,7 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
-import { HEROES, RECOS, toolsFromCatalog, type CardItem } from "./catalog";
+import { cardsFromDiscover, toolsFromCatalog, type CardItem } from "./catalog";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Discover">;
 const SCREEN_W = Dimensions.get("window").width;
@@ -24,11 +24,14 @@ export function DiscoverScreen({ navigation }: Props) {
   const text = copy[locale];
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
   const catalog = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
+  const discover = useQuery({ queryKey: ["catalog-discover"], queryFn: () => spring.catalogDiscover() });
   const tools = toolsFromCatalog(catalog.data?.items);
+  const heroes = cardsFromDiscover(discover.data?.items, "hero");
+  const recos = cardsFromDiscover(discover.data?.items, "reco");
   const [page, setPage] = useState(0);
   const pages = [...new Set(tools.map((tool) => tool.page))].sort((a, b) => a - b);
-  const featured = RECOS.slice(0, 2);
-  const rest = RECOS.slice(2);
+  const featured = recos.slice(0, 2);
+  const rest = recos.slice(2);
 
   function onToolsScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     setPage(Math.round(event.nativeEvent.contentOffset.x / PAGE_W));
@@ -51,9 +54,15 @@ export function DiscoverScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 34, marginHorizontal: 20, marginBottom: 16 }}>{text.discover}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10, marginBottom: 18 }}>
-          {HEROES.map((hero) => (
+          {heroes.map((hero) => (
             <Cover key={hero.id} source={hero.art} style={{ width: HERO_W, height: 150, borderRadius: 16 }} dim={0.4}>
-              <Pressable onPress={() => stack?.navigate("AllTools")} style={{ flex: 1, justifyContent: "flex-end", padding: 14 }}>
+              <Pressable
+                onPress={() => {
+                  if (hero.toolId) openTool(hero.toolId);
+                  else stack?.navigate("AllTools");
+                }}
+                style={{ flex: 1, justifyContent: "flex-end", padding: 14 }}
+              >
                 <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{locale === "en" ? hero.en : hero.zh}</Text>
                 <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{text.viewAll}</Text>
               </Pressable>

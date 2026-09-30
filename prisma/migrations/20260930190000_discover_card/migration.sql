@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `CatalogEntry` MODIFY `kind` ENUM('TOOL', 'AIDE', 'WRITE', 'IMAGE', 'TRANSLATE', 'DISCOVER') NOT NULL;
+
+-- AlterTable
+ALTER TABLE `CatalogEntry` ADD COLUMN `art` VARCHAR(64) NULL,
+    ADD COLUMN `section` VARCHAR(16) NULL,
+    ADD COLUMN `tone` VARCHAR(16) NULL;

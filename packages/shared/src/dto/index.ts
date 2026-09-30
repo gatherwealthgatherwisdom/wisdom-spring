@@ -65,6 +65,8 @@ import type {
   CatalogStylesResponseSchema,
   CatalogToolViewSchema,
   CatalogToolsResponseSchema,
+  CatalogDiscoverResponseSchema,
+  CatalogDiscoverViewSchema,
   CatalogWriteResponseSchema,
   CatalogWriteViewSchema,
 } from "../schema/catalog.schema";
@@ -135,6 +137,8 @@ export type CatalogLanguageView = z.infer<typeof CatalogLanguageViewSchema>;
 export type CatalogWriteResponse = z.infer<typeof CatalogWriteResponseSchema>;
 export type CatalogStylesResponse = z.infer<typeof CatalogStylesResponseSchema>;
 export type CatalogLanguagesResponse = z.infer<typeof CatalogLanguagesResponseSchema>;
+export type CatalogDiscoverView = z.infer<typeof CatalogDiscoverViewSchema>;
+export type CatalogDiscoverResponse = z.infer<typeof CatalogDiscoverResponseSchema>;
 export type AdminCatalogItem = z.infer<typeof AdminCatalogItemSchema>;
 export type AdminCatalogQuery = z.infer<typeof AdminCatalogQuerySchema>;
 export type UpdateCatalogEntryRequest = z.infer<typeof UpdateCatalogEntrySchema>;

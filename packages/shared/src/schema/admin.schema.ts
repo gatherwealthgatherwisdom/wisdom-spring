@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATALOG_KINDS } from "../constants/catalog";
+import { DISCOVER_ART_IDS, DISCOVER_SECTIONS, DISCOVER_TONE_RE } from "../constants/discover";
 import { PlanTier } from "../enums/plan-tier";
 import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
@@ -197,6 +198,9 @@ export const AdminCatalogItemSchema = z.object({
   instruction: z.string().optional(),
   icon: z.string().optional(),
   page: z.number().int().optional(),
+  section: z.enum(DISCOVER_SECTIONS).optional(),
+  tone: z.string().regex(DISCOVER_TONE_RE).optional(),
+  art: z.enum(DISCOVER_ART_IDS).optional(),
 });
 
 export const AdminCatalogQuerySchema = z.object({
@@ -217,6 +221,9 @@ export const UpdateCatalogEntrySchema = z
     instruction: z.string().max(8_000).nullable().optional(),
     icon: z.string().trim().min(1).max(64).nullable().optional(),
     page: z.number().int().min(0).max(9).nullable().optional(),
+    section: z.enum(DISCOVER_SECTIONS).nullable().optional(),
+    tone: z.string().regex(DISCOVER_TONE_RE).nullable().optional(),
+    art: z.enum(DISCOVER_ART_IDS).nullable().optional(),
   })
   .refine(
     (value) =>
@@ -231,7 +238,10 @@ export const UpdateCatalogEntrySchema = z
       value.imageStyle !== undefined ||
       value.instruction !== undefined ||
       value.icon !== undefined ||
-      value.page !== undefined,
+      value.page !== undefined ||
+      value.section !== undefined ||
+      value.tone !== undefined ||
+      value.art !== undefined,
     { message: "empty" },
   );
 
@@ -255,4 +265,13 @@ export const CreateCatalogEntrySchema = z.object({
   instruction: z.string().max(8_000).optional(),
   icon: z.string().trim().min(1).max(64).optional(),
   page: z.number().int().min(0).max(9).optional(),
-});
+  section: z.enum(DISCOVER_SECTIONS).optional(),
+  tone: z.string().regex(DISCOVER_TONE_RE).optional(),
+  art: z.enum(DISCOVER_ART_IDS).optional(),
+})
+  .superRefine((value, ctx) => {
+    if (value.kind !== "discover") return;
+    if (!value.section) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["section"], message: "section" });
+    if (!value.tone) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tone"], message: "tone" });
+    if (!value.art) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["art"], message: "art" });
+  });

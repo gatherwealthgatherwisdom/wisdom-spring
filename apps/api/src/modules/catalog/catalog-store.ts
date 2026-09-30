@@ -2,17 +2,22 @@ import type { CatalogKind as PrismaCatalogKind, Prisma, PrismaClient } from "@pr
 import {
   AppError,
   ErrorCode,
+  DISCOVER_TONE_RE,
   IMAGE_STYLES,
   SPRING_AIDES,
+  SPRING_DISCOVER_CARDS,
   SPRING_TOOLS,
   TRANSLATE_LANGUAGES,
   WRITE_TEMPLATES,
   imageStyle,
+  isDiscoverArtId,
+  isDiscoverSection,
   toolInstruction,
   usesWebSearch,
   writeTemplate,
   type AdminCatalogItem,
   type CatalogAideView,
+  type CatalogDiscoverView,
   type CatalogKind,
   type CatalogLanguageView,
   type CatalogStyleView,
@@ -22,6 +27,7 @@ import {
   type CreateCatalogEntryRequest,
   type ImageStyle,
   type SpringAide,
+  type SpringDiscoverCard,
   type SpringTool,
   type TranslateLanguage,
   type UpdateCatalogEntryRequest,
@@ -34,6 +40,7 @@ const PRISMA_KIND: Record<CatalogKind, PrismaCatalogKind> = {
   write: "WRITE",
   image: "IMAGE",
   translate: "TRANSLATE",
+  discover: "DISCOVER",
 };
 
 const API_KIND: Record<PrismaCatalogKind, CatalogKind> = {
@@ -42,6 +49,7 @@ const API_KIND: Record<PrismaCatalogKind, CatalogKind> = {
   WRITE: "write",
   IMAGE: "image",
   TRANSLATE: "translate",
+  DISCOVER: "discover",
 };
 
 function toPrismaKind(kind: CatalogKind): PrismaCatalogKind {
@@ -138,6 +146,32 @@ function langFromConstant(item: TranslateLanguage, index: number): AdminCatalogI
   };
 }
 
+function discoverFromConstant(item: SpringDiscoverCard, index: number): AdminCatalogItem {
+  return {
+    kind: "discover",
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+    live: true,
+    sort: index,
+    section: item.section,
+    tone: item.tone,
+    art: item.art,
+    ...(item.toolId ? { templateId: item.toolId } : {}),
+    ...(item.mode ? { mode: item.mode } : {}),
+    ...(item.imageStyle ? { imageStyle: item.imageStyle } : {}),
+  };
+}
+
+function assertDiscover(item: AdminCatalogItem): void {
+  if (item.kind !== "discover") return;
+  if (!item.section || !isDiscoverSection(item.section)) throw new AppError(ErrorCode.VALIDATION);
+  if (!item.art || !isDiscoverArtId(item.art)) throw new AppError(ErrorCode.VALIDATION);
+  if (!item.tone || !DISCOVER_TONE_RE.test(item.tone)) throw new AppError(ErrorCode.VALIDATION);
+}
+
 function fromRow(row: {
   kind: PrismaCatalogKind;
   id: string;
@@ -153,6 +187,9 @@ function fromRow(row: {
   instruction: string | null;
   icon: string | null;
   page: number | null;
+  section: string | null;
+  tone: string | null;
+  art: string | null;
 }): AdminCatalogItem {
   return {
     kind: fromPrismaKind(row.kind),
@@ -169,6 +206,9 @@ function fromRow(row: {
     ...(row.instruction ? { instruction: row.instruction } : {}),
     ...(row.icon ? { icon: row.icon } : {}),
     ...(row.page !== null ? { page: row.page } : {}),
+    ...(row.section && isDiscoverSection(row.section) ? { section: row.section } : {}),
+    ...(row.tone && DISCOVER_TONE_RE.test(row.tone) ? { tone: row.tone } : {}),
+    ...(row.art && isDiscoverArtId(row.art) ? { art: row.art } : {}),
   };
 }
 
@@ -259,13 +299,18 @@ export async function listCatalog(prisma: PrismaClient, kind?: CatalogKind): Pro
     const row = byKey.get(`translate:${item.id}`);
     return row ? overlay(base, row) : base;
   });
+  const discover = SPRING_DISCOVER_CARDS.map((item, index) => {
+    const base = discoverFromConstant(item, index);
+    const row = byKey.get(`discover:${item.id}`);
+    return row ? overlay(base, row) : base;
+  });
   const known = new Set(
-    [...tools, ...aides, ...writes, ...styles, ...langs].map((item) => `${item.kind}:${item.id}`),
+    [...tools, ...aides, ...writes, ...styles, ...langs, ...discover].map((item) => `${item.kind}:${item.id}`),
   );
   const extras = rows
     .filter((row) => !known.has(`${fromPrismaKind(row.kind)}:${row.id}`))
     .map((row) => fromRow(row));
-  const all = [...tools, ...aides, ...writes, ...styles, ...langs, ...extras].filter(
+  const all = [...tools, ...aides, ...writes, ...styles, ...langs, ...discover, ...extras].filter(
     (item) => !kind || item.kind === kind,
   );
   all.sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id));
@@ -290,6 +335,27 @@ export async function publicStyles(prisma: PrismaClient): Promise<CatalogStyleVi
 
 export async function publicLanguages(prisma: PrismaClient): Promise<CatalogLanguageView[]> {
   return (await listCatalog(prisma, "translate")).filter((item) => item.live).map(toPublicLanguage);
+}
+
+export function toPublicDiscover(item: AdminCatalogItem): CatalogDiscoverView {
+  return {
+    id: item.id,
+    zh: item.zh,
+    en: item.en,
+    blurbZh: item.blurbZh,
+    blurbEn: item.blurbEn,
+    section: item.section ?? "reco",
+    tone: item.tone ?? "#1F6B4A",
+    art: item.art ?? "devices",
+    sort: item.sort,
+    ...(item.templateId ? { toolId: item.templateId } : {}),
+    ...(item.mode ? { mode: item.mode } : {}),
+    ...(item.imageStyle ? { imageStyle: item.imageStyle } : {}),
+  };
+}
+
+export async function publicDiscover(prisma: PrismaClient): Promise<CatalogDiscoverView[]> {
+  return (await listCatalog(prisma, "discover")).filter((item) => item.live).map(toPublicDiscover);
 }
 
 export async function catalogInstruction(
@@ -354,6 +420,9 @@ function toData(item: AdminCatalogItem): Prisma.CatalogEntryUncheckedCreateInput
     instruction: item.instruction ?? null,
     icon: item.icon ?? null,
     page: item.page ?? null,
+    section: item.section ?? null,
+    tone: item.tone ?? null,
+    art: item.art ?? null,
   };
 }
 
@@ -375,6 +444,9 @@ async function persist(prisma: PrismaClient, item: AdminCatalogItem): Promise<Ad
       instruction: data.instruction,
       icon: data.icon,
       page: data.page,
+      section: data.section,
+      tone: data.tone,
+      art: data.art,
     },
   });
   return item;
@@ -414,6 +486,9 @@ export async function patchCatalogEntry(
       : {}),
     ...(body.icon !== undefined ? (body.icon ? { icon: body.icon } : { icon: undefined }) : {}),
     ...(body.page !== undefined ? (body.page !== null ? { page: body.page } : { page: undefined }) : {}),
+    ...(body.section !== undefined ? (body.section ? { section: body.section } : { section: undefined }) : {}),
+    ...(body.tone !== undefined ? (body.tone ? { tone: body.tone } : { tone: undefined }) : {}),
+    ...(body.art !== undefined ? (body.art ? { art: body.art } : { art: undefined }) : {}),
   };
   if (body.mode === null) delete next.mode;
   if (body.templateId === null) delete next.templateId;
@@ -421,6 +496,10 @@ export async function patchCatalogEntry(
   if (body.instruction === null) delete next.instruction;
   if (body.icon === null) delete next.icon;
   if (body.page === null) delete next.page;
+  if (body.section === null) delete next.section;
+  if (body.tone === null) delete next.tone;
+  if (body.art === null) delete next.art;
+  assertDiscover(next);
   return persist(prisma, next);
 }
 
@@ -445,7 +524,11 @@ export async function createCatalogEntry(
     ...(body.instruction ? { instruction: body.instruction } : {}),
     ...(body.icon ? { icon: body.icon } : {}),
     ...(body.page !== undefined ? { page: body.page } : {}),
+    ...(body.section ? { section: body.section } : {}),
+    ...(body.tone ? { tone: body.tone } : {}),
+    ...(body.art ? { art: body.art } : {}),
   };
+  assertDiscover(item);
   return persist(prisma, item);
 }
 
@@ -456,6 +539,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
     ...WRITE_TEMPLATES.map((item, index) => toData(writeFromConstant(item, index))),
     ...IMAGE_STYLES.map((item, index) => toData(styleFromConstant(item, index))),
     ...TRANSLATE_LANGUAGES.map((item, index) => toData(langFromConstant(item, index))),
+    ...SPRING_DISCOVER_CARDS.map((item, index) => toData(discoverFromConstant(item, index))),
   ];
   await prisma.catalogEntry.createMany({ data, skipDuplicates: true });
 }

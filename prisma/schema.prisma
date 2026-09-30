@@ -272,6 +272,7 @@ enum CatalogKind {
   WRITE
   IMAGE
   TRANSLATE
+  DISCOVER
 }
 
 model CatalogEntry {
@@ -289,6 +290,9 @@ model CatalogEntry {
   instruction String?     @db.Text
   icon        String?     @db.VarChar(64)
   page        Int?
+  section     String?     @db.VarChar(16)
+  tone        String?     @db.VarChar(16)
+  art         String?     @db.VarChar(64)
   updatedAt   DateTime    @updatedAt
 
   @@id([kind, id])

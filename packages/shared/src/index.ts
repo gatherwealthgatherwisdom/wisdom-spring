@@ -25,6 +25,7 @@ export * from "./constants/allowlist";
 export * from "./constants/messages";
 export * from "./constants/tools";
 export * from "./constants/catalog";
+export * from "./constants/discover";
 export * from "./constants/uploads";
 export * from "./constants/feedback";
 export * from "./constants/prompts";

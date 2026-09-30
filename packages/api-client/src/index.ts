@@ -7,6 +7,7 @@ import type {
   AnnouncementView,
   CreateCatalogEntryRequest,
   CatalogAidesResponse,
+  CatalogDiscoverResponse,
   CatalogKind,
   CatalogLanguagesResponse,
   CatalogStylesResponse,
@@ -165,6 +166,10 @@ export class SpringClient {
 
   catalogLanguages(): Promise<CatalogLanguagesResponse> {
     return this.request("/v1/catalog/languages");
+  }
+
+  catalogDiscover(): Promise<CatalogDiscoverResponse> {
+    return this.request("/v1/catalog/discover");
   }
 
   conversations(query?: { q?: string; cursor?: string; mode?: string }): Promise<PageOf<ConversationView>> {

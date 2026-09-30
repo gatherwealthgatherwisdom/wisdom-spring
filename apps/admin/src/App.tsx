@@ -7,6 +7,7 @@ import { FlagsPage } from "./pages/FlagsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ModelsPage } from "./pages/ModelsPage";
 import { QuotasPage } from "./pages/QuotasPage";
+import { DiscoverPage } from "./pages/DiscoverPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { UsagePage } from "./pages/UsagePage";
@@ -42,6 +43,7 @@ export function App() {
         <NavLink to="/copy">文案</NavLink>
         <NavLink to="/tools">工具</NavLink>
         <NavLink to="/templates">模板</NavLink>
+        <NavLink to="/discover">發現</NavLink>
         <NavLink to="/announcements">公告</NavLink>
         <NavLink to="/audit">審計</NavLink>
         <button
@@ -65,6 +67,7 @@ export function App() {
           <Route path="/copy" element={<CopyPage />} />
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/models" replace />} />

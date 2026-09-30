@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
-import { DRAW_CARDS, HERO_ART, STYLE_ART } from "../discover/catalog";
+import { cardsFromDiscover, HERO_ART, STYLE_ART } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { mediaUrl, spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
@@ -27,7 +27,9 @@ export function ImageScreen({ navigation }: Props) {
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
   const chats = useQuery({ queryKey: ["conversations", "image"], queryFn: () => spring.conversations({ mode: "image" }), enabled: signedIn });
   const catalog = useQuery({ queryKey: ["catalog-styles"], queryFn: () => spring.catalogStyles() });
+  const discover = useQuery({ queryKey: ["catalog-discover"], queryFn: () => spring.catalogDiscover() });
   const styles = catalog.data?.items ?? IMAGE_STYLES;
+  const draws = cardsFromDiscover(discover.data?.items, "draw");
   const selected = useMemo(
     () => (styles.some((style) => style.id === styleId) ? styleId : (styles[0]?.id ?? "ink")),
     [styles, styleId],
@@ -65,14 +67,13 @@ export function ImageScreen({ navigation }: Props) {
         </Cover>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
           <UseCard title={text.imageCreate} art={HERO_ART.drawCreate} onPress={() => { setStyleId("ink"); setPrompt(text.imageCreate); }} />
-          {DRAW_CARDS.map((card) => (
+          {draws.map((card) => (
             <UseCard
               key={card.id}
               title={locale === "en" ? card.en : card.zh}
               art={card.art}
               onPress={() => {
-                const next = card.id === "portrait" ? "paper" : "ink";
-                setStyleId(next);
+                setStyleId(card.imageStyle ?? "ink");
                 setPrompt(locale === "en" ? card.en : card.zh);
               }}
             />

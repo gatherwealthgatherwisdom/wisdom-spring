@@ -58,3 +58,22 @@ export const CatalogStylesResponseSchema = z.object({
 export const CatalogLanguagesResponseSchema = z.object({
   items: z.array(CatalogLanguageViewSchema),
 });
+
+export const CatalogDiscoverViewSchema = z.object({
+  id: z.string(),
+  zh: z.string(),
+  en: z.string(),
+  blurbZh: z.string(),
+  blurbEn: z.string(),
+  section: z.string(),
+  tone: z.string(),
+  art: z.string(),
+  sort: z.number().int(),
+  toolId: z.string().optional(),
+  mode: ConversationModeSchema.optional(),
+  imageStyle: z.string().optional(),
+});
+
+export const CatalogDiscoverResponseSchema = z.object({
+  items: z.array(CatalogDiscoverViewSchema),
+});

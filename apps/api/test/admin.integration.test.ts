@@ -366,6 +366,8 @@ describe("admin panel", () => {
     await seedCatalog(app.ctx.prisma);
     const listed = await app.inject({ method: "GET", url: "/admin/catalog?kind=tool", headers: auth() });
     expect((listed.json().items as Array<{ id: string }>).some((item) => item.id === "rewrite")).toBe(true);
+    const discover = await app.inject({ method: "GET", url: "/admin/catalog?kind=discover", headers: auth() });
+    expect((discover.json().items as Array<{ id: string }>).some((item) => item.id === "devices")).toBe(true);
   });
 
   it("hides an unlisted tool from the public catalog", async () => {
@@ -587,6 +589,145 @@ describe("admin panel", () => {
       url: "/admin/catalog/translate/ja",
       headers: auth(),
       payload: { live: true },
+    });
+  });
+
+  it("lets admin edit discover cards and hides unpublished ones from the public catalog", async () => {
+    const before = await app.inject({ method: "GET", url: "/v1/catalog/discover" });
+    expect(before.statusCode).toBe(200);
+    const beforeItems = before.json().items as Array<{ id: string; zh: string; section: string }>;
+    expect(beforeItems.some((item) => item.id === "voice-in")).toBe(true);
+    expect(beforeItems.some((item) => item.id === "devices")).toBe(true);
+    expect(JSON.stringify(before.json())).not.toContain("instruction");
+    expect(JSON.stringify(before.json())).not.toContain("templateId");
+
+    const renamed = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/devices",
+      headers: auth(),
+      payload: { zh: "測試主視覺" },
+    });
+    expect(renamed.statusCode).toBe(200);
+    expect(renamed.json().zh).toBe("測試主視覺");
+
+    const hidden = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/voice-in",
+      headers: auth(),
+      payload: { live: false },
+    });
+    expect(hidden.statusCode).toBe(200);
+
+    const publicCards = await app.inject({ method: "GET", url: "/v1/catalog/discover" });
+    const publicItems = publicCards.json().items as Array<{ id: string; zh: string }>;
+    expect(publicItems.some((item) => item.id === "voice-in")).toBe(false);
+    expect(publicItems.some((item) => item.id === "devices" && item.zh === "測試主視覺")).toBe(true);
+    expect(JSON.stringify(publicCards.json())).not.toContain("instruction");
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/admin/catalog",
+      headers: auth(),
+      payload: {
+        kind: "discover",
+        id: "reco-test",
+        zh: "測試推薦",
+        en: "Test reco",
+        blurbZh: "測試簡介",
+        blurbEn: "Test blurb",
+        live: true,
+        sort: 200,
+        section: "reco",
+        tone: "#1F6B4A",
+        art: "recoWrite",
+        templateId: "rewrite",
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const afterCreate = await app.inject({ method: "GET", url: "/v1/catalog/discover" });
+    expect(
+      (afterCreate.json().items as Array<{ id: string; toolId?: string }>).some(
+        (item) => item.id === "reco-test" && item.toolId === "rewrite",
+      ),
+    ).toBe(true);
+
+    const unknownArt = await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/devices",
+      headers: auth(),
+      payload: { art: "not-an-art" },
+    });
+    expect(unknownArt.statusCode).toBe(400);
+    expect(unknownArt.json().error.code).toBe(ErrorCode.VALIDATION);
+
+    const badSection = await app.inject({
+      method: "POST",
+      url: "/admin/catalog",
+      headers: auth(),
+      payload: {
+        kind: "discover",
+        id: "bad-section",
+        zh: "錯區",
+        en: "Bad",
+        blurbZh: "錯",
+        blurbEn: "Bad",
+        section: "banner",
+        tone: "#1F6B4A",
+        art: "recoWrite",
+      },
+    });
+    expect(badSection.statusCode).toBe(400);
+
+    const badTone = await app.inject({
+      method: "POST",
+      url: "/admin/catalog",
+      headers: auth(),
+      payload: {
+        kind: "discover",
+        id: "bad-tone",
+        zh: "錯色",
+        en: "Bad",
+        blurbZh: "錯",
+        blurbEn: "Bad",
+        section: "reco",
+        tone: "pine",
+        art: "recoWrite",
+      },
+    });
+    expect(badTone.statusCode).toBe(400);
+
+    const missingFields = await app.inject({
+      method: "POST",
+      url: "/admin/catalog",
+      headers: auth(),
+      payload: {
+        kind: "discover",
+        id: "missing-art",
+        zh: "缺圖",
+        en: "Missing",
+        blurbZh: "缺",
+        blurbEn: "Missing",
+      },
+    });
+    expect(missingFields.statusCode).toBe(400);
+
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/devices",
+      headers: auth(),
+      payload: { zh: "在所有設備上使用智泉" },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/voice-in",
+      headers: auth(),
+      payload: { live: true },
+    });
+    await app.inject({
+      method: "PATCH",
+      url: "/admin/catalog/discover/reco-test",
+      headers: auth(),
+      payload: { live: false },
     });
   });
 
