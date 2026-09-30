@@ -97,6 +97,13 @@ export function drawModel(
   const eligible = rows.filter((row) => isEligible(row, input));
   let pool = eligible.filter((row) => !input.excludeSlugs.includes(row.slug));
   if (pool.length === 0) pool = eligible;
+  if (
+    input.capability === ModelCapability.TEXT &&
+    !input.requireImageOutput &&
+    pool.some((row) => row.supportsText && !row.supportsVision)
+  ) {
+    pool = pool.filter((row) => row.supportsText && !row.supportsVision);
+  }
   if (pool.length === 0) throw new AppError(ErrorCode.MODEL_POOL_EMPTY);
   const primary = weightedDraw(pool, rng);
   const fallbacks = pickFallbacks(pool, primary, LIMITS.fallbacksMax, rng);

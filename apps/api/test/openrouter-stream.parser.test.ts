@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseOpenRouterSse } from "../src/modules/catalog/infra/openrouter-stream.parser";
+import { ErrorCode } from "@spring/shared";
+import {
+  classifyUpstream,
+  parseOpenRouterSse,
+  shouldRetryWithNewSlug,
+} from "../src/modules/catalog/infra/openrouter-stream.parser";
 
 async function* chunks(parts: string[]): AsyncGenerator<string> {
   for (const part of parts) yield part;
@@ -44,5 +49,30 @@ describe("parseOpenRouterSse", () => {
       'data: {"model":"x-ai/grok","error":{"code":403,"message":"Unsupported region"},"choices":[{"delta":{"content":""},"finish_reason":"error"}]}\n\n',
     ]);
     expect(events[0]).toEqual({ type: "error", status: 403, message: "Unsupported region" });
+  });
+});
+
+describe("classifyUpstream", () => {
+  it("treats HTTP 401 as unavailable, not a Hong Kong region block", () => {
+    const error = classifyUpstream(401, JSON.stringify({ error: { message: "Invalid API key" } }));
+    expect(error.code).toBe(ErrorCode.UPSTREAM_UNAVAILABLE);
+    expect(shouldRetryWithNewSlug(error)).toBe(false);
+  });
+
+  it("retries region 403 and dead 404 endpoints on a new slug", () => {
+    const blocked = classifyUpstream(403, JSON.stringify({ error: { message: "Unsupported Regions" } }));
+    expect(blocked.code).toBe(ErrorCode.UPSTREAM_REGION_BLOCKED);
+    expect(shouldRetryWithNewSlug(blocked)).toBe(true);
+
+    const banned = classifyUpstream(403, JSON.stringify({ error: { message: "Author OpenAI is banned" } }));
+    expect(banned.code).toBe(ErrorCode.UPSTREAM_REGION_BLOCKED);
+
+    const other403 = classifyUpstream(403, JSON.stringify({ error: { message: "your IP address is not in the allowlist" } }));
+    expect(other403.code).toBe(ErrorCode.UPSTREAM_UNAVAILABLE);
+    expect(shouldRetryWithNewSlug(other403)).toBe(false);
+
+    const missing = classifyUpstream(404, JSON.stringify({ error: { message: "No endpoints found" } }));
+    expect(missing.code).toBe(ErrorCode.UPSTREAM_UNAVAILABLE);
+    expect(shouldRetryWithNewSlug(missing)).toBe(true);
   });
 });

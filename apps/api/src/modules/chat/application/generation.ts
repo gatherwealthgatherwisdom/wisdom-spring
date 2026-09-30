@@ -24,7 +24,13 @@ import type { SseSink } from "../../../http/sse";
 import type { ChatContentPart, ChatMessage, OpenRouterClient } from "../../catalog/infra/openrouter.client";
 import { persistGeneratedImage } from "../infra/generated-image.store";
 import { readUpload } from "../infra/upload.store";
-import { UpstreamError, type SpringStreamEvent, type StreamUsage } from "../../catalog/infra/openrouter-stream.parser";
+import {
+  classifyUpstream,
+  shouldRetryWithNewSlug,
+  UpstreamError,
+  type SpringStreamEvent,
+  type StreamUsage,
+} from "../../catalog/infra/openrouter-stream.parser";
 import type { AbortRegistry } from "./abort-registry";
 
 export interface TitleEnqueuer {
@@ -121,7 +127,7 @@ export async function runGeneration(
   deps.aborts.register(input.assistantMessageId, controller);
 
   let deny: "deny" | "allow" = "deny";
-  let regionRetries = 0;
+  let slugRetries = 0;
   let sawDelta = false;
   let text = "";
   let imageUrl: string | null = null;
@@ -227,17 +233,7 @@ export async function runGeneration(
             if (event.model) served = event.model;
             usage = event.usage;
           } else if (event.type === "error") {
-            const region =
-              event.status === 401 ||
-              event.status === 403 ||
-              /region|author banned|unsupported region/i.test(event.message);
-            const dataPolicy = /data policy|data collection|data_collection/i.test(event.message);
-            throw new UpstreamError(
-              region ? ErrorCode.UPSTREAM_REGION_BLOCKED : ErrorCode.UPSTREAM_UNAVAILABLE,
-              event.message,
-              event.status,
-              dataPolicy,
-            );
+            throw classifyUpstream(event.status, JSON.stringify({ error: { message: event.message } }));
           }
         }
         if (!sawDone && text.length === 0) {
@@ -337,21 +333,22 @@ export async function runGeneration(
         }
         if (
           error instanceof UpstreamError &&
-          error.code === ErrorCode.UPSTREAM_REGION_BLOCKED &&
-          regionRetries < LIMITS.sendRetryOnRegionBlock &&
+          shouldRetryWithNewSlug(error) &&
+          slugRetries < LIMITS.sendRetryOnRegionBlock &&
           !sawDelta
         ) {
-          regionRetries += 1;
+          slugRetries += 1;
           excludeSlugs = [...excludeSlugs, pickPrimary];
+          const region = error.code === ErrorCode.UPSTREAM_REGION_BLOCKED;
           await deps.prisma.modelPoolEntry
             .update({
               where: { slug: pickPrimary },
               data: {
-                regionStatus: "HK_BLOCKED",
                 healthStatus: "DOWN",
-                lastErrorCode: ErrorCode.UPSTREAM_REGION_BLOCKED,
+                lastErrorCode: error.code,
                 lastProbeAt: deps.now(),
                 fail24h: { increment: 1 },
+                ...(region ? { regionStatus: "HK_BLOCKED" as const } : {}),
               },
             })
             .catch(() => undefined);

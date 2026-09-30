@@ -25,6 +25,25 @@ export class UpstreamError extends Error {
   }
 }
 
+export function isRegionBlockMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    /unsupported regions?/.test(lower) ||
+    /author banned/.test(lower) ||
+    /author(?:\s+\S+)?\s+is banned/.test(lower) ||
+    /not available in (?:your )?region/.test(lower)
+  );
+}
+
+export function isDeadEndpoint(status: number, message: string): boolean {
+  return status === 404 || /no endpoints(?: found)?/i.test(message);
+}
+
+export function shouldRetryWithNewSlug(error: UpstreamError): boolean {
+  if (error.code === ErrorCode.UPSTREAM_REGION_BLOCKED) return true;
+  return isDeadEndpoint(error.status, error.message);
+}
+
 export function classifyUpstream(status: number, body: string): UpstreamError {
   let message = body.slice(0, 400);
   try {
@@ -42,7 +61,10 @@ export function classifyUpstream(status: number, body: string): UpstreamError {
   if (dataPolicy) return new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, message, status, true);
   if (status === 402) return new UpstreamError(ErrorCode.QUOTA_MONTHLY_COST, message, status);
   if (status === 429) return new UpstreamError(ErrorCode.UPSTREAM_RATE_LIMITED, message, status);
-  if (status === 401 || status === 403) return new UpstreamError(ErrorCode.UPSTREAM_REGION_BLOCKED, message, status);
+  if (status === 401) return new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, message, status);
+  if (status === 403 && isRegionBlockMessage(message)) {
+    return new UpstreamError(ErrorCode.UPSTREAM_REGION_BLOCKED, message, status);
+  }
   return new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, message, status);
 }
 

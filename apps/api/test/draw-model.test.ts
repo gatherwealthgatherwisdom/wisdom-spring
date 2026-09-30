@@ -110,8 +110,8 @@ describe("drawModel", () => {
 
   it("draws a vision model only when the turn asks to look at a photo", () => {
     const rows = [
-      row({ slug: "deepseek/chat" }),
       row({ slug: "qwen/vl", supportsVision: true }),
+      row({ slug: "deepseek/chat" }),
     ];
     const text = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero);
     expect(text.primary).toBe("deepseek/chat");
@@ -121,6 +121,19 @@ describe("drawModel", () => {
       zero,
     );
     expect(vision.primary).toBe("qwen/vl");
+  });
+
+  it("can draw a vision model for text when it is the only FREE-eligible row", () => {
+    const rows = [
+      row({ slug: "qwen/vl", supportsVision: true }),
+      row({
+        slug: "deepseek/expensive",
+        promptUsdMicrosPerMillion: 5_000_000n,
+        completionUsdMicrosPerMillion: 5_000_000n,
+      }),
+    ];
+    const pick = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero);
+    expect(pick.primary).toBe("qwen/vl");
   });
 
   it("draws an image model only when the turn asks for an image", () => {

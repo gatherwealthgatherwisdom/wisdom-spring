@@ -230,3 +230,114 @@ describe("POST /v1/messages", () => {
     expect(attempts).toBe(3);
   });
 });
+
+describe("POST /v1/messages dead-endpoint retry", () => {
+  const dead = "google/gemma-2-9b-it";
+  const live = "qwen/qwen3.7-flash";
+  const requested: string[] = [];
+  const client: OpenRouterClient = {
+    async listModels() {
+      return [];
+    },
+    async listImageModels() {
+      return [];
+    },
+    async completeChat() {
+      return { text: "標題", model: live, images: [] };
+    },
+    async generateImage() {
+      throw new Error("unused");
+    },
+    streamChat(input) {
+      requested.push(input.model);
+      if (input.model === dead) {
+        throw new UpstreamError(ErrorCode.UPSTREAM_UNAVAILABLE, "No endpoints found", 404);
+      }
+      return (async function* () {
+        yield { type: "delta" as const, text: "泉" };
+        yield {
+          type: "done" as const,
+          model: live,
+          usage: { promptTokens: 4, completionTokens: 1, costUsd: 0.00001 },
+        };
+      })();
+    },
+  };
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeAll(async () => {
+    const ctx = await createContext({
+      openrouter: client,
+      titles: { async enqueue() {} },
+    });
+    await reset(ctx.prisma);
+    for (const slug of [dead, live]) {
+      await ctx.prisma.modelCatalog.create({
+        data: {
+          slug,
+          name: slug,
+          author: slug.split("/")[0] ?? "unknown",
+          contextLength: 32_000,
+          inputModalities: ["text"],
+          outputModalities: ["text"],
+          pricing: { prompt: "0.00000005", completion: "0.0000001" },
+          isFreeRoute: false,
+          raw: {},
+          syncedAt: new Date(),
+        },
+      });
+    }
+    await ctx.prisma.modelPoolEntry.create({
+      data: {
+        slug: dead,
+        enabled: true,
+        regionStatus: "HK_SAFE",
+        healthStatus: "HEALTHY",
+        weight: 10_000,
+        qualityScore: 100,
+        minPlanTier: "FREE",
+      },
+    });
+    await ctx.prisma.modelPoolEntry.create({
+      data: {
+        slug: live,
+        enabled: true,
+        regionStatus: "HK_SAFE",
+        healthStatus: "HEALTHY",
+        weight: 1,
+        qualityScore: 1,
+        minPlanTier: "FREE",
+      },
+    });
+    app = await buildApp({ ctx });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await app.ctx.disconnect();
+  });
+
+  it("redraws after a 404 and leaves the dead slug HK_SAFE", async () => {
+    const registered = await app.inject({
+      method: "POST",
+      url: "/v1/auth/register",
+      payload: { email: `retry-${Date.now()}@gwgwgroup.com`, password: "spring-pass-1" },
+    });
+    const token = registered.json().accessToken as string;
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { content: "用一個字答：泉", clientMessageId: randomUUID() },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain("event: done");
+    expect(response.body).toContain("泉");
+    expect(requested[0]).toBe(dead);
+    expect(requested[1]).toBe(live);
+    const down = await app.ctx.prisma.modelPoolEntry.findUnique({ where: { slug: dead } });
+    expect(down?.healthStatus).toBe("DOWN");
+    expect(down?.regionStatus).toBe("HK_SAFE");
+    expect(down?.lastErrorCode).toBe(ErrorCode.UPSTREAM_UNAVAILABLE);
+  });
+});
