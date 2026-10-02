@@ -1,5 +1,7 @@
 import { FeatureFlagKey } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Card, PageHeader, Switch } from "@/components";
 import { client } from "../session";
 
 const LABELS: Record<string, { title: string; note: string }> = {
@@ -34,31 +36,33 @@ export function FlagsPage() {
   const flags = useQuery({ queryKey: ["admin-flags"], queryFn: () => client.adminFlags() });
   const update = useMutation({
     mutationFn: ({ key, enabled }: { key: string; enabled: boolean }) => client.adminUpdateFlag(key, { enabled }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-flags"] }),
+    onSuccess: () => {
+      toast.success("已更新旗標。");
+      void queryClient.invalidateQueries({ queryKey: ["admin-flags"] });
+    },
   });
   return (
     <section>
-      <h1>旗標</h1>
-      <div className="card">
+      <PageHeader title="旗標" description="開關只影響手機能力，唔會改模型池或清墨外觀。" />
+      <Card className="divide-y divide-line p-0">
         {(flags.data?.items ?? []).map((flag) => {
           const label = LABELS[flag.key] ?? { title: flag.key, note: "" };
           return (
-            <label className="row" key={flag.key} style={{ marginBottom: 14, alignItems: "flex-start" }}>
-              <input
-                type="checkbox"
+            <div key={flag.key} className="flex items-start justify-between gap-4 px-4 py-4">
+              <div>
+                <p className="font-medium text-ink">{label.title}</p>
+                <p className="text-xs text-muted">{flag.key}</p>
+                {label.note ? <p className="mt-1 text-sm text-muted">{label.note}</p> : null}
+              </div>
+              <Switch
                 checked={flag.enabled}
-                onChange={(event) => update.mutate({ key: flag.key, enabled: event.target.checked })}
+                onCheckedChange={(enabled) => update.mutate({ key: flag.key, enabled })}
               />
-              <span>
-                <strong>{label.title}</strong>
-                <span className="muted"> · {flag.key}</span>
-                {label.note ? <div className="note">{label.note}</div> : null}
-              </span>
-            </label>
+            </div>
           );
         })}
-        {flags.isLoading ? <p className="muted">載入中…</p> : null}
-      </div>
+        {flags.isLoading ? <p className="px-4 py-6 text-sm text-muted">載入中…</p> : null}
+      </Card>
     </section>
   );
 }

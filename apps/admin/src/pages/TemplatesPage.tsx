@@ -2,6 +2,28 @@ import { ApiError } from "@spring/api-client";
 import type { AdminCatalogItem, CatalogKind, CreateCatalogEntryRequest, UpdateCatalogEntryRequest } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import {
+  Button,
+  Checkbox,
+  DataTable,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  ErrorAlert,
+  Field,
+  Input,
+  PageHeader,
+  TableCell,
+  TableRow,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Textarea,
+  Toolbar,
+} from "@/components";
 import { client } from "../session";
 
 type Kind = Extract<CatalogKind, "write" | "image" | "translate">;
@@ -45,6 +67,7 @@ export function TemplatesPage() {
       setError("");
       setEditingId(null);
       setDraft(null);
+      toast.success("已儲存。");
       await refresh();
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "更新失敗。"),
@@ -56,6 +79,7 @@ export function TemplatesPage() {
       setError("");
       setCreateOpen(false);
       setCreate(emptyCreate);
+      toast.success("已新增。");
       await refresh();
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "新增失敗。"),
@@ -103,149 +127,171 @@ export function TemplatesPage() {
   }
 
   const instructionLabel = kind === "image" ? "風格提示" : "instruction";
+  const items = rows.data?.items ?? [];
 
   return (
     <section>
-      <h1>模板</h1>
-      <div className="toolbar">
-        {TABS.map((tab) => (
-          <button
-            key={tab.kind}
-            className={kind === tab.kind ? "btn" : "btn ghost"}
-            type="button"
-            onClick={() => {
-              setKind(tab.kind);
-              setEditingId(null);
-              setDraft(null);
-              setCreateOpen(false);
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-        <button className="btn ghost" type="button" onClick={() => setCreateOpen((open) => !open)}>
-          {createOpen ? "取消新增" : "新增"}
-        </button>
-      </div>
-      {error ? <p className="error">{error}</p> : null}
-      {createOpen ? (
-        <form className="card" onSubmit={onCreate} style={{ display: "grid", gap: 10, marginBottom: 16 }}>
-          <div className="row">
-            <input value={create.id} onChange={(event) => setCreate({ ...create, id: event.target.value })} placeholder="id" required />
-            <input
-              type="number"
-              value={create.sort}
-              onChange={(event) => setCreate({ ...create, sort: Number(event.target.value) })}
-            />
-          </div>
-          <div className="row">
-            <input value={create.zh} onChange={(event) => setCreate({ ...create, zh: event.target.value })} placeholder="中文名" required />
-            <input value={create.en} onChange={(event) => setCreate({ ...create, en: event.target.value })} placeholder="English" required />
-          </div>
-          <textarea
-            value={create.blurbZh}
-            onChange={(event) => setCreate({ ...create, blurbZh: event.target.value })}
-            placeholder="中文簡介"
-          />
-          <textarea
-            value={create.blurbEn}
-            onChange={(event) => setCreate({ ...create, blurbEn: event.target.value })}
-            placeholder="English blurb"
-          />
-          {kind !== "translate" ? (
-            <textarea
-              value={create.instruction}
-              onChange={(event) => setCreate({ ...create, instruction: event.target.value })}
-              placeholder={instructionLabel}
-              style={{ minHeight: 120, whiteSpace: "pre-wrap" }}
-            />
-          ) : null}
-          <button className="btn" type="submit" disabled={add.isPending}>
-            建立
-          </button>
-        </form>
-      ) : null}
-      <div className="card" style={{ overflowX: "auto" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>上架</th>
-              <th>sort</th>
-              <th>id</th>
-              <th>中文</th>
-              <th>English</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {(rows.data?.items ?? []).map((item) => (
-              <tr key={`${item.kind}:${item.id}`}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={item.live}
-                    onChange={(event) => update.mutate({ id: item.id, body: { live: event.target.checked } })}
-                  />
-                </td>
-                <td>
-                  <input
-                    type="number"
-                    value={item.sort}
-                    onChange={(event) => update.mutate({ id: item.id, body: { sort: Number(event.target.value) } })}
-                  />
-                </td>
-                <td>
-                  <code>{item.id}</code>
-                </td>
-                <td>{item.zh}</td>
-                <td>{item.en}</td>
-                <td>
-                  <button className="btn ghost" type="button" onClick={() => startEdit(item)}>
-                    編輯
-                  </button>
-                </td>
-              </tr>
+      <PageHeader title="模板" description="寫作模板、圖像風格、翻譯語言。" />
+      <Toolbar>
+        <Tabs
+          value={kind}
+          onValueChange={(value) => {
+            setKind(value as Kind);
+            setEditingId(null);
+            setDraft(null);
+            setCreateOpen(false);
+          }}
+        >
+          <TabsList>
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab.kind} value={tab.kind}>
+                {tab.label}
+              </TabsTrigger>
             ))}
-          </tbody>
-        </table>
-        {rows.isLoading ? <p className="muted">載入中…</p> : null}
-      </div>
-      {draft && editingId === draft.id ? (
-        <div className="card" style={{ marginTop: 16, display: "grid", gap: 10 }}>
-          <h2>
-            編輯 {draft.zh} <span className="muted">· {draft.id}</span>
-          </h2>
-          <div className="row">
-            <input value={draft.zh} onChange={(event) => setDraft({ ...draft, zh: event.target.value })} />
-            <input value={draft.en} onChange={(event) => setDraft({ ...draft, en: event.target.value })} />
-          </div>
-          <textarea value={draft.blurbZh} onChange={(event) => setDraft({ ...draft, blurbZh: event.target.value })} />
-          <textarea value={draft.blurbEn} onChange={(event) => setDraft({ ...draft, blurbEn: event.target.value })} />
-          {kind !== "translate" ? (
-            <textarea
-              value={draft.instruction ?? ""}
-              onChange={(event) => setDraft({ ...draft, instruction: event.target.value || undefined })}
-              placeholder={instructionLabel}
-              style={{ minHeight: 120, whiteSpace: "pre-wrap" }}
-            />
+          </TabsList>
+        </Tabs>
+        <Button variant="ghost" onClick={() => setCreateOpen(true)}>
+          新增
+        </Button>
+      </Toolbar>
+      <ErrorAlert message={error} />
+      <DataTable
+        columns={["上架", "sort", "id", "中文", "English", ""]}
+        loading={rows.isLoading}
+        empty={!rows.isLoading && items.length === 0 ? "未有模板。" : null}
+      >
+        {items.map((item) => (
+          <TableRow key={`${item.kind}:${item.id}`}>
+            <TableCell>
+              <Checkbox
+                checked={item.live}
+                onChange={(event) => update.mutate({ id: item.id, body: { live: event.target.checked } })}
+              />
+            </TableCell>
+            <TableCell>
+              <Input
+                type="number"
+                value={item.sort}
+                onChange={(event) => update.mutate({ id: item.id, body: { sort: Number(event.target.value) } })}
+              />
+            </TableCell>
+            <TableCell>
+              <code>{item.id}</code>
+            </TableCell>
+            <TableCell>{item.zh}</TableCell>
+            <TableCell>{item.en}</TableCell>
+            <TableCell>
+              <Button variant="ghost" size="sm" onClick={() => startEdit(item)}>
+                編輯
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </DataTable>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <form className="grid gap-3" onSubmit={onCreate}>
+            <DialogHeader>
+              <DialogTitle>新增模板</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="id">
+                <Input value={create.id} onChange={(event) => setCreate({ ...create, id: event.target.value })} required />
+              </Field>
+              <Field label="sort">
+                <Input
+                  type="number"
+                  value={create.sort}
+                  onChange={(event) => setCreate({ ...create, sort: Number(event.target.value) })}
+                />
+              </Field>
+              <Field label="中文名">
+                <Input value={create.zh} onChange={(event) => setCreate({ ...create, zh: event.target.value })} required />
+              </Field>
+              <Field label="English">
+                <Input value={create.en} onChange={(event) => setCreate({ ...create, en: event.target.value })} required />
+              </Field>
+            </div>
+            <Field label="中文簡介">
+              <Textarea
+                value={create.blurbZh}
+                onChange={(event) => setCreate({ ...create, blurbZh: event.target.value })}
+              />
+            </Field>
+            <Field label="English blurb">
+              <Textarea
+                value={create.blurbEn}
+                onChange={(event) => setCreate({ ...create, blurbEn: event.target.value })}
+              />
+            </Field>
+            {kind !== "translate" ? (
+              <Field label={instructionLabel}>
+                <Textarea
+                  className="min-h-[120px] whitespace-pre-wrap"
+                  value={create.instruction}
+                  onChange={(event) => setCreate({ ...create, instruction: event.target.value })}
+                />
+              </Field>
+            ) : null}
+            <DialogFooter>
+              <Button type="submit" disabled={add.isPending}>
+                建立
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(draft && editingId === draft.id)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingId(null);
+            setDraft(null);
+          }
+        }}
+      >
+        <DialogContent>
+          {draft ? (
+            <div className="grid gap-3">
+              <DialogHeader>
+                <DialogTitle>
+                  編輯 {draft.zh} <span className="text-sm font-normal text-muted">· {draft.id}</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="中文">
+                  <Input value={draft.zh} onChange={(event) => setDraft({ ...draft, zh: event.target.value })} />
+                </Field>
+                <Field label="English">
+                  <Input value={draft.en} onChange={(event) => setDraft({ ...draft, en: event.target.value })} />
+                </Field>
+              </div>
+              <Field label="中文簡介">
+                <Textarea value={draft.blurbZh} onChange={(event) => setDraft({ ...draft, blurbZh: event.target.value })} />
+              </Field>
+              <Field label="English blurb">
+                <Textarea value={draft.blurbEn} onChange={(event) => setDraft({ ...draft, blurbEn: event.target.value })} />
+              </Field>
+              {kind !== "translate" ? (
+                <Field label={instructionLabel}>
+                  <Textarea
+                    className="min-h-[120px] whitespace-pre-wrap"
+                    value={draft.instruction ?? ""}
+                    onChange={(event) => setDraft({ ...draft, instruction: event.target.value || undefined })}
+                  />
+                </Field>
+              ) : null}
+              <DialogFooter>
+                <Button disabled={update.isPending} onClick={saveEdit}>
+                  儲存
+                </Button>
+              </DialogFooter>
+            </div>
           ) : null}
-          <div className="row">
-            <button className="btn" type="button" disabled={update.isPending} onClick={saveEdit}>
-              儲存
-            </button>
-            <button
-              className="btn ghost"
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setDraft(null);
-              }}
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      ) : null}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

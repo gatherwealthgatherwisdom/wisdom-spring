@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { DataTable, Input, PageHeader, StatCard, TableCell, TableRow, TextLink, Toolbar } from "@/components";
 import { client } from "../session";
 
 function dollars(micros: string): string {
@@ -23,94 +23,71 @@ export function UsagePage() {
   const data = usage.data;
   return (
     <section>
-      <h1>用量</h1>
-      <div className="toolbar">
-        <label className="row">
-          <span className="muted">香港月份</span>
-          <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
+      <PageHeader title="用量" description="香港月份合計。按用戶最多 50 名，按費用排序。" />
+      <Toolbar>
+        <label className="flex items-center gap-2 text-sm text-muted">
+          香港月份
+          <Input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="w-44" />
         </label>
-      </div>
+      </Toolbar>
       {data ? (
-        <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <p>
-              區間 {data.from.slice(0, 10)} → {data.to.slice(0, 10)}
-            </p>
-            <p>
-              費用 {dollars(data.totals.costUsdMicros)} · 請求 {data.totals.requests}
-            </p>
-            <p>
-              tokens {data.totals.promptTokens} / {data.totals.completionTokens}
-            </p>
-            <p>
-              地區封鎖率 {(data.totals.regionBlockRate * 100).toFixed(1)}% · 後備率{" "}
-              {(data.totals.fallbackRate * 100).toFixed(1)}%
-            </p>
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label="費用" value={dollars(data.totals.costUsdMicros)} hint={`${data.from.slice(0, 10)} → ${data.to.slice(0, 10)}`} />
+            <StatCard label="請求" value={data.totals.requests} />
+            <StatCard
+              label="tokens"
+              value={`${data.totals.promptTokens} / ${data.totals.completionTokens}`}
+            />
+            <StatCard
+              label="封鎖 / 後備"
+              value={`${(data.totals.regionBlockRate * 100).toFixed(1)}%`}
+              hint={`後備 ${(data.totals.fallbackRate * 100).toFixed(1)}%`}
+            />
           </div>
-          <div className="card">
-            <h2>按模型</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>model</th>
-                  <th>USD</th>
-                  <th>requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.byModel.map((row) => (
-                  <tr key={row.model}>
-                    <td>{row.model}</td>
-                    <td>{dollars(row.costUsdMicros)}</td>
-                    <td>{row.requests}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <h2>按用戶</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>用戶</th>
-                  <th>USD</th>
-                  <th>requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.byUser.map((row) => (
-                  <tr key={row.userId}>
-                    <td>
-                      <Link to={`/users/${row.userId}`}>{row.email ?? row.phone ?? row.displayName ?? row.userId}</Link>
-                    </td>
-                    <td>{dollars(row.costUsdMicros)}</td>
-                    <td>{row.requests}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <h2>按計劃</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>plan</th>
-                  <th>USD</th>
-                  <th>requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.byPlan.map((row) => (
-                  <tr key={row.planTier}>
-                    <td>{row.planTier}</td>
-                    <td>{dollars(row.costUsdMicros)}</td>
-                    <td>{row.requests}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <h2 className="mb-2 text-base font-semibold">按模型</h2>
+            <DataTable columns={["model", "USD", "requests"]}>
+              {data.byModel.map((row) => (
+                <TableRow key={row.model}>
+                  <TableCell>{row.model}</TableCell>
+                  <TableCell>{dollars(row.costUsdMicros)}</TableCell>
+                  <TableCell>{row.requests}</TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
           </div>
-        </>
+          <div>
+            <h2 className="mb-2 text-base font-semibold">按用戶</h2>
+            <DataTable columns={["用戶", "USD", "requests"]} empty={data.byUser.length === 0 ? "呢個月未有用戶用量。" : null}>
+              {data.byUser.map((row) => (
+                <TableRow key={row.userId}>
+                  <TableCell>
+                    <TextLink to={`/users/${row.userId}`}>
+                      {row.email ?? row.phone ?? row.displayName ?? row.userId}
+                    </TextLink>
+                  </TableCell>
+                  <TableCell>{dollars(row.costUsdMicros)}</TableCell>
+                  <TableCell>{row.requests}</TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
+          </div>
+          <div>
+            <h2 className="mb-2 text-base font-semibold">按計劃</h2>
+            <DataTable columns={["plan", "USD", "requests"]}>
+              {data.byPlan.map((row) => (
+                <TableRow key={row.planTier}>
+                  <TableCell>{row.planTier}</TableCell>
+                  <TableCell>{dollars(row.costUsdMicros)}</TableCell>
+                  <TableCell>{row.requests}</TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
+          </div>
+        </div>
       ) : (
-        <p className="muted">載入中…</p>
+        <p className="text-sm text-muted">載入中…</p>
       )}
     </section>
   );

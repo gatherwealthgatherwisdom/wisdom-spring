@@ -2,6 +2,8 @@ import { ApiError } from "@spring/api-client";
 import { microsToUsd, usdToMicros, type AdminLimits, type UpdateLimitsRequest } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { Button, Card, ErrorAlert, FieldRow, Input, PageHeader } from "@/components";
 import { client } from "../session";
 
 type Draft = {
@@ -79,6 +81,7 @@ export function QuotasPage() {
     onSuccess: async (data) => {
       setError("");
       setDraft(fromLimits(data));
+      toast.success("已儲存配額。");
       await queryClient.invalidateQueries({ queryKey: ["admin-limits"] });
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "儲存失敗。"),
@@ -96,151 +99,128 @@ export function QuotasPage() {
 
   return (
     <section>
-      <h1>配額</h1>
-      <p className="note" style={{ marginTop: -8, marginBottom: 16 }}>
-        數字即時影響訪客次數、每日上限、FREE 單價 cap、上傳同歷史。
-      </p>
-      {error ? <p className="error">{error}</p> : null}
+      <PageHeader title="配額" description="數字即時影響訪客次數、每日上限、FREE 單價 cap、上傳同歷史。" />
+      <ErrorAlert message={error} />
       {draft ? (
-        <form className="card" onSubmit={onSubmit} style={{ display: "grid", gap: 18, maxWidth: 640 }}>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <h2>訪客</h2>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>試用次數</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                style={{ width: 120 }}
-                value={draft.guestTrialMessages}
-                onChange={(event) => set("guestTrialMessages", event.target.value)}
-              />
-            </label>
-          </fieldset>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <h2>FREE</h2>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每日次數</span>
-              <input
-                type="number"
-                min={1}
-                max={100000}
-                style={{ width: 120 }}
-                value={draft.freeDailyMessages}
-                onChange={(event) => set("freeDailyMessages", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每月 USD</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.freeMonthlyUsd}
-                onChange={(event) => set("freeMonthlyUsd", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>prompt / 1M USD</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.freeMaxPromptUsd}
-                onChange={(event) => set("freeMaxPromptUsd", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>completion / 1M USD</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.freeMaxCompletionUsd}
-                onChange={(event) => set("freeMaxCompletionUsd", event.target.value)}
-              />
-            </label>
-          </fieldset>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <h2>PLUS</h2>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每日次數</span>
-              <input
-                type="number"
-                min={1}
-                max={100000}
-                style={{ width: 120 }}
-                value={draft.plusDailyMessages}
-                onChange={(event) => set("plusDailyMessages", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每月 USD</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.plusMonthlyUsd}
-                onChange={(event) => set("plusMonthlyUsd", event.target.value)}
-              />
-            </label>
-          </fieldset>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <h2>INTERNAL</h2>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每日次數</span>
-              <input
-                type="number"
-                min={1}
-                max={100000}
-                style={{ width: 120 }}
-                value={draft.internalDailyMessages}
-                onChange={(event) => set("internalDailyMessages", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>每月 USD</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.internalMonthlyUsd}
-                onChange={(event) => set("internalMonthlyUsd", event.target.value)}
-              />
-            </label>
-          </fieldset>
-          <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-            <h2>上傳同歷史</h2>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>上傳上限 MB</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                style={{ width: 120 }}
-                value={draft.uploadMb}
-                onChange={(event) => set("uploadMb", event.target.value)}
-              />
-            </label>
-            <label className="row">
-              <span style={{ minWidth: 140 }}>歷史條數</span>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                style={{ width: 120 }}
-                value={draft.historyMaxMessages}
-                onChange={(event) => set("historyMaxMessages", event.target.value)}
-              />
-            </label>
-          </fieldset>
-          <div>
-            <button className="btn" type="submit" disabled={save.isPending}>
-              {save.isPending ? "儲存中…" : "儲存"}
-            </button>
-          </div>
+        <form className="max-w-2xl" onSubmit={onSubmit}>
+          <Card className="grid gap-6">
+            <fieldset className="grid gap-3 border-0 p-0">
+              <h2 className="text-base font-semibold">訪客</h2>
+              <FieldRow label="試用次數">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={draft.guestTrialMessages}
+                  onChange={(event) => set("guestTrialMessages", event.target.value)}
+                />
+              </FieldRow>
+            </fieldset>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <h2 className="text-base font-semibold">FREE</h2>
+              <FieldRow label="每日次數">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={draft.freeDailyMessages}
+                  onChange={(event) => set("freeDailyMessages", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="每月 USD">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.freeMonthlyUsd}
+                  onChange={(event) => set("freeMonthlyUsd", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="prompt / 1M USD">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.freeMaxPromptUsd}
+                  onChange={(event) => set("freeMaxPromptUsd", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="completion / 1M USD">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.freeMaxCompletionUsd}
+                  onChange={(event) => set("freeMaxCompletionUsd", event.target.value)}
+                />
+              </FieldRow>
+            </fieldset>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <h2 className="text-base font-semibold">PLUS</h2>
+              <FieldRow label="每日次數">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={draft.plusDailyMessages}
+                  onChange={(event) => set("plusDailyMessages", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="每月 USD">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.plusMonthlyUsd}
+                  onChange={(event) => set("plusMonthlyUsd", event.target.value)}
+                />
+              </FieldRow>
+            </fieldset>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <h2 className="text-base font-semibold">INTERNAL</h2>
+              <FieldRow label="每日次數">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100000}
+                  value={draft.internalDailyMessages}
+                  onChange={(event) => set("internalDailyMessages", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="每月 USD">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.internalMonthlyUsd}
+                  onChange={(event) => set("internalMonthlyUsd", event.target.value)}
+                />
+              </FieldRow>
+            </fieldset>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <h2 className="text-base font-semibold">上傳同歷史</h2>
+              <FieldRow label="上傳上限 MB">
+                <Input
+                  inputMode="decimal"
+                  className="w-28"
+                  value={draft.uploadMb}
+                  onChange={(event) => set("uploadMb", event.target.value)}
+                />
+              </FieldRow>
+              <FieldRow label="歷史條數">
+                <Input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={draft.historyMaxMessages}
+                  onChange={(event) => set("historyMaxMessages", event.target.value)}
+                />
+              </FieldRow>
+            </fieldset>
+            <div>
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending ? "儲存中…" : "儲存"}
+              </Button>
+            </div>
+          </Card>
         </form>
       ) : (
-        <p className="muted">載入中…</p>
+        <p className="text-sm text-muted">載入中…</p>
       )}
     </section>
   );

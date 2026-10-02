@@ -2,7 +2,23 @@ import { ApiError } from "@spring/api-client";
 import { microsToUsd } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  Breadcrumbs,
+  Button,
+  Card,
+  DataTable,
+  ErrorAlert,
+  FieldRow,
+  Input,
+  PageHeader,
+  StatCard,
+  StatusBadge,
+  TableCell,
+  TableRow,
+  TextLink,
+} from "@/components";
 import { client } from "../session";
 
 export function UserDetailPage() {
@@ -25,6 +41,7 @@ export function UserDetailPage() {
     mutationFn: (bonusDailyMessages: number) => client.adminUpdateUser(id, { bonusDailyMessages }),
     onSuccess: async () => {
       setError("");
+      toast.success("已儲存額外次數。");
       await queryClient.invalidateQueries({ queryKey: ["admin-user", id] });
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
@@ -32,75 +49,68 @@ export function UserDetailPage() {
   });
 
   const data = detail.data;
+  const items = threads.data?.items ?? [];
   return (
     <section>
-      <p className="note">
-        <Link to="/users">用戶</Link>
-      </p>
-      <h1>用戶詳情</h1>
-      {error ? <p className="error">{error}</p> : null}
-      {detail.isLoading ? <p className="muted">載入中…</p> : null}
+      <Breadcrumbs items={[{ href: "/users", label: "用戶" }, { label: "詳情" }]} />
+      <PageHeader title="用戶詳情" description="只讀對話。額外每日次數只加喺已註冊用戶。" />
+      <ErrorAlert message={error} />
+      {detail.isLoading ? <p className="text-sm text-muted">載入中…</p> : null}
       {data ? (
-        <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <p>
+        <div className="grid gap-4">
+          <Card>
+            <p className="font-medium text-ink">
               {data.user.email ?? "—"} · {data.user.phone ?? "—"} · {data.user.displayName ?? "—"}
             </p>
-            <p className="muted">
-              {data.user.registered ? "已註冊" : "訪客"} · {data.user.planTier} · {data.user.status}
+            <p className="mt-1 flex flex-wrap gap-2 text-sm">
+              <StatusBadge value={data.user.registered ? "已註冊" : "訪客"} />
+              <StatusBadge value={data.user.planTier} />
+              <StatusBadge value={data.user.status} />
             </p>
-            <p>
-              今日 {data.quota.dailyUsed} / {data.quota.dailyLimit} · 本月 {data.monthUsage.requests} 次 · $
-              {microsToUsd(data.monthUsage.costUsdMicros)}
-            </p>
-            <p>
-              讚 {data.thumbs.up} · 踩 {data.thumbs.down}
-            </p>
-            <div className="row" style={{ marginTop: 12 }}>
-              <label className="row">
-                <span className="muted">額外每日次數</span>
-                <input type="number" min={0} max={10000} value={bonus} onChange={(event) => setBonus(event.target.value)} />
-              </label>
-              <button
-                className="btn"
-                type="button"
-                disabled={update.isPending}
-                onClick={() => update.mutate(Number(bonus))}
-              >
-                儲存
-              </button>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard label="今日" value={`${data.quota.dailyUsed} / ${data.quota.dailyLimit}`} />
+              <StatCard label="本月請求" value={data.monthUsage.requests} />
+              <StatCard label="本月費用" value={`$${microsToUsd(data.monthUsage.costUsdMicros)}`} />
+              <StatCard label="讚 / 踩" value={`${data.thumbs.up} / ${data.thumbs.down}`} />
             </div>
+            <div className="mt-4">
+              <FieldRow label="額外每日次數">
+                <Input
+                  type="number"
+                  min={0}
+                  max={10000}
+                  value={bonus}
+                  onChange={(event) => setBonus(event.target.value)}
+                />
+                <Button disabled={update.isPending} onClick={() => update.mutate(Number(bonus))}>
+                  儲存
+                </Button>
+              </FieldRow>
+            </div>
+          </Card>
+          <div>
+            <h2 className="mb-2 text-base font-semibold">對話</h2>
+            <DataTable
+              columns={["標題", "mode", "狀態", "最後訊息", ""]}
+              loading={threads.isLoading}
+              empty={!threads.isLoading && items.length === 0 ? "未有對話。" : null}
+            >
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.title ?? "—"}</TableCell>
+                  <TableCell>{item.mode}</TableCell>
+                  <TableCell>
+                    <StatusBadge value={item.status} />
+                  </TableCell>
+                  <TableCell>{item.lastMessageAt.slice(0, 16).replace("T", " ")}</TableCell>
+                  <TableCell>
+                    <TextLink to={`/users/${id}/c/${item.id}`}>訊息</TextLink>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
           </div>
-          <div className="card">
-            <h2>對話</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>標題</th>
-                  <th>mode</th>
-                  <th>狀態</th>
-                  <th>最後訊息</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {(threads.data?.items ?? []).map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.title ?? "—"}</td>
-                    <td>{item.mode}</td>
-                    <td>{item.status}</td>
-                    <td>{item.lastMessageAt.slice(0, 16).replace("T", " ")}</td>
-                    <td>
-                      <Link to={`/users/${id}/c/${item.id}`}>訊息</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {threads.isLoading ? <p className="muted">載入中…</p> : null}
-            {(threads.data?.items ?? []).length === 0 && !threads.isLoading ? <p className="muted">未有對話。</p> : null}
-          </div>
-        </>
+        </div>
       ) : null}
     </section>
   );
@@ -116,30 +126,33 @@ export function UserThreadPage() {
   const data = thread.data;
   return (
     <section>
-      <p className="note">
-        <Link to={`/users/${id}`}>用戶詳情</Link>
-      </p>
-      <h1>{data?.conversation.title ?? "對話"}</h1>
-      {thread.isLoading ? <p className="muted">載入中…</p> : null}
+      <Breadcrumbs
+        items={[
+          { href: "/users", label: "用戶" },
+          { href: `/users/${id}`, label: "詳情" },
+          { label: data?.conversation.title ?? "對話" },
+        ]}
+      />
+      <PageHeader title={data?.conversation.title ?? "對話"} />
+      {thread.isLoading ? <p className="text-sm text-muted">載入中…</p> : null}
       {data ? (
-        <div className="card">
-          <p className="muted">
-            {data.conversation.mode} · {data.conversation.status}
+        <Card className="grid gap-4">
+          <p className="flex flex-wrap gap-2 text-sm">
+            <StatusBadge value={data.conversation.mode} />
+            <StatusBadge value={data.conversation.status} />
           </p>
-          <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-            {data.messages.map((message) => (
-              <div key={message.id} style={{ borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>
-                <p className="muted">
-                  {message.role} · {message.status}
-                  {message.servedModel ? ` · ${message.servedModel}` : ""}
-                  {message.feedback ? ` · ${message.feedback}` : ""}
-                  {message.costUsdMicros !== "0" ? ` · $${microsToUsd(message.costUsdMicros)}` : ""}
-                </p>
-                <p style={{ whiteSpace: "pre-wrap" }}>{message.content || "—"}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+          {data.messages.map((message) => (
+            <article key={message.id} className="border-b border-line pb-3 last:border-0 last:pb-0">
+              <p className="text-xs text-muted">
+                {message.role} · {message.status}
+                {message.servedModel ? ` · ${message.servedModel}` : ""}
+                {message.feedback ? ` · ${message.feedback}` : ""}
+                {message.costUsdMicros !== "0" ? ` · $${microsToUsd(message.costUsdMicros)}` : ""}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-ink">{message.content || "—"}</p>
+            </article>
+          ))}
+        </Card>
       ) : null}
     </section>
   );

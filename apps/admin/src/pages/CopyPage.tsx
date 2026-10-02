@@ -2,6 +2,8 @@ import { ApiError } from "@spring/api-client";
 import type { AdminCopy, UpdateCopyRequest } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { Button, Card, ErrorAlert, Field, PageHeader, Textarea } from "@/components";
 import { client } from "../session";
 
 type Draft = {
@@ -50,6 +52,7 @@ export function CopyPage() {
     onSuccess: async (data) => {
       setError("");
       setDraft(fromCopy(data));
+      toast.success("已儲存文案。");
       await queryClient.invalidateQueries({ queryKey: ["admin-copy"] });
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "儲存失敗。"),
@@ -67,54 +70,48 @@ export function CopyPage() {
 
   return (
     <section>
-      <h1>文案</h1>
-      <p className="note" style={{ marginTop: -8, marginBottom: 16 }}>
-        改完即用。系統提示同睇圖／PDF 空 caption 即時影響生成；建議句會出現喺對話空狀態。
-      </p>
-      {error ? <p className="error">{error}</p> : null}
+      <PageHeader
+        title="文案"
+        description="改完即用。系統提示同睇圖／PDF 空 caption 即時影響生成；建議句會出現喺對話空狀態。"
+      />
+      <ErrorAlert message={error} />
       {draft ? (
-        <form className="card" onSubmit={onSubmit} style={{ display: "grid", gap: 18, maxWidth: 720 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>系統提示</span>
-            <textarea
-              rows={10}
-              value={draft.system}
-              onChange={(event) => set("system", event.target.value)}
-              required
-            />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>睇圖空 caption</span>
-            <textarea rows={2} value={draft.look} onChange={(event) => set("look", event.target.value)} required />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>PDF 空 caption</span>
-            <textarea rows={2} value={draft.file} onChange={(event) => set("file", event.target.value)} required />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>對話標題指示</span>
-            <textarea
-              rows={2}
-              value={draft.titleJob}
-              onChange={(event) => set("titleJob", event.target.value)}
-              required
-            />
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span>空狀態建議句（一行一句）</span>
-            <textarea
-              rows={6}
-              value={draft.emptyHero}
-              onChange={(event) => set("emptyHero", event.target.value)}
-              required
-            />
-          </label>
-          <button className="btn" type="submit" disabled={save.isPending}>
-            {save.isPending ? "儲存中…" : "儲存"}
-          </button>
+        <form className="max-w-3xl" onSubmit={onSubmit}>
+          <Card className="grid gap-5">
+            <Field label="系統提示">
+              <Textarea rows={10} value={draft.system} onChange={(event) => set("system", event.target.value)} required />
+            </Field>
+            <Field label="睇圖空 caption">
+              <Textarea rows={2} value={draft.look} onChange={(event) => set("look", event.target.value)} required />
+            </Field>
+            <Field label="PDF 空 caption">
+              <Textarea rows={2} value={draft.file} onChange={(event) => set("file", event.target.value)} required />
+            </Field>
+            <Field label="對話標題指示">
+              <Textarea
+                rows={2}
+                value={draft.titleJob}
+                onChange={(event) => set("titleJob", event.target.value)}
+                required
+              />
+            </Field>
+            <Field label="空狀態建議句（一行一句）">
+              <Textarea
+                rows={6}
+                value={draft.emptyHero}
+                onChange={(event) => set("emptyHero", event.target.value)}
+                required
+              />
+            </Field>
+            <div>
+              <Button type="submit" disabled={save.isPending}>
+                {save.isPending ? "儲存中…" : "儲存"}
+              </Button>
+            </div>
+          </Card>
         </form>
       ) : (
-        <p className="muted">載入中…</p>
+        <p className="text-sm text-muted">載入中…</p>
       )}
     </section>
   );

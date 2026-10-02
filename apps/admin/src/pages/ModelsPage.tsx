@@ -2,6 +2,21 @@ import { ApiError } from "@spring/api-client";
 import { ModelRegionStatus, PlanTier, isAllowlisted, type ModelPoolView, type UpdateModelPoolRequest } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+  Button,
+  Card,
+  Checkbox,
+  DataTable,
+  ErrorAlert,
+  Input,
+  NativeSelect,
+  PageHeader,
+  StatusBadge,
+  TableCell,
+  TableRow,
+  Toolbar,
+} from "@/components";
 import { client } from "../session";
 
 function price(micros: string): string {
@@ -14,7 +29,6 @@ export function ModelsPage() {
   const models = useQuery({ queryKey: ["admin-models"], queryFn: () => client.adminModels() });
   const [histogram, setHistogram] = useState<Array<{ slug: string; count: number }>>([]);
   const [error, setError] = useState("");
-  const [note, setNote] = useState("");
   const [plan, setPlan] = useState<PlanTier>(PlanTier.PLUS);
   const [enabled, setEnabled] = useState<"all" | "on" | "off">("all");
   const [region, setRegion] = useState<"all" | ModelRegionStatus>("all");
@@ -38,7 +52,7 @@ export function ModelsPage() {
     mutationFn: () => client.adminCatalogSync(),
     onSuccess: async (result) => {
       setError("");
-      setNote(`已同步 ${result.upserted} 個目錄。`);
+      toast.success(`已同步 ${result.upserted} 個目錄。`);
       await refresh();
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "同步失敗。"),
@@ -48,7 +62,7 @@ export function ModelsPage() {
     mutationFn: () => client.adminCatalogProbe(),
     onSuccess: async (result) => {
       setError("");
-      setNote(`已探測 ${result.probed} 個模型。`);
+      toast.success(`已探測 ${result.probed} 個模型。`);
       await refresh();
     },
     onError: (caught) => setError(caught instanceof ApiError ? caught.message : "探測失敗。"),
@@ -82,89 +96,90 @@ export function ModelsPage() {
 
   return (
     <section>
-      <h1>模型池</h1>
-      <div className="toolbar">
-        <button className="btn" type="button" disabled={sync.isPending} onClick={() => sync.mutate()}>
-          {sync.isPending ? "同步中…" : "同步目錄"}
-        </button>
-        <button className="btn ghost" type="button" disabled={probeBatch.isPending} onClick={() => probeBatch.mutate()}>
-          {probeBatch.isPending ? "探測中…" : "探測下一批"}
-        </button>
-        <select value={plan} onChange={(event) => setPlan(event.target.value as PlanTier)}>
+      <PageHeader
+        title="模型池"
+        description="香港可用名單先可以啟用。唔好開 GPT／Claude／Gemini 畀用戶揀。"
+        actions={
+          <>
+            <Button disabled={sync.isPending} onClick={() => sync.mutate()}>
+              {sync.isPending ? "同步中…" : "同步目錄"}
+            </Button>
+            <Button variant="ghost" disabled={probeBatch.isPending} onClick={() => probeBatch.mutate()}>
+              {probeBatch.isPending ? "探測中…" : "探測下一批"}
+            </Button>
+          </>
+        }
+      />
+      <Toolbar>
+        <NativeSelect value={plan} onChange={(event) => setPlan(event.target.value as PlanTier)}>
           <option value={PlanTier.FREE}>FREE</option>
           <option value={PlanTier.PLUS}>PLUS</option>
           <option value={PlanTier.INTERNAL}>INTERNAL</option>
-        </select>
-        <button className="btn ghost" type="button" onClick={() => void simulate()}>
+        </NativeSelect>
+        <Button variant="ghost" onClick={() => void simulate()}>
           模擬抽籤 100 次
-        </button>
-      </div>
-      <div className="toolbar">
-        <select value={enabled} onChange={(event) => setEnabled(event.target.value as "all" | "on" | "off")}>
+        </Button>
+        <NativeSelect value={enabled} onChange={(event) => setEnabled(event.target.value as "all" | "on" | "off")}>
           <option value="all">全部啟用狀態</option>
           <option value="on">已啟用</option>
           <option value="off">已關閉</option>
-        </select>
-        <select value={region} onChange={(event) => setRegion(event.target.value as "all" | ModelRegionStatus)}>
+        </NativeSelect>
+        <NativeSelect value={region} onChange={(event) => setRegion(event.target.value as "all" | ModelRegionStatus)}>
           <option value="all">全部地區</option>
           <option value={ModelRegionStatus.HK_SAFE}>HK_SAFE</option>
           <option value={ModelRegionStatus.UNKNOWN}>UNKNOWN</option>
           <option value={ModelRegionStatus.HK_BLOCKED}>HK_BLOCKED</option>
-        </select>
-        <select value={kind} onChange={(event) => setKind(event.target.value as "all" | "text" | "image" | "vision")}>
+        </NativeSelect>
+        <NativeSelect value={kind} onChange={(event) => setKind(event.target.value as "all" | "text" | "image" | "vision")}>
           <option value="all">全部能力</option>
           <option value="text">文字</option>
           <option value="image">圖像輸出</option>
           <option value="vision">睇圖</option>
-        </select>
-        <input value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="作者或 slug" />
-      </div>
-      {error ? <p className="error">{error}</p> : null}
-      {note ? <p className="note">{note}</p> : null}
+        </NativeSelect>
+        <Input value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="作者或 slug" className="w-52" />
+      </Toolbar>
+      <ErrorAlert message={error} />
       {histogram.length > 0 ? (
-        <div className="card bars" style={{ marginBottom: 16 }}>
+        <Card className="mb-4 grid gap-2">
           {histogram.map((item) => (
-            <div className="bar" key={item.slug}>
-              <span>{item.slug}</span>
-              <i style={{ width: `${(item.count / max) * 100}%` }} />
+            <div className="grid grid-cols-[minmax(140px,240px)_1fr_40px] items-center gap-2 text-sm" key={item.slug}>
+              <span className="truncate">{item.slug}</span>
+              <span className="block h-2 rounded-full bg-line">
+                <span className="block h-2 rounded-full bg-pine" style={{ width: `${(item.count / max) * 100}%` }} />
+              </span>
               <strong>{item.count}</strong>
             </div>
           ))}
-        </div>
+        </Card>
       ) : null}
-      <div className="card">
-        <table>
-          <thead>
-            <tr>
-              <th>slug</th>
-              <th>author</th>
-              <th>out</th>
-              <th>enabled</th>
-              <th>region</th>
-              <th>health</th>
-              <th>weight</th>
-              <th>quality</th>
-              <th>plan</th>
-              <th>out / 1M</th>
-              <th>24h</th>
-              <th>probe</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <ModelRow
-                key={row.slug}
-                row={row}
-                onChange={(body) => update.mutate({ slug: row.slug, body })}
-                onProbe={() => void client.adminProbe(row.slug).then(refresh)}
-              />
-            ))}
-          </tbody>
-        </table>
-        {models.isLoading ? <p className="muted">載入中…</p> : null}
-        {!models.isLoading && rows.length === 0 ? <p className="muted">沒有符合篩選的模型。</p> : null}
-      </div>
+      <DataTable
+        columns={[
+          "slug",
+          "author",
+          "out",
+          "enabled",
+          "region",
+          "health",
+          "weight",
+          "quality",
+          "plan",
+          "out / 1M",
+          "24h",
+          "probe",
+          "",
+        ]}
+        loading={models.isLoading}
+        empty={!models.isLoading && rows.length === 0 ? "沒有符合篩選的模型。" : null}
+      >
+        {rows.map((row) => (
+          <ModelRow
+            key={row.slug}
+            row={row}
+            onChange={(body) => update.mutate({ slug: row.slug, body })}
+            onProbe={() => void client.adminProbe(row.slug).then(refresh)}
+          />
+        ))}
+      </DataTable>
     </section>
   );
 }
@@ -195,23 +210,24 @@ function ModelRow({
   }
 
   return (
-    <tr>
-      <td>{row.slug}</td>
-      <td>{row.author}</td>
-      <td>{out}</td>
-      <td>
-        <input
-          type="checkbox"
+    <TableRow>
+      <TableCell>{row.slug}</TableCell>
+      <TableCell>{row.author}</TableCell>
+      <TableCell>{out}</TableCell>
+      <TableCell>
+        <Checkbox
           checked={row.enabled}
           disabled={!row.enabled && !allowlisted}
           title={allowlisted ? undefined : "唔喺香港可用名單"}
           onChange={(event) => onChange({ enabled: event.target.checked })}
         />
-      </td>
-      <td>{row.regionStatus}</td>
-      <td>{row.healthStatus}</td>
-      <td>
-        <input
+      </TableCell>
+      <TableCell>
+        <StatusBadge value={row.regionStatus} />
+      </TableCell>
+      <TableCell>{row.healthStatus}</TableCell>
+      <TableCell>
+        <Input
           type="number"
           min={0}
           max={10_000}
@@ -219,9 +235,9 @@ function ModelRow({
           onChange={(event) => setWeight(event.target.value)}
           onBlur={() => commitNumber("weight", weight, row.weight)}
         />
-      </td>
-      <td>
-        <input
+      </TableCell>
+      <TableCell>
+        <Input
           type="number"
           min={0}
           max={100}
@@ -229,27 +245,32 @@ function ModelRow({
           onChange={(event) => setQuality(event.target.value)}
           onBlur={() => commitNumber("qualityScore", quality, row.qualityScore)}
         />
-      </td>
-      <td>
-        <select value={row.minPlanTier} onChange={(event) => onChange({ minPlanTier: event.target.value as PlanTier })}>
+      </TableCell>
+      <TableCell>
+        <NativeSelect
+          value={row.minPlanTier}
+          onChange={(event) => onChange({ minPlanTier: event.target.value as PlanTier })}
+        >
           <option value={PlanTier.FREE}>FREE</option>
           <option value={PlanTier.PLUS}>PLUS</option>
           <option value={PlanTier.INTERNAL}>INTERNAL</option>
-        </select>
-      </td>
-      <td>{price(row.completionUsdMicrosPerMillion)}</td>
-      <td>
+        </NativeSelect>
+      </TableCell>
+      <TableCell>{price(row.completionUsdMicrosPerMillion)}</TableCell>
+      <TableCell>
         {row.success24h}/{row.fail24h}
-      </td>
-      <td>{row.lastProbeAt ? row.lastProbeAt.slice(0, 16).replace("T", " ") : "—"}</td>
-      <td className="row">
-        <button className="btn ghost" type="button" onClick={onProbe}>
-          探測
-        </button>
-        <button className="btn danger" type="button" onClick={() => onChange({ regionStatus: ModelRegionStatus.HK_BLOCKED })}>
-          封鎖
-        </button>
-      </td>
-    </tr>
+      </TableCell>
+      <TableCell>{row.lastProbeAt ? row.lastProbeAt.slice(0, 16).replace("T", " ") : "—"}</TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          <Button variant="ghost" size="sm" onClick={onProbe}>
+            探測
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => onChange({ regionStatus: ModelRegionStatus.HK_BLOCKED })}>
+            封鎖
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

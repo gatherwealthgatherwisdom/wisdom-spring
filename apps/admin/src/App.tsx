@@ -1,19 +1,20 @@
 import { useSyncExternalStore } from "react";
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AppShell, Toaster, TooltipProvider } from "@/components";
 import { AnnouncementsPage } from "./pages/AnnouncementsPage";
 import { AuditPage } from "./pages/AuditPage";
 import { CopyPage } from "./pages/CopyPage";
+import { DiscoverPage } from "./pages/DiscoverPage";
 import { FlagsPage } from "./pages/FlagsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ModelsPage } from "./pages/ModelsPage";
 import { QuotasPage } from "./pages/QuotasPage";
-import { DiscoverPage } from "./pages/DiscoverPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { UserDetailPage, UserThreadPage } from "./pages/UserDetailPage";
 import { UsagePage } from "./pages/UsagePage";
 import { UsersPage } from "./pages/UsersPage";
-import { clearSession, client, getSession, subscribeSession } from "./session";
+import { getSession, subscribeSession } from "./session";
 
 function useSession() {
   return useSyncExternalStore(subscribeSession, getSession);
@@ -23,41 +24,19 @@ export function App() {
   const session = useSession();
   if (!session.accessToken || session.user?.role !== "ADMIN") {
     return (
-      <Routes>
-        <Route path="*" element={<LoginPage />} />
-      </Routes>
+      <>
+        <Toaster />
+        <Routes>
+          <Route path="*" element={<LoginPage />} />
+        </Routes>
+      </>
     );
   }
 
   return (
-    <div className="shell">
-      <nav className="nav">
-        <div className="brand">
-          智泉
-          <small>ADMIN · GWGW</small>
-        </div>
-        <NavLink to="/models">模型</NavLink>
-        <NavLink to="/users">用戶</NavLink>
-        <NavLink to="/usage">用量</NavLink>
-        <NavLink to="/flags">旗標</NavLink>
-        <NavLink to="/quotas">配額</NavLink>
-        <NavLink to="/copy">文案</NavLink>
-        <NavLink to="/tools">工具</NavLink>
-        <NavLink to="/templates">模板</NavLink>
-        <NavLink to="/discover">發現</NavLink>
-        <NavLink to="/announcements">公告</NavLink>
-        <NavLink to="/audit">審計</NavLink>
-        <button
-          type="button"
-          onClick={() => {
-            void client.logout(false).catch(() => undefined);
-            clearSession();
-          }}
-        >
-          登出
-        </button>
-      </nav>
-      <main className="main">
+    <TooltipProvider delayDuration={200}>
+      <Toaster />
+      <AppShell>
         <Routes>
           <Route path="/" element={<Navigate to="/models" replace />} />
           <Route path="/models" element={<ModelsPage />} />
@@ -75,7 +54,7 @@ export function App() {
           <Route path="/audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/models" replace />} />
         </Routes>
-      </main>
-    </div>
+      </AppShell>
+    </TooltipProvider>
   );
 }
