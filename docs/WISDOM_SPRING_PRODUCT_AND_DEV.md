@@ -883,7 +883,7 @@ Pass the served model name into the title job and optionally into a hidden trail
 - CORS allow admin origin + mobile does not use CORS the same way.
 - TLS only in deployed env.
 
-Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin is the E.164 number in env `ADMIN_PHONE`.
+Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin is the E.164 number in env `ADMIN_PHONE` (default `+85292578982`). Development and test OTP is always `123456`.
 
 ---
 
@@ -896,7 +896,7 @@ REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 OPENROUTER_API_KEY=
-ADMIN_PHONE=
+ADMIN_PHONE=+85292578982
 APP_ORIGIN_ADMIN=http://localhost:5173
 PUBLIC_APP_URL=https://gwgwgroup.com
 ```

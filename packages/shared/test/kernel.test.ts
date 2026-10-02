@@ -10,7 +10,14 @@ import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/fea
 import { PlanTier } from "../src/enums/plan-tier";
 import { AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
-import { formatE164, formatLocalDigits, normalizeHkMobile, normalizeMobile } from "../src/lib/phone";
+import {
+  DEFAULT_ADMIN_PHONE,
+  DEV_PHONE_CODE,
+  formatE164,
+  formatLocalDigits,
+  normalizeHkMobile,
+  normalizeMobile,
+} from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
 import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
@@ -314,6 +321,12 @@ describe("Hong Kong mobile numbers", () => {
     expect(normalizeHkMobile("31234567")).toBeNull();
     expect(normalizeHkMobile("9123456")).toBeNull();
     expect(normalizeHkMobile("85231234567")).toBeNull();
+  });
+
+  it("keeps the default admin on a Hong Kong mobile", () => {
+    expect(DEFAULT_ADMIN_PHONE).toBe("+85292578982");
+    expect(normalizeMobile(DEFAULT_ADMIN_PHONE)).toBe(DEFAULT_ADMIN_PHONE);
+    expect(DEV_PHONE_CODE).toBe("123456");
   });
 });
 

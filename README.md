@@ -30,7 +30,7 @@ pnpm dev
 
 `PROBE_ASSUMES_HK_EGRESS=true` only on a host whose traffic exits from Hong Kong. A probe from anywhere else records health and can mark a slug blocked on HTTP 403, and it does not promote `UNKNOWN` to `HK_SAFE`.
 
-Verifying the E.164 number in `ADMIN_PHONE` (`+852`, `+853`, or `+86`) creates the first admin. Money on the wire is integer USD micros. The company OpenRouter key stays on the server.
+The default admin is `+85292578982` (`ADMIN_PHONE`). Development and test always accept `123456`; production still sends a random 6-digit SMS. Money on the wire is integer USD micros. The company OpenRouter key stays on the server.
 
 ## Checks
 

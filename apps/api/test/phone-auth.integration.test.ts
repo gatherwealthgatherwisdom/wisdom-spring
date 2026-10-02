@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, LIMITS, UserRole, createId } from "@spring/shared";
+import { DEFAULT_ADMIN_PHONE, DEV_PHONE_CODE, ErrorCode, LIMITS, UserRole, createId } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
@@ -176,21 +176,33 @@ describe("phone login", () => {
     expect(expired.statusCode).toBe(401);
   });
 
-  it("invalidates the previous code when a new one is sent", async () => {
-    const phone = "63333333";
-    const first = await issue(phone);
-    const second = await issue(phone);
-    expect(second).not.toBe(first);
-    const stale = await app.inject({
+  it("issues 123456 outside production", async () => {
+    const code = await issue("65555555");
+    expect(code).toBe(DEV_PHONE_CODE);
+    const ok = await app.inject({
       method: "POST",
       url: "/v1/auth/phone/verify",
-      payload: { phone, code: first },
+      payload: { phone: "65555555", code: DEV_PHONE_CODE },
     });
-    expect(stale.statusCode).toBe(401);
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().user.phone).toBe("+85265555555");
+  });
+
+  it("invalidates the previous code when a new one is sent", async () => {
+    const phone = "63333333";
+    await issue(phone);
+    const firstRow = await app.ctx.prisma.phoneCode.findFirst({
+      where: { phone: "+85263333333" },
+      orderBy: { createdAt: "asc" },
+    });
+    expect(firstRow?.usedAt).toBeNull();
+    await issue(phone);
+    const stale = await app.ctx.prisma.phoneCode.findUnique({ where: { id: firstRow!.id } });
+    expect(stale?.usedAt).not.toBeNull();
     const fresh = await app.inject({
       method: "POST",
       url: "/v1/auth/phone/verify",
-      payload: { phone, code: second },
+      payload: { phone, code: DEV_PHONE_CODE },
     });
     expect(fresh.statusCode).toBe(200);
     expect(fresh.json().user.registered).toBe(false);
@@ -304,18 +316,18 @@ describe("phone login", () => {
 
   it("promotes ADMIN_PHONE to ADMIN and refuses ordinary users on admin routes", async () => {
     await app.ctx.prisma.user.create({
-      data: { id: createId(), phone: "+85291111111", locale: "zh-HK", role: "USER" },
+      data: { id: createId(), phone: DEFAULT_ADMIN_PHONE, locale: "zh-HK", role: "USER" },
     });
-    const adminCode = await issue("+85291111111");
+    const adminCode = await issue(DEFAULT_ADMIN_PHONE);
     const adminOk = await app.inject({
       method: "POST",
       url: "/v1/auth/phone/verify",
-      payload: { phone: "+85291111111", code: adminCode },
+      payload: { phone: DEFAULT_ADMIN_PHONE, code: adminCode },
     });
     expect(adminOk.statusCode).toBe(200);
     expect(adminOk.json().user.role).toBe(UserRole.ADMIN);
     expect(adminOk.json().user.registered).toBe(true);
-    expect(adminOk.json().user.phone).toBe("+85291111111");
+    expect(adminOk.json().user.phone).toBe(DEFAULT_ADMIN_PHONE);
     const models = await app.inject({
       method: "GET",
       url: "/admin/models",

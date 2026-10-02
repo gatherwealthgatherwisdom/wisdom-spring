@@ -1,5 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import {
+  DEFAULT_ADMIN_PHONE,
   DIALS,
   UserRole,
   formatE164,
@@ -28,7 +29,7 @@ const DIAL_LABEL: Record<DialCode, string> = {
 export function LoginPage() {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [dial, setDial] = useState<DialCode>("852");
-  const [digits, setDigits] = useState("");
+  const [digits, setDigits] = useState(() => DEFAULT_ADMIN_PHONE.replace(/^\+852/, ""));
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");

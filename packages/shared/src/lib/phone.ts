@@ -6,6 +6,9 @@ export const DIALS = [
 
 export type DialCode = (typeof DIALS)[number]["code"];
 
+export const DEFAULT_ADMIN_PHONE = "+85292578982";
+export const DEV_PHONE_CODE = "123456";
+
 function specFor(dial: DialCode) {
   const spec = DIALS.find((item) => item.code === dial);
   if (!spec) throw new Error(dial);

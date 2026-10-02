@@ -1,6 +1,14 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import type { PrismaClient, User } from "@prisma/client";
-import { AppError, ErrorCode, Locale, UserRole, createId, type AuthResponse } from "@spring/shared";
+import {
+  AppError,
+  DEV_PHONE_CODE,
+  ErrorCode,
+  Locale,
+  UserRole,
+  createId,
+  type AuthResponse,
+} from "@spring/shared";
 import type { AppEnv } from "../../env";
 import type { AuthService } from "./auth.service";
 import type { SmsLog, SmsSender } from "./sms-sender";
@@ -28,11 +36,12 @@ export class PhoneAuthService {
     private readonly prisma: PrismaClient,
     private readonly auth: AuthService,
     private readonly sms: SmsSender,
-    private readonly env: Pick<AppEnv, "jwtAccessSecret" | "adminPhone">,
+    private readonly env: Pick<AppEnv, "jwtAccessSecret" | "adminPhone" | "nodeEnv">,
   ) {}
 
   async requestCode(phone: string, log: SmsLog): Promise<void> {
-    const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+    const code =
+      this.env.nodeEnv === "production" ? randomInt(0, 1_000_000).toString().padStart(6, "0") : DEV_PHONE_CODE;
     const now = new Date();
     await this.prisma.phoneCode.updateMany({
       where: { phone, usedAt: null },
