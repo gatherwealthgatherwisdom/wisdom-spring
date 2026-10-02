@@ -28,6 +28,7 @@ export type ChatParams = {
   imageStyle?: string;
   seed?: string;
   attach?: "camera" | "library" | "file";
+  focusMessageId?: string;
 };
 
 export type AppStackParamList = {

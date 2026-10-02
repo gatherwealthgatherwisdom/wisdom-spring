@@ -10,17 +10,29 @@ export function UserBubble({
   content,
   timeLabel,
   attachments,
+  highlighted,
 }: {
   content: string;
   timeLabel?: string;
   attachments?: MessageView["attachments"];
+  highlighted?: boolean;
 }) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const pdfLabel = copy[locale].pdfFile;
   return (
     <View style={{ alignItems: "flex-end", marginVertical: 6 }}>
-      <View style={{ maxWidth: "86%", backgroundColor: colors.user, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 }}>
+      <View
+        style={{
+          maxWidth: "86%",
+          backgroundColor: colors.user,
+          borderRadius: 18,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          borderWidth: highlighted ? 2 : 0,
+          borderColor: highlighted ? colors.onAccent : "transparent",
+        }}
+      >
         {attachments && attachments.length > 0 ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: content ? 8 : 0 }}>
             {attachments.map((item) => {

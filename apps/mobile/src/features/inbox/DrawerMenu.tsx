@@ -1,17 +1,27 @@
 import type { ConversationView } from "@spring/shared";
 import { ConversationStatus } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
-import { groupHistory, useHistory, useHistoryStore } from "../../shared/lib/history";
+import { mediaUrl } from "../../shared/lib/api";
+import { groupHistory, useHistory, useHistoryStore, type HistoryHit } from "../../shared/lib/history";
 import { copy, type Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { formatWhen } from "../../shared/lib/time";
 import { useColors, type Palette } from "../../shared/theme";
 import { Icon, type IconName } from "../../shared/ui/Icon";
+
+const MODE_CHIPS: Array<{ mode?: ConversationView["mode"]; label: (text: Copy) => string }> = [
+  { label: (text) => text.all },
+  { mode: "chat", label: (text) => text.inbox },
+  { mode: "write", label: (text) => text.write },
+  { mode: "translate", label: (text) => text.translate },
+  { mode: "image", label: (text) => text.image },
+];
 
 export function DrawerMenu({
   open,
@@ -29,16 +39,20 @@ export function DrawerMenu({
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const user = usePrefs((state) => state.user);
   const [q, setQ] = useState("");
+  const [mode, setMode] = useState<ConversationView["mode"] | undefined>();
   const [renaming, setRenaming] = useState<ConversationView | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const trimmed = q.trim();
-  const history = useHistory({ q: trimmed });
+  const history = useHistory({ q: trimmed, mode });
   const groups = groupHistory(history.items);
+  const hitsById = useMemo(() => new Map(history.hits.map((hit) => [hit.conversationId, hit])), [history.hits]);
+  const searching = trimmed.length > 0;
   const initial = user?.displayName?.trim().charAt(0) ?? "";
 
   useEffect(() => {
     if (!open) {
       setQ("");
+      setMode(undefined);
       setRenaming(null);
       return;
     }
@@ -72,6 +86,20 @@ export function DrawerMenu({
             item.id,
             item.status === ConversationStatus.ARCHIVED ? ConversationStatus.ACTIVE : ConversationStatus.ARCHIVED,
           );
+        },
+      },
+      {
+        text: text.exportChat,
+        onPress: () => {
+          void (async () => {
+            try {
+              const markdown = await useHistoryStore.getState().exportThread(item.id);
+              await Clipboard.setStringAsync(markdown);
+              Alert.alert(text.copiedChat);
+            } catch {
+              Alert.alert(text.exportChat);
+            }
+          })();
         },
       },
       {
@@ -126,17 +154,40 @@ export function DrawerMenu({
               <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.newChat}</Text>
             </Pressable>
             {signedIn ? (
-              <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
-                <Icon name="search-outline" color={colors.muted} size={18} />
-                <TextInput
-                  value={q}
-                  onChangeText={setQ}
-                  placeholder={text.search}
-                  placeholderTextColor={colors.muted}
-                  autoCorrect={false}
-                  style={{ flex: 1, paddingVertical: 12, color: colors.ink }}
-                />
-              </View>
+              <>
+                <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
+                  <Icon name="search-outline" color={colors.muted} size={18} />
+                  <TextInput
+                    value={q}
+                    onChangeText={setQ}
+                    placeholder={text.search}
+                    placeholderTextColor={colors.muted}
+                    autoCorrect={false}
+                    style={{ flex: 1, paddingVertical: 12, color: colors.ink }}
+                  />
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10, flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingRight: 4, alignItems: "flex-start" }}>
+                  {MODE_CHIPS.map((chip) => {
+                    const selected = mode === chip.mode;
+                    return (
+                      <Pressable
+                        key={chip.mode ?? "all"}
+                        onPress={() => setMode(chip.mode)}
+                        style={{
+                          borderRadius: 999,
+                          paddingHorizontal: 12,
+                          paddingVertical: 7,
+                          backgroundColor: selected ? colors.accent : colors.card,
+                          borderWidth: 1,
+                          borderColor: selected ? colors.accent : colors.line,
+                        }}
+                      >
+                        <Text style={{ color: selected ? colors.onAccent : colors.ink, fontSize: 13 }}>{chip.label(text)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </>
             ) : null}
           </View>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 16 }}>
@@ -161,15 +212,28 @@ export function DrawerMenu({
             ) : !history.ready && history.items.length === 0 ? (
               <View style={{ height: 24 }} />
             ) : history.items.length === 0 ? (
-              <Text style={{ color: colors.muted, padding: 16 }}>{text.emptyChats}</Text>
+              <Text style={{ color: colors.muted, padding: 16 }}>{searching ? text.emptySearch : text.emptyChats}</Text>
             ) : (
-              <>
-                <ChatGroup title={text.pinned} items={groups.pinned} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.today} items={groups.today} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.yesterday} items={groups.yesterday} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-              </>
+              searching ? (
+                <ChatGroup
+                  title={text.searchResults}
+                  items={history.items}
+                  colors={colors}
+                  locale={locale}
+                  text={text}
+                  hits={hitsById}
+                  onOpen={goChat}
+                  onManage={manage}
+                />
+              ) : (
+                <>
+                  <ChatGroup title={text.pinned} items={groups.pinned} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                  <ChatGroup title={text.today} items={groups.today} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                  <ChatGroup title={text.yesterday} items={groups.yesterday} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                  <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                  <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                </>
+              )
             )}
           </ScrollView>
           <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 8 }}>
@@ -246,6 +310,7 @@ function ChatGroup({
   colors,
   locale,
   text,
+  hits,
   onOpen,
   onManage,
 }: {
@@ -254,6 +319,7 @@ function ChatGroup({
   colors: Palette;
   locale: "zh-HK" | "en";
   text: Copy;
+  hits: Map<string, HistoryHit>;
   onOpen: (params: Parameters<typeof openChat>[1]) => void;
   onManage: (item: ConversationView) => void;
 }) {
@@ -261,34 +327,45 @@ function ChatGroup({
   return (
     <View style={{ marginBottom: 8 }}>
       <Text style={{ color: colors.muted, fontSize: 12, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 }}>{title}</Text>
-      {items.map((item) => (
-        <Pressable
-          key={item.id}
-          onPress={() => onOpen({ conversationId: item.id, mode: item.mode })}
-          onLongPress={() => onManage(item)}
-          style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
-        >
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center" }}>
-            <Icon name={modeIcon(item.mode)} color={colors.accent} size={16} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-              <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }} numberOfLines={1}>
-                {item.title || text.newChat}
-              </Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>{formatWhen(item.lastMessageAt, locale)}</Text>
+      {items.map((item) => {
+        const hit = hits.get(item.id);
+        const thumb = item.mode === "image" ? mediaUrl(item.lastImageUrl) : null;
+        const preview = hit?.snippet ?? item.preview ?? modeLabel(item.mode, text);
+        return (
+          <Pressable
+            key={item.id}
+            onPress={() =>
+              onOpen({
+                conversationId: item.id,
+                mode: item.mode,
+                ...(hit?.messageId ? { focusMessageId: hit.messageId } : {}),
+              })
+            }
+            onLongPress={() => onManage(item)}
+            style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              {thumb ? (
+                <Image source={{ uri: thumb }} style={{ width: 36, height: 36 }} />
+              ) : (
+                <Icon name={modeIcon(item.mode)} color={colors.accent} size={16} />
+              )}
             </View>
-            {item.preview ? (
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+                <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }} numberOfLines={1}>
+                  {item.title || text.newChat}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>{formatWhen(item.lastMessageAt, locale)}</Text>
+              </View>
               <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
-                {item.preview}
+                {preview}
               </Text>
-            ) : (
-              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{modeLabel(item.mode, text)}</Text>
-            )}
-          </View>
-          {item.pinnedAt ? <Icon name="bookmark" color={colors.accent} size={16} /> : null}
-        </Pressable>
-      ))}
+            </View>
+            {item.pinnedAt ? <Icon name="bookmark" color={colors.accent} size={16} /> : null}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

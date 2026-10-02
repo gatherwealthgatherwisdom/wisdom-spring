@@ -5,15 +5,18 @@ import { create } from "zustand";
 import { spring } from "../api";
 import {
   deleteConversation,
+  getConversation,
   listConversations,
   listMessages,
   loadMediaRows,
-  searchConversationIds,
+  searchHits,
   upsertConversation,
   wipeUser,
 } from "./db";
+import { markdownFromThread } from "./export";
 import { lastActiveOf } from "./groups";
 import { clearMediaMap } from "./media";
+import type { HistoryHit } from "./search";
 import { localThread, pullHistory, pullThread, queueOp } from "./sync";
 
 type HistoryState = {
@@ -30,6 +33,7 @@ type HistoryState = {
   setStatus: (id: string, status: ConversationStatus.ACTIVE | ConversationStatus.ARCHIVED) => Promise<void>;
   remove: (id: string) => Promise<void>;
   markOffline: () => void;
+  exportThread: (id: string) => Promise<string>;
 };
 
 export function isOfflineError(error: unknown): boolean {
@@ -140,6 +144,21 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   markOffline() {
     set({ online: false });
   },
+  async exportThread(id) {
+    const userId = get().userId;
+    if (!userId) throw new Error("signed-out");
+    const conversation = get().conversations.find((item) => item.id === id) ?? (await getConversation(userId, id));
+    if (!conversation) throw new Error("missing");
+    try {
+      const exported = await spring.exportConversation(id);
+      set({ online: true });
+      return exported.markdown;
+    } catch (error) {
+      if (isOfflineError(error)) set({ online: false });
+      const messages = get().messages[id] ?? (await listMessages(userId, id));
+      return markdownFromThread(conversation, messages);
+    }
+  },
 }));
 
 async function mutate(
@@ -175,17 +194,17 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
   const online = useHistoryStore((state) => state.online);
   const ready = useHistoryStore((state) => state.ready);
   const userId = useHistoryStore((state) => state.userId);
-  const [matchIds, setMatchIds] = useState<Set<string> | null>(null);
+  const [hits, setHits] = useState<HistoryHit[] | null>(null);
 
   useEffect(() => {
     const needle = options?.q?.trim();
     if (!needle || !userId) {
-      setMatchIds(null);
+      setHits(null);
       return;
     }
     let cancelled = false;
-    void searchConversationIds(userId, needle).then((ids) => {
-      if (!cancelled) setMatchIds(new Set(ids));
+    void searchHits(userId, needle).then((rows) => {
+      if (!cancelled) setHits(rows);
     });
     return () => {
       cancelled = true;
@@ -195,12 +214,16 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
   const items = useMemo(() => {
     let list = conversations;
     if (options?.mode) list = list.filter((item) => item.mode === options.mode);
-    if (matchIds) list = list.filter((item) => matchIds.has(item.id));
+    if (hits) {
+      const ids = new Set(hits.map((hit) => hit.conversationId));
+      list = list.filter((item) => ids.has(item.id));
+    }
     return list;
-  }, [conversations, options?.mode, matchIds]);
+  }, [conversations, options?.mode, hits]);
 
   return {
     items,
+    hits: hits ?? [],
     lastActive: lastActiveOf(conversations),
     online,
     ready,
@@ -209,6 +232,7 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
     setStatus: useHistoryStore.getState().setStatus,
     remove: useHistoryStore.getState().remove,
     sync: useHistoryStore.getState().sync,
+    exportThread: useHistoryStore.getState().exportThread,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { MessageView } from "@spring/shared";
+import { useEffect, useRef } from "react";
 import { FlatList, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
@@ -16,6 +17,7 @@ export function MessageList({
   regenerateLabel,
   listenLabel,
   emptyLabel,
+  highlightedId,
   onCard,
   suggestions,
   onSuggest,
@@ -30,6 +32,7 @@ export function MessageList({
   regenerateLabel: string;
   listenLabel: string;
   emptyLabel?: string;
+  highlightedId?: string;
   onCard: (card: "email" | "translate" | "image" | "resume") => void;
   suggestions?: string[];
   onSuggest?: (sentence: string) => void;
@@ -39,15 +42,36 @@ export function MessageList({
 }) {
   const locale = usePrefs((state) => state.locale);
   const colors = useColors();
-  const data = draft ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" }] : messages;
+  const listRef = useRef<FlatList<MessageView>>(null);
+  const data = draft
+    ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" as const } as MessageView]
+    : messages;
+
+  useEffect(() => {
+    if (!highlightedId || messages.length === 0) return;
+    const index = messages.findIndex((item) => item.id === highlightedId);
+    if (index < 0) return;
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.35 });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [highlightedId, messages]);
+
   if (data.length === 0) {
     if (emptyLabel) return <Text style={{ color: colors.muted, paddingVertical: 24, textAlign: "center" }}>{emptyLabel}</Text>;
     return <EmptyHero text={text} onCard={onCard} suggestions={suggestions} onSuggest={onSuggest} />;
   }
   return (
     <FlatList
+      ref={listRef}
       data={data}
       keyExtractor={(item) => item.id}
+      onScrollToIndexFailed={({ index, averageItemLength }) => {
+        listRef.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * index), animated: false });
+        setTimeout(() => {
+          listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.35 });
+        }, 80);
+      }}
       renderItem={({ item, index }) => {
         if (item.role === "USER") {
           if (mode === "translate") return null;
@@ -56,6 +80,7 @@ export function MessageList({
               content={item.content}
               timeLabel={"createdAt" in item ? formatWhen(item.createdAt, locale) : undefined}
               attachments={"attachments" in item ? item.attachments : []}
+              highlighted={item.id === highlightedId}
             />
           );
         }
@@ -71,6 +96,7 @@ export function MessageList({
               originalLabel={text.original}
               translatedLabel={text.translated}
               streaming={streaming}
+              highlighted={item.id === highlightedId}
             />
           );
         }
@@ -89,6 +115,7 @@ export function MessageList({
             feedback={"feedback" in item ? item.feedback : null}
             thumbsUpLabel={text.thumbsUp}
             thumbsDownLabel={text.thumbsDown}
+            highlighted={item.id === highlightedId}
             onListen={streaming ? undefined : () => onListen(item.content)}
             onRegenerate={streaming || mode === "image" ? undefined : () => onRegenerate(item.id)}
             onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
@@ -105,16 +132,18 @@ function TranslatePair({
   originalLabel,
   translatedLabel,
   streaming,
+  highlighted,
 }: {
   original: string;
   translation: string;
   originalLabel: string;
   translatedLabel: string;
   streaming: boolean;
+  highlighted?: boolean;
 }) {
   const colors = useColors();
   return (
-    <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
+    <View style={{ borderWidth: 1, borderColor: highlighted ? colors.accent : colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
       <View style={{ padding: 12, backgroundColor: colors.card }}>
         <Text style={{ color: colors.muted, marginBottom: 4 }}>{originalLabel}</Text>
         <Text style={{ color: colors.ink, lineHeight: 22 }}>{original}</Text>

@@ -1,13 +1,13 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView, type MessageView } from "@spring/shared";
+import { ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, mediaUrl, spring } from "../../shared/lib/api";
-import { isOfflineError, refreshAfterSend, useHistoryStore, useThread } from "../../shared/lib/history";
+import { hitFromMessage, isOfflineError, refreshAfterSend, useHistoryStore, useThread } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { pickPdf, pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
@@ -30,6 +30,7 @@ export function ChatScreen({ navigation, route }: Props) {
   const text = copy[locale];
   const queryClient = useQueryClient();
   const conversationId = route.params?.conversationId;
+  const focusMessageId = route.params?.focusMessageId;
   const mode = route.params?.mode ?? "chat";
   const seeded = useRef(false);
   const attached = useRef(false);
@@ -64,12 +65,22 @@ export function ChatScreen({ navigation, route }: Props) {
   const chatTitle = thread.conversation?.title || text.app;
 
   const searching = searchOpen && trimmedSearch.length > 0;
-  const localMessages = thread.messages.filter((item) => item.status !== "SUPERSEDED");
-  const messages: MessageView[] = searching
-    ? thread.online
-      ? (found.data?.items ?? [])
-      : localMessages.filter((item) => item.content.includes(trimmedSearch))
-    : localMessages;
+  const messages = useMemo(
+    () => thread.messages.filter((item) => item.status !== "SUPERSEDED"),
+    [thread.messages],
+  );
+  const localMatchIds = useMemo(
+    () => (trimmedSearch ? messages.flatMap((item) => (hitFromMessage(item, trimmedSearch) ? [item.id] : [])) : []),
+    [messages, trimmedSearch],
+  );
+  const remoteMatchIds = found.data?.items.map((item) => item.id) ?? [];
+  const matchIds = useMemo(() => {
+    if (!searching) return [];
+    const ids = new Set(localMatchIds);
+    if (thread.online && found.isFetched) for (const id of remoteMatchIds) ids.add(id);
+    return messages.filter((item) => ids.has(item.id)).map((item) => item.id);
+  }, [searching, localMatchIds, remoteMatchIds, thread.online, found.isFetched, messages]);
+  const highlightedId = searching ? matchIds[matchIds.length - 1] : focusMessageId;
   const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
   const showDraft = searching
     ? null
@@ -253,6 +264,14 @@ export function ChatScreen({ navigation, route }: Props) {
   }, [conversationId, route.params?.seed, token, navigation]);
 
   useEffect(() => {
+    if (!focusMessageId || searching) return;
+    const timer = setTimeout(() => {
+      navigation.setParams({ focusMessageId: undefined });
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [focusMessageId, searching, navigation]);
+
+  useEffect(() => {
     const kind = route.params?.attach;
     if (!kind || attached.current) return;
     if (!token) {
@@ -277,11 +296,11 @@ export function ChatScreen({ navigation, route }: Props) {
   async function exportChat() {
     if (!conversationId) return;
     try {
-      const exported = await spring.exportConversation(conversationId);
-      await Clipboard.setStringAsync(exported.markdown);
+      const markdown = await useHistoryStore.getState().exportThread(conversationId);
+      await Clipboard.setStringAsync(markdown);
       setBanner(text.copiedChat);
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : text.copiedChat;
+      const message = error instanceof ApiError ? error.message : text.placeholder;
       setBanner(message);
     }
   }
@@ -357,6 +376,9 @@ export function ChatScreen({ navigation, route }: Props) {
             />
           </View>
         ) : null}
+        {searching && matchIds.length === 0 && !(thread.online && found.isFetching) ? (
+          <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center", marginBottom: 8 }}>{text.emptySearch}</Text>
+        ) : null}
         {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
         {!thread.online && conversationId ? (
           <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center", marginBottom: 8 }}>{text.offlineHistory}</Text>
@@ -374,7 +396,7 @@ export function ChatScreen({ navigation, route }: Props) {
             mode={mode}
             regenerateLabel={text.regenerate}
             listenLabel={text.listen}
-            emptyLabel={searching ? (thread.online && !found.isFetched ? " " : text.emptySearch) : undefined}
+            highlightedId={highlightedId}
             onCard={(card) => {
               if (card === "email") navigation.navigate("Chat", { mode: "write", templateId: "email" });
               if (card === "translate") navigation.replace("Chat", { mode: "translate" });

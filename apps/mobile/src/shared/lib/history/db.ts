@@ -2,6 +2,7 @@ import type { ConversationView, MessageView } from "@spring/shared";
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 import { hydrateMediaMap } from "./media";
+import { pickHits, type HistoryHit } from "./search";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS conversations (
@@ -224,6 +225,23 @@ export async function searchConversationIds(userId: string, needle: string): Pro
     [userId, q, userId, q],
   );
   return rows.map((row) => row.id);
+}
+
+export async function searchHits(userId: string, needle: string): Promise<HistoryHit[]> {
+  const q = needle.trim();
+  if (!q) return [];
+  const conversations = await listConversations(userId);
+  if (usesMemory()) {
+    const messages = [...memory.messages.values()].filter((row) => row.userId === userId).map((row) => row.item);
+    return pickHits(conversations, messages, q);
+  }
+  const db = await database();
+  const rows = await db.getAllAsync<{ payload: string }>(
+    "SELECT payload FROM messages WHERE userId = ? AND payload LIKE ?",
+    [userId, likeNeedle(q)],
+  );
+  const messages = rows.map((row) => parseMessage(row.payload)).filter((row): row is MessageView => Boolean(row));
+  return pickHits(conversations, messages, q);
 }
 
 export async function enqueueOp(

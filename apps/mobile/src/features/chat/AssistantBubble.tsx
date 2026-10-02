@@ -42,6 +42,7 @@ export function AssistantBubble({
   thumbsUpLabel,
   thumbsDownLabel,
   onFeedback,
+  highlighted,
 }: {
   content: string;
   imageUrl?: string | null;
@@ -60,12 +61,23 @@ export function AssistantBubble({
   thumbsUpLabel?: string;
   thumbsDownLabel?: string;
   onFeedback?: (rating: "up" | "down") => void;
+  highlighted?: boolean;
 }) {
   const colors = useColors();
   const image = splitImage(content);
   const uri = mediaUrl(imageUrl ?? image.uri);
   return (
-    <View style={{ marginVertical: 8, maxWidth: "92%" }}>
+    <View
+      style={{
+        marginVertical: 8,
+        maxWidth: "92%",
+        borderWidth: highlighted ? 1 : 0,
+        borderColor: highlighted ? colors.accent : "transparent",
+        borderRadius: 16,
+        padding: highlighted ? 10 : 0,
+        backgroundColor: highlighted ? colors.card : "transparent",
+      }}
+    >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
         <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
           <Icon name="water-outline" color={colors.accent} size={16} />
