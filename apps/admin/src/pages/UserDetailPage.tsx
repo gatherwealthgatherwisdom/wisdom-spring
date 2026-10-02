@@ -13,6 +13,7 @@ import {
   FieldRow,
   Input,
   PageHeader,
+  PrimaryCell,
   StatCard,
   StatusBadge,
   TableCell,
@@ -92,20 +93,29 @@ export function UserDetailPage() {
           <div>
             <h2 className="mb-2 text-base font-semibold">對話</h2>
             <DataTable
-              columns={["標題", "mode", "狀態", "最後訊息", ""]}
+              columns={[
+                { key: "title", header: "對話", className: "min-w-[12rem]" },
+                { key: "status", header: "狀態" },
+                { key: "last", header: "最後訊息" },
+                { key: "link", header: "" },
+              ]}
               loading={threads.isLoading}
               empty={!threads.isLoading && items.length === 0 ? "未有對話。" : null}
+              count={items.length}
             >
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{item.title ?? "—"}</TableCell>
-                  <TableCell>{item.mode}</TableCell>
+                  <TableCell>
+                    <PrimaryCell title={item.title ?? "未有標題"} subtitle={<StatusBadge value={item.mode} />} />
+                  </TableCell>
                   <TableCell>
                     <StatusBadge value={item.status} />
                   </TableCell>
-                  <TableCell>{item.lastMessageAt.slice(0, 16).replace("T", " ")}</TableCell>
-                  <TableCell>
-                    <TextLink to={`/users/${id}/c/${item.id}`}>訊息</TextLink>
+                  <TableCell className="text-muted tabular-nums">
+                    {item.lastMessageAt.slice(0, 16).replace("T", " ")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <TextLink to={`/users/${id}/c/${item.id}`}>查看</TextLink>
                   </TableCell>
                 </TableRow>
               ))}

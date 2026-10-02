@@ -1,10 +1,13 @@
 export { AppShell } from "./layout/app-shell";
 export { Breadcrumbs } from "./layout/breadcrumbs";
 export { PageHeader } from "./layout/page-header";
+export { CellChips } from "./data/cell-chips";
+export { CompactNumber } from "./data/compact-number";
 export { DataTable } from "./data/data-table";
+export { PrimaryCell } from "./data/primary-cell";
 export { StatCard } from "./data/stat-card";
 export { StatusBadge } from "./data/status-badge";
-export { Toolbar } from "./data/toolbar";
+export { FilterField, Toolbar } from "./data/toolbar";
 export { ConfirmDialog } from "./form/confirm-dialog";
 export { ErrorAlert } from "./form/error-alert";
 export { Field, FieldRow } from "./form/field";

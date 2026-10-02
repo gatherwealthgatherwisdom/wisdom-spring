@@ -15,7 +15,8 @@ import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
   Button,
-  Checkbox,
+  CellChips,
+  CompactNumber,
   DataTable,
   Dialog,
   DialogContent,
@@ -27,6 +28,8 @@ import {
   Input,
   NativeSelect,
   PageHeader,
+  PrimaryCell,
+  Switch,
   TableCell,
   TableRow,
   Tabs,
@@ -180,37 +183,47 @@ export function DiscoverPage() {
       </Toolbar>
       <ErrorAlert message={error} />
       <DataTable
-        columns={["上架", "sort", "id", "區", "中文", "English", "art", "tone", "工具", ""]}
+        columns={[
+          { key: "live", header: "上架", width: "4.5rem" },
+          { key: "item", header: "項目", className: "min-w-[14rem]" },
+          { key: "sort", header: "排序" },
+          { key: "attrs", header: "屬性" },
+          { key: "edit", header: "" },
+        ]}
         loading={rows.isLoading}
         empty={!rows.isLoading && items.length === 0 ? "未有卡片。" : null}
+        count={items.length}
       >
         {items.map((item) => (
           <TableRow key={`${item.kind}:${item.id}`}>
             <TableCell>
-              <Checkbox
+              <Switch
                 checked={item.live}
-                onChange={(event) => update.mutate({ id: item.id, body: { live: event.target.checked } })}
+                onCheckedChange={(checked) => update.mutate({ id: item.id, body: { live: checked } })}
               />
             </TableCell>
             <TableCell>
-              <Input
-                type="number"
+              <PrimaryCell title={item.zh} subtitle={`${item.id} · ${item.en}`} />
+            </TableCell>
+            <TableCell>
+              <CompactNumber
                 value={item.sort}
-                onChange={(event) => update.mutate({ id: item.id, body: { sort: Number(event.target.value) } })}
+                min={0}
+                max={10_000}
+                onCommit={(sort) => update.mutate({ id: item.id, body: { sort } })}
               />
             </TableCell>
             <TableCell>
-              <code>{item.id}</code>
+              <CellChips
+                items={[
+                  item.section ? SECTION_LABEL[item.section] ?? item.section : null,
+                  item.art,
+                  item.templateId ? `工具 ${item.templateId}` : null,
+                  item.mode,
+                ]}
+              />
             </TableCell>
-            <TableCell>{item.section ? SECTION_LABEL[item.section] ?? item.section : "—"}</TableCell>
-            <TableCell>{item.zh}</TableCell>
-            <TableCell>{item.en}</TableCell>
-            <TableCell>{item.art ?? "—"}</TableCell>
-            <TableCell>
-              <code>{item.tone ?? "—"}</code>
-            </TableCell>
-            <TableCell>{item.templateId ?? "—"}</TableCell>
-            <TableCell>
+            <TableCell className="text-right">
               <Button variant="ghost" size="sm" onClick={() => startEdit(item)}>
                 編輯
               </Button>
