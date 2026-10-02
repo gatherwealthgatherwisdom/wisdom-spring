@@ -28,7 +28,7 @@ export class PhoneAuthService {
     private readonly prisma: PrismaClient,
     private readonly auth: AuthService,
     private readonly sms: SmsSender,
-    private readonly env: Pick<AppEnv, "jwtAccessSecret">,
+    private readonly env: Pick<AppEnv, "jwtAccessSecret" | "adminPhone">,
   ) {}
 
   async requestCode(phone: string, log: SmsLog): Promise<void> {
@@ -86,17 +86,23 @@ export class PhoneAuthService {
     if (existing) {
       if (existing.status === "SUSPENDED") throw new AppError(ErrorCode.USER_SUSPENDED);
       if (existing.status === "DELETED") {
-        return this.prisma.user.update({ where: { id: existing.id }, data: { status: "ACTIVE" } });
+        const restored = await this.prisma.user.update({
+          where: { id: existing.id },
+          data: { status: "ACTIVE" },
+        });
+        return this.promoteAdmin(restored, phone);
       }
-      return existing;
+      return this.promoteAdmin(existing, phone);
     }
+    const admin = this.isAdminPhone(phone);
     try {
       return await this.prisma.user.create({
         data: {
           id: createId(),
           phone,
           locale: Locale.ZH_HK,
-          role: UserRole.USER,
+          role: admin ? UserRole.ADMIN : UserRole.USER,
+          registeredAt: admin ? new Date() : null,
         },
       });
     } catch (error) {
@@ -104,7 +110,23 @@ export class PhoneAuthService {
       const raced = await this.prisma.user.findUnique({ where: { phone } });
       if (!raced || raced.status === "DELETED") throw new AppError(ErrorCode.AUTH_INVALID);
       if (raced.status === "SUSPENDED") throw new AppError(ErrorCode.USER_SUSPENDED);
-      return raced;
+      return this.promoteAdmin(raced, phone);
     }
+  }
+
+  private isAdminPhone(phone: string): boolean {
+    return Boolean(this.env.adminPhone) && phone === this.env.adminPhone;
+  }
+
+  private async promoteAdmin(user: User, phone: string): Promise<User> {
+    if (!this.isAdminPhone(phone)) return user;
+    if (user.role === UserRole.ADMIN && user.registeredAt) return user;
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        role: UserRole.ADMIN,
+        registeredAt: user.registeredAt ?? new Date(),
+      },
+    });
   }
 }

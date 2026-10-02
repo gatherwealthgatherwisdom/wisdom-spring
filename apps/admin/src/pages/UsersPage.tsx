@@ -1,5 +1,13 @@
 import { ApiError } from "@spring/api-client";
-import { PlanTier, UserRole, UserStatus, microsToUsd, type AdminUpdateUserRequest, type AdminUserRow } from "@spring/shared";
+import {
+  PlanTier,
+  UserRole,
+  UserStatus,
+  formatE164,
+  microsToUsd,
+  type AdminUpdateUserRequest,
+  type AdminUserRow,
+} from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -41,13 +49,13 @@ export function UsersPage() {
         <Input
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="搜尋電郵、電話或名稱"
+          placeholder="電話或名稱"
           className="w-72"
         />
       </Toolbar>
       <ErrorAlert message={error} />
       <DataTable
-        columns={["電郵", "電話", "名稱", "註冊", "試用", "本月", "角色", "計劃", "狀態", "", "詳情"]}
+        columns={["電話", "名稱", "註冊", "試用", "本月", "角色", "計劃", "狀態", "", "詳情"]}
         loading={users.isLoading}
         empty={!users.isLoading && items.length === 0 ? "未有用戶。" : null}
       >
@@ -68,8 +76,7 @@ function UserRow({
 }) {
   return (
     <TableRow>
-      <TableCell>{user.email ?? "—"}</TableCell>
-      <TableCell>{user.phone ?? "—"}</TableCell>
+      <TableCell>{user.phone ? formatE164(user.phone) : "—"}</TableCell>
       <TableCell>{user.displayName ?? "—"}</TableCell>
       <TableCell>
         <StatusBadge value={user.registered ? "已註冊" : "訪客"} />

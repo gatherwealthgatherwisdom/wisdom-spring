@@ -18,7 +18,7 @@ export default defineConfig({
       REDIS_URL: "redis://127.0.0.1:6379",
       JWT_ACCESS_SECRET: "test-access-secret-0001",
       JWT_REFRESH_SECRET: "test-refresh-secret-001",
-      ADMIN_EMAIL: "admin@gwgwgroup.com",
+      ADMIN_PHONE: "+85291111111",
       OPENROUTER_API_KEY: "",
       PROBE_ASSUMES_HK_EGRESS: "false",
       WORKER_EMBEDDED: "false",

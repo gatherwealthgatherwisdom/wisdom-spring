@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ErrorCode, LIMITS } from "@spring/shared";
+import { ErrorCode, LIMITS, UserRole, createId } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
@@ -300,6 +300,44 @@ describe("phone login", () => {
     });
     expect(me.json().quota.dailyUsed).toBe(1);
     expect(me.json().user.registered).toBe(true);
+  });
+
+  it("promotes ADMIN_PHONE to ADMIN and refuses ordinary users on admin routes", async () => {
+    await app.ctx.prisma.user.create({
+      data: { id: createId(), phone: "+85291111111", locale: "zh-HK", role: "USER" },
+    });
+    const adminCode = await issue("+85291111111");
+    const adminOk = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: "+85291111111", code: adminCode },
+    });
+    expect(adminOk.statusCode).toBe(200);
+    expect(adminOk.json().user.role).toBe(UserRole.ADMIN);
+    expect(adminOk.json().user.registered).toBe(true);
+    expect(adminOk.json().user.phone).toBe("+85291111111");
+    const models = await app.inject({
+      method: "GET",
+      url: "/admin/models",
+      headers: { authorization: `Bearer ${adminOk.json().accessToken}` },
+    });
+    expect(models.statusCode).toBe(200);
+
+    const memberCode = await issue("+85292222222");
+    const memberOk = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: "+85292222222", code: memberCode },
+    });
+    expect(memberOk.statusCode).toBe(200);
+    expect(memberOk.json().user.role).toBe(UserRole.USER);
+    const denied = await app.inject({
+      method: "GET",
+      url: "/admin/models",
+      headers: { authorization: `Bearer ${memberOk.json().accessToken}` },
+    });
+    expect(denied.statusCode).toBe(403);
+    expect(denied.json().error.code).toBe(ErrorCode.FORBIDDEN);
   });
 
   it("keeps email accounts on the daily allowance", async () => {

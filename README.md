@@ -12,7 +12,7 @@ Consumer chat for 中盈紫達集團（Gather Wealth Gather Wisdom Group）. Eac
 
 ```bash
 cp .env.example .env
-# fill JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, OPENROUTER_API_KEY, ADMIN_EMAIL
+# fill JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, OPENROUTER_API_KEY, ADMIN_PHONE
 
 docker compose -f infra/docker-compose.yml up -d
 pnpm install
@@ -30,7 +30,7 @@ pnpm dev
 
 `PROBE_ASSUMES_HK_EGRESS=true` only on a host whose traffic exits from Hong Kong. A probe from anywhere else records health and can mark a slug blocked on HTTP 403, and it does not promote `UNKNOWN` to `HK_SAFE`.
 
-Registering the address in `ADMIN_EMAIL` creates the first admin. Money on the wire is integer USD micros. The company OpenRouter key stays on the server.
+Verifying the E.164 number in `ADMIN_PHONE` (`+852`, `+853`, or `+86`) creates the first admin. Money on the wire is integer USD micros. The company OpenRouter key stays on the server.
 
 ## Checks
 

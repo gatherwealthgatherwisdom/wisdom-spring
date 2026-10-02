@@ -39,7 +39,6 @@ export class AuthService {
       throw new AppError(ErrorCode.CONFLICT, "呢個電郵已經註冊。");
     }
     const passwordHash = await argon2.hash(input.password, { type: argon2.argon2id });
-    const role = this.env.adminEmail && input.email === this.env.adminEmail ? UserRole.ADMIN : UserRole.USER;
     const user = existing
       ? await this.prisma.user.update({
           where: { id: existing.id },
@@ -47,7 +46,7 @@ export class AuthService {
             email: input.email,
             passwordHash,
             status: "ACTIVE",
-            role,
+            role: UserRole.USER,
             displayName: input.displayName ?? null,
             locale: input.locale ?? Locale.ZH_HK,
             registeredAt: existing.registeredAt ?? new Date(),
@@ -58,7 +57,7 @@ export class AuthService {
             id: createId(),
             email: input.email,
             passwordHash,
-            role,
+            role: UserRole.USER,
             displayName: input.displayName,
             locale: input.locale ?? Locale.ZH_HK,
             registeredAt: new Date(),

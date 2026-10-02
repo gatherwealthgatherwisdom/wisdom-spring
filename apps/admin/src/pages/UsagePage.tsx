@@ -1,3 +1,4 @@
+import { formatE164 } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DataTable, Input, PageHeader, StatCard, TableCell, TableRow, TextLink, Toolbar } from "@/components";
@@ -64,7 +65,7 @@ export function UsagePage() {
                 <TableRow key={row.userId}>
                   <TableCell>
                     <TextLink to={`/users/${row.userId}`}>
-                      {row.email ?? row.phone ?? row.displayName ?? row.userId}
+                      {row.phone ? formatE164(row.phone) : (row.displayName ?? row.userId)}
                     </TextLink>
                   </TableCell>
                   <TableCell>{dollars(row.costUsdMicros)}</TableCell>

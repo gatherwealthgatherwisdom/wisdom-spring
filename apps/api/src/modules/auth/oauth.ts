@@ -54,7 +54,6 @@ export class OAuthService {
 
     const byEmail = email ? await this.prisma.user.findUnique({ where: { email } }) : null;
     if (byEmail && byEmail.status === "SUSPENDED") throw new AppError(ErrorCode.USER_SUSPENDED);
-    const role = email && email === this.env.adminEmail ? UserRole.ADMIN : UserRole.USER;
     const user =
       byEmail && byEmail.status !== "DELETED"
         ? byEmail
@@ -62,7 +61,7 @@ export class OAuthService {
             data: {
               id: createId(),
               email,
-              role,
+              role: UserRole.USER,
               displayName,
               locale: Locale.ZH_HK,
               registeredAt: new Date(),

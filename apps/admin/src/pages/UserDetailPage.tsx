@@ -1,5 +1,5 @@
 import { ApiError } from "@spring/api-client";
-import { microsToUsd } from "@spring/shared";
+import { formatE164, microsToUsd } from "@spring/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
@@ -60,7 +60,8 @@ export function UserDetailPage() {
         <div className="grid gap-4">
           <Card>
             <p className="font-medium text-ink">
-              {data.user.email ?? "—"} · {data.user.phone ?? "—"} · {data.user.displayName ?? "—"}
+              {data.user.phone ? formatE164(data.user.phone) : "—"}
+              {data.user.displayName ? ` · ${data.user.displayName}` : ""}
             </p>
             <p className="mt-1 flex flex-wrap gap-2 text-sm">
               <StatusBadge value={data.user.registered ? "已註冊" : "訪客"} />

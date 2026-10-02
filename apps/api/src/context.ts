@@ -111,8 +111,12 @@ export async function createContext(options?: {
 }
 
 export async function bootstrap(prisma: PrismaClient): Promise<void> {
-  if (env.adminEmail) {
-    await prisma.user.updateMany({ where: { email: env.adminEmail }, data: { role: "ADMIN" } });
+  if (env.adminPhone) {
+    await prisma.user.updateMany({ where: { phone: env.adminPhone }, data: { role: "ADMIN" } });
+    await prisma.user.updateMany({
+      where: { phone: env.adminPhone, registeredAt: null },
+      data: { registeredAt: new Date() },
+    });
   }
   for (const key of Object.values(FeatureFlagKey)) {
     await prisma.featureFlag.upsert({

@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { resolve } from "node:path";
+import { normalizeMobile } from "@spring/shared";
 
 const root = resolve(import.meta.dirname, "../../..");
 config({ path: resolve(root, ".env") });
@@ -27,7 +28,7 @@ export const env = {
   jwtAccessSecret: secret("JWT_ACCESS_SECRET", "dev-access-secret-change"),
   jwtRefreshSecret: secret("JWT_REFRESH_SECRET", "dev-refresh-secret-change"),
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
-  adminEmail: (process.env.ADMIN_EMAIL ?? "").trim().toLowerCase(),
+  adminPhone: normalizeMobile((process.env.ADMIN_PHONE ?? "").trim()) ?? "",
   appOriginAdmin: process.env.APP_ORIGIN_ADMIN ?? "http://localhost:5173",
   publicAppUrl: process.env.PUBLIC_APP_URL ?? "https://gwgwgroup.com",
   ignoreProviders: (process.env.OPENROUTER_IGNORE_PROVIDERS ?? "openai,anthropic")

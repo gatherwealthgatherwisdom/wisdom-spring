@@ -93,8 +93,9 @@ Locale default: `zh-HK`. Support `en` as well.
 
 **Account**
 
-- Email + password and/or email OTP
-- Apple Sign-In + Google Sign-In on mobile
+- Phone OTP for +852, +853, and +86 (E.164) on the app and admin
+- Email + password remains on the API for tests
+- Optional Google / Apple ID-token exchange remains on the API
 - Refresh-token rotation, logout all devices
 - Delete account
 
@@ -882,7 +883,7 @@ Pass the served model name into the title job and optionally into a hidden trail
 - CORS allow admin origin + mobile does not use CORS the same way.
 - TLS only in deployed env.
 
-Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin seeded via env `ADMIN_EMAIL`.
+Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin is the E.164 number in env `ADMIN_PHONE`.
 
 ---
 
@@ -895,7 +896,7 @@ REDIS_URL=redis://localhost:6379
 JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 OPENROUTER_API_KEY=
-ADMIN_EMAIL=
+ADMIN_PHONE=
 APP_ORIGIN_ADMIN=http://localhost:5173
 PUBLIC_APP_URL=https://gwgwgroup.com
 ```
