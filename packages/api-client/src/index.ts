@@ -179,6 +179,10 @@ export class SpringClient {
     return this.request(`/v1/conversations${queryString(query)}`);
   }
 
+  conversation(id: string): Promise<ConversationView> {
+    return this.request(`/v1/conversations/${encodeURIComponent(id)}`);
+  }
+
   createConversation(title?: string): Promise<ConversationView> {
     return this.request("/v1/conversations", { method: "POST", body: JSON.stringify(title ? { title } : {}) });
   }
@@ -191,8 +195,10 @@ export class SpringClient {
     return this.request(`/v1/conversations/${id}`, { method: "DELETE" });
   }
 
-  messages(conversationId: string, query?: { q?: string }): Promise<PageOf<MessageView>> {
-    return this.request(`/v1/conversations/${conversationId}/messages${queryString({ limit: "100", ...query })}`);
+  messages(conversationId: string, query?: { q?: string; cursor?: string; limit?: string }): Promise<PageOf<MessageView>> {
+    return this.request(
+      `/v1/conversations/${conversationId}/messages${queryString({ limit: query?.limit ?? "100", q: query?.q, cursor: query?.cursor })}`,
+    );
   }
 
   exportConversation(id: string): Promise<ConversationExport> {

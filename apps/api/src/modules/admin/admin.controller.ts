@@ -35,6 +35,12 @@ import { requireAdmin } from "../../http/auth-guard";
 import { toActingUser, toPublic } from "../auth/acting-user";
 import { drawModel } from "../catalog/application/draw-model";
 import { createCatalogEntry, listCatalog, patchCatalogEntry } from "../catalog/catalog-store";
+import {
+  conversationView,
+  previewForConversation,
+  previewsByConversationIds,
+  type ConversationPreview,
+} from "../chat/application/conversation-view";
 import { messageViews } from "../chat/application/message-view";
 import { loadAppLimits, patchAppLimits } from "./app-limits";
 import { writeAudit } from "./audit";
@@ -186,22 +192,8 @@ async function usageReport(
   };
 }
 
-function adminConversationView(row: Conversation) {
-  return {
-    id: row.id,
-    userId: row.userId,
-    title: row.title,
-    status: row.status,
-    mode: row.mode,
-    templateId: row.templateId,
-    sourceLang: row.sourceLang,
-    targetLang: row.targetLang,
-    imageStyle: row.imageStyle,
-    lastImageUrl: row.lastImageUrl,
-    pinnedAt: row.pinnedAt?.toISOString() ?? null,
-    lastMessageAt: row.lastMessageAt.toISOString(),
-    createdAt: row.createdAt.toISOString(),
-  };
+function adminConversationView(row: Conversation, preview?: ConversationPreview) {
+  return { userId: row.userId, ...conversationView(row, preview) };
 }
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -332,8 +324,12 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     });
     const page = rows.slice(0, query.limit);
     const last = page[page.length - 1];
+    const previews = await previewsByConversationIds(
+      app.ctx.prisma,
+      page.map((row) => row.id),
+    );
     return {
-      items: page.map(adminConversationView),
+      items: page.map((row) => adminConversationView(row, previews.get(row.id))),
       nextCursor:
         rows.length > query.limit && last
           ? encodeCursor({ lastMessageAt: last.lastMessageAt.toISOString(), id: last.id })
@@ -353,7 +349,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     });
     const views = await messageViews(app.ctx.prisma, rows);
     return {
-      conversation: adminConversationView(conversation),
+      conversation: adminConversationView(conversation, await previewForConversation(app.ctx.prisma, id)),
       messages: views.map((view, index) => ({
         ...view,
         costUsdMicros: (rows[index]?.costUsdMicros ?? 0n).toString(),

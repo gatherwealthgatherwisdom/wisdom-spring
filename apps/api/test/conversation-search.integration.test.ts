@@ -86,6 +86,7 @@ async function seedThread(
         role: MessageRole.USER,
         status: MessageStatus.COMPLETED,
         content: "請用繁體中文講水墨同松樹。",
+        createdAt: new Date("2026-01-01T00:00:01.000Z"),
       },
       {
         id: supersededId,
@@ -95,6 +96,7 @@ async function seedThread(
         content: "舊回覆有水墨二字，不應命中。",
         requestedModel: "deepseek/deepseek-chat",
         servedModel: "deepseek/deepseek-chat",
+        createdAt: new Date("2026-01-01T00:00:02.000Z"),
       },
       {
         id: assistantId,
@@ -105,6 +107,7 @@ async function seedThread(
         imageUrl: "/v1/generated/01HTESTIMAGE00000000000001",
         requestedModel: "deepseek/deepseek-chat",
         servedModel: "deepseek/deepseek-chat",
+        createdAt: new Date("2026-01-01T00:00:03.000Z"),
       },
     ],
   });
@@ -243,5 +246,99 @@ describe("conversation search, feedback, export", () => {
     expect(body.markdown).toContain("![](/v1/generated/01HTESTIMAGE00000000000001)");
     expect(body.markdown).not.toContain("舊回覆");
     expect(body.markdown).not.toMatch(/deepseek|gpt|claude|gemini/i);
+  });
+
+  it("returns a last-turn preview on the list and fetch-by-id", async () => {
+    const { token, userId } = await register(app, `preview-${Date.now()}@gwgwgroup.com`);
+    const { conversationId } = await seedThread(app.ctx.prisma, userId, "預覽");
+    const listed = await app.inject({
+      method: "GET",
+      url: "/v1/conversations",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(listed.statusCode).toBe(200);
+    const row = (listed.json().items as Array<{ id: string; preview: string | null; previewRole: string | null }>).find(
+      (item) => item.id === conversationId,
+    );
+    expect(row?.preview).toBe("松樹常配淡墨留白。");
+    expect(row?.previewRole).toBe(MessageRole.ASSISTANT);
+
+    const one = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(one.statusCode).toBe(200);
+    expect(one.json().preview).toBe("松樹常配淡墨留白。");
+    expect(one.json().title).toBe("預覽");
+  });
+
+  it("returns 404 for another user's conversation id", async () => {
+    const owner = await register(app, `get-owner-${Date.now()}@gwgwgroup.com`);
+    const other = await register(app, `get-other-${Date.now()}@gwgwgroup.com`);
+    const { conversationId } = await seedThread(app.ctx.prisma, owner.userId, "別人");
+    const response = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${conversationId}`,
+      headers: { authorization: `Bearer ${other.token}` },
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error.code).toBe(ErrorCode.NOT_FOUND);
+  });
+
+  it("pages messages with a createdAt cursor", async () => {
+    const { token, userId } = await register(app, `page-${Date.now()}@gwgwgroup.com`);
+    const conversationId = createId();
+    await app.ctx.prisma.conversation.create({ data: { id: conversationId, userId, title: "長對話" } });
+    const first = createId();
+    const second = createId();
+    const third = createId();
+    await app.ctx.prisma.message.createMany({
+      data: [
+        {
+          id: first,
+          conversationId,
+          role: MessageRole.USER,
+          status: MessageStatus.COMPLETED,
+          content: "第一句",
+          createdAt: new Date("2026-01-01T00:00:01.000Z"),
+        },
+        {
+          id: second,
+          conversationId,
+          role: MessageRole.ASSISTANT,
+          status: MessageStatus.COMPLETED,
+          content: "第二句",
+          createdAt: new Date("2026-01-01T00:00:02.000Z"),
+        },
+        {
+          id: third,
+          conversationId,
+          role: MessageRole.USER,
+          status: MessageStatus.COMPLETED,
+          content: "第三句",
+          createdAt: new Date("2026-01-01T00:00:03.000Z"),
+        },
+      ],
+    });
+    const page1 = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${conversationId}/messages?limit=2`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(page1.statusCode).toBe(200);
+    const body1 = page1.json() as { items: Array<{ content: string }>; nextCursor: string | null };
+    expect(body1.items.map((row) => row.content)).toEqual(["第二句", "第三句"]);
+    expect(body1.nextCursor).toBeTruthy();
+
+    const page2 = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${conversationId}/messages?limit=2&cursor=${encodeURIComponent(body1.nextCursor ?? "")}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(page2.statusCode).toBe(200);
+    const body2 = page2.json() as { items: Array<{ content: string }>; nextCursor: string | null };
+    expect(body2.items.map((row) => row.content)).toEqual(["第一句"]);
+    expect(body2.nextCursor).toBeNull();
   });
 });

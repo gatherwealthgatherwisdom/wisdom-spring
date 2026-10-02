@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { CONVERSATION_MODES } from "../constants/tools";
 import { ConversationStatus } from "../enums/conversation-status";
+import { MessageRole } from "../enums/message-role";
 import { PaginationQuerySchema } from "./pagination.schema";
 
 export const ConversationModeSchema = z.enum(CONVERSATION_MODES);
+
+export const ConversationPreviewRoleSchema = z.enum([MessageRole.USER, MessageRole.ASSISTANT]);
 
 export const ConversationViewSchema = z.object({
   id: z.string().ulid(),
@@ -18,6 +21,8 @@ export const ConversationViewSchema = z.object({
   pinnedAt: z.string().nullable(),
   lastMessageAt: z.string(),
   createdAt: z.string(),
+  preview: z.string().nullable(),
+  previewRole: ConversationPreviewRoleSchema.nullable(),
 });
 
 export const CreateConversationSchema = z.object({
