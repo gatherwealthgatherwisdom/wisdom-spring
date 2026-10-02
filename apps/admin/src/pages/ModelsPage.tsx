@@ -216,6 +216,7 @@ export function ModelsPage() {
         empty={!models.isLoading && rows.length === 0 ? "沒有符合篩選的模型。" : null}
         count={rows.length}
         total={items.length}
+        resetKey={`${enabled}:${region}:${kind}:${author}`}
       >
         {rows.map((row) => (
           <ModelRow

@@ -224,7 +224,7 @@ export class SpringClient {
   }
 
   adminUsers(q?: string): Promise<PageOf<AdminUserRow>> {
-    return this.request(`/admin/users${queryString(q ? { q } : undefined)}`);
+    return this.request(`/admin/users${queryString({ q, limit: "100" })}`);
   }
 
   adminUser(id: string): Promise<AdminUserDetail> {
@@ -232,7 +232,9 @@ export class SpringClient {
   }
 
   adminUserConversations(id: string, cursor?: string): Promise<PageOf<AdminConversationView>> {
-    return this.request(`/admin/users/${encodeURIComponent(id)}/conversations${queryString(cursor ? { cursor } : undefined)}`);
+    return this.request(
+      `/admin/users/${encodeURIComponent(id)}/conversations${queryString({ cursor, limit: "100" })}`,
+    );
   }
 
   adminConversation(id: string): Promise<AdminConversationDetail> {

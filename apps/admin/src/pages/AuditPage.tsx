@@ -58,6 +58,7 @@ export function AuditPage() {
         loading={audit.isLoading}
         empty={!audit.isLoading && items.length === 0 ? "未有紀錄。" : null}
         count={items.length}
+        resetKey={action}
       >
         {items.map((row) => (
           <TableRow key={row.id}>

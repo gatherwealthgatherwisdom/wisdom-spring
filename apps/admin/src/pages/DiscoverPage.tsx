@@ -193,6 +193,7 @@ export function DiscoverPage() {
         loading={rows.isLoading}
         empty={!rows.isLoading && items.length === 0 ? "未有卡片。" : null}
         count={items.length}
+        resetKey={section}
       >
         {items.map((item) => (
           <TableRow key={`${item.kind}:${item.id}`}>

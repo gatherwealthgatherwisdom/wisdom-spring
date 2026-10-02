@@ -102,6 +102,7 @@ export function UserDetailPage() {
               loading={threads.isLoading}
               empty={!threads.isLoading && items.length === 0 ? "未有對話。" : null}
               count={items.length}
+              resetKey={id}
             >
               {items.map((item) => (
                 <TableRow key={item.id}>

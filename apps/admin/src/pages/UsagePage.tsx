@@ -71,6 +71,7 @@ export function UsagePage() {
               columns={moneyColumns("模型")}
               empty={data.byModel.length === 0 ? "呢個月未有模型用量。" : null}
               count={data.byModel.length}
+              resetKey={month}
             >
               {data.byModel.map((row) => (
                 <TableRow key={row.model}>
@@ -89,6 +90,7 @@ export function UsagePage() {
               columns={moneyColumns("用戶")}
               empty={data.byUser.length === 0 ? "呢個月未有用戶用量。" : null}
               count={data.byUser.length}
+              resetKey={month}
             >
               {data.byUser.map((row) => (
                 <TableRow key={row.userId}>
@@ -109,6 +111,7 @@ export function UsagePage() {
               columns={moneyColumns("計劃")}
               empty={data.byPlan.length === 0 ? "呢個月未有計劃用量。" : null}
               count={data.byPlan.length}
+              resetKey={month}
             >
               {data.byPlan.map((row) => (
                 <TableRow key={row.planTier}>

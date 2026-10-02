@@ -165,6 +165,7 @@ export function ToolsPage() {
         loading={rows.isLoading}
         empty={!rows.isLoading && items.length === 0 ? "未有項目。" : null}
         count={items.length}
+        resetKey={kind}
       >
         {items.map((item) => (
           <TableRow key={`${item.kind}:${item.id}`}>

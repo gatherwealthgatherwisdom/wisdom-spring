@@ -72,6 +72,7 @@ export function UsersPage() {
         loading={users.isLoading}
         empty={!users.isLoading && items.length === 0 ? "未有用戶。" : null}
         count={items.length}
+        resetKey={q}
       >
         {items.map((user) => (
           <UserRow key={user.id} user={user} onChange={(body) => update.mutate({ id: user.id, body })} />
