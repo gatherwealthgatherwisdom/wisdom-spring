@@ -11,6 +11,7 @@ import { openAuth, openChat, type MainTabParamList } from "../../navigation/Main
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
+import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -26,7 +27,7 @@ export function InboxScreen({ navigation }: Props) {
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const user = usePrefs((state) => state.user);
   const stack = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
-  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const { lastActive: last } = useHistory();
   useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
   const notices = useQuery({ queryKey: ["announcements"], queryFn: () => spring.announcements() });
   const catalogTools = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
@@ -37,7 +38,6 @@ export function InboxScreen({ navigation }: Props) {
   const draws = cardsFromDiscover(catalogDiscover.data?.items, "draw");
   const dismissedAnnouncementId = usePrefs((state) => state.dismissedAnnouncementId);
   const setDismissedAnnouncementId = usePrefs((state) => state.setDismissedAnnouncementId);
-  const last = chats.data?.items[0];
   const initial = user?.displayName?.trim().charAt(0) ?? "";
   const latest = notices.data?.items[0];
   const banner = latest && latest.id !== dismissedAnnouncementId ? latest : undefined;
@@ -194,10 +194,12 @@ export function InboxScreen({ navigation }: Props) {
           </View>
         ) : null}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          <Pressable onPress={() => openChat(navigation, last ? { conversationId: last.id, mode: last.mode } : { mode: "chat" })} style={chip(colors)}>
-            <Icon name="time-outline" color={colors.ink} size={16} />
-            <Text style={{ color: colors.ink }}>{text.lastChat}</Text>
-          </Pressable>
+          {last ? (
+            <Pressable onPress={() => openChat(navigation, { conversationId: last.id, mode: last.mode })} style={chip(colors)}>
+              <Icon name="time-outline" color={colors.ink} size={16} />
+              <Text style={{ color: colors.ink }} numberOfLines={1}>{last.title || text.lastChat}</Text>
+            </Pressable>
+          ) : null}
           <Pressable onPress={() => setPoolOpen(true)} style={chip(colors)}>
             <Text style={{ color: colors.ink }}>{text.app}</Text>
           </Pressable>

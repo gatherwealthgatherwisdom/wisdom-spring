@@ -26,7 +26,9 @@ export function RecentRow({
       <Icon name="chatbubble-outline" color={colors.accent} size={18} />
       <View style={{ flex: 1 }}>
         <Text style={{ color: colors.ink }} numberOfLines={1}>{item.title || modeLabel}</Text>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>{modeLabel} · {formatWhen(item.lastMessageAt, locale)}</Text>
+        <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>
+          {item.preview ? `${item.preview} · ${formatWhen(item.lastMessageAt, locale)}` : `${modeLabel} · ${formatWhen(item.lastMessageAt, locale)}`}
+        </Text>
       </View>
     </Pressable>
   );

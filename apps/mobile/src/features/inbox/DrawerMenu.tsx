@@ -1,13 +1,12 @@
 import type { ConversationView } from "@spring/shared";
 import { ConversationStatus } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
-import { spring } from "../../shared/lib/api";
+import { groupHistory, useHistory, useHistoryStore } from "../../shared/lib/history";
 import { copy, type Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { formatWhen } from "../../shared/lib/time";
@@ -29,31 +28,26 @@ export function DrawerMenu({
   const text = copy[locale];
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const user = usePrefs((state) => state.user);
-  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
+  const [renaming, setRenaming] = useState<ConversationView | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
   const trimmed = q.trim();
-  const chats = useQuery({
-    queryKey: ["conversations", trimmed],
-    queryFn: () => spring.conversations(trimmed ? { q: trimmed } : undefined),
-    enabled: signedIn && open,
-  });
-  const items = chats.data?.items ?? [];
-  const pinned = items.filter((item) => item.pinnedAt && item.status !== ConversationStatus.ARCHIVED);
-  const rest = items.filter((item) => !item.pinnedAt && item.status !== ConversationStatus.ARCHIVED);
-  const archived = items.filter((item) => item.status === ConversationStatus.ARCHIVED);
+  const history = useHistory({ q: trimmed });
+  const groups = groupHistory(history.items);
   const initial = user?.displayName?.trim().charAt(0) ?? "";
 
   useEffect(() => {
-    if (!open) setQ("");
-  }, [open]);
+    if (!open) {
+      setQ("");
+      setRenaming(null);
+      return;
+    }
+    if (signedIn) void useHistoryStore.getState().sync();
+  }, [open, signedIn]);
 
   function goChat(params: Parameters<typeof openChat>[1]) {
     onClose();
     openChat(navigation, params);
-  }
-
-  async function refresh() {
-    await queryClient.invalidateQueries({ queryKey: ["conversations"] });
   }
 
   function manage(item: ConversationView) {
@@ -61,17 +55,23 @@ export function DrawerMenu({
       {
         text: item.pinnedAt ? text.unpin : text.pin,
         onPress: () => {
-          void spring.updateConversation(item.id, { pinned: !item.pinnedAt }).then(refresh);
+          void history.pin(item.id, !item.pinnedAt);
+        },
+      },
+      {
+        text: text.rename,
+        onPress: () => {
+          setRenaming(item);
+          setRenameTitle(item.title ?? "");
         },
       },
       {
         text: item.status === ConversationStatus.ARCHIVED ? text.restore : text.archive,
         onPress: () => {
-          void spring
-            .updateConversation(item.id, {
-              status: item.status === ConversationStatus.ARCHIVED ? ConversationStatus.ACTIVE : ConversationStatus.ARCHIVED,
-            })
-            .then(refresh);
+          void history.setStatus(
+            item.id,
+            item.status === ConversationStatus.ARCHIVED ? ConversationStatus.ACTIVE : ConversationStatus.ARCHIVED,
+          );
         },
       },
       {
@@ -84,7 +84,7 @@ export function DrawerMenu({
               text: text.remove,
               style: "destructive",
               onPress: () => {
-                void spring.deleteConversation(item.id).then(refresh);
+                void history.remove(item.id);
               },
             },
           ]);
@@ -92,6 +92,13 @@ export function DrawerMenu({
       },
       { text: text.cancel, style: "cancel" },
     ]);
+  }
+
+  function saveRename() {
+    if (!renaming) return;
+    const title = renameTitle.trim();
+    if (title) void history.rename(renaming.id, title);
+    setRenaming(null);
   }
 
   return (
@@ -133,6 +140,11 @@ export function DrawerMenu({
             ) : null}
           </View>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 16 }}>
+            {signedIn && !history.online ? (
+              <View style={{ marginHorizontal: 8, marginTop: 8, marginBottom: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}>
+                <Text style={{ color: colors.muted, fontSize: 13 }}>{text.offlineHistory}</Text>
+              </View>
+            ) : null}
             {!signedIn ? (
               <View style={{ marginHorizontal: 8, marginTop: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 }}>
                 <Text style={{ color: colors.ink, marginBottom: 12 }}>{text.signInHint}</Text>
@@ -146,15 +158,17 @@ export function DrawerMenu({
                   <Text style={{ color: colors.onAccent }}>{text.login}</Text>
                 </Pressable>
               </View>
-            ) : !chats.isFetched ? (
+            ) : !history.ready && history.items.length === 0 ? (
               <View style={{ height: 24 }} />
-            ) : items.length === 0 ? (
+            ) : history.items.length === 0 ? (
               <Text style={{ color: colors.muted, padding: 16 }}>{text.emptyChats}</Text>
             ) : (
               <>
-                <ChatGroup title={text.pinned} items={pinned} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.recent} items={rest} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
-                <ChatGroup title={text.archive} items={archived} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
+                <ChatGroup title={text.pinned} items={groups.pinned} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
+                <ChatGroup title={text.today} items={groups.today} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
+                <ChatGroup title={text.yesterday} items={groups.yesterday} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
+                <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
+                <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} onOpen={goChat} onManage={manage} />
               </>
             )}
           </ScrollView>
@@ -195,6 +209,32 @@ export function DrawerMenu({
         </View>
         <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066" }} />
       </View>
+      {renaming ? (
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: "#00000066", justifyContent: "center", padding: 24 }}>
+          <Pressable onPress={() => setRenaming(null)} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.line }}>
+            <Text style={{ color: colors.ink, fontSize: 16, marginBottom: 12 }}>{text.rename}</Text>
+            <TextInput
+              value={renameTitle}
+              onChangeText={setRenameTitle}
+              placeholder={text.titlePlaceholder}
+              placeholderTextColor={colors.muted}
+              maxLength={80}
+              autoFocus
+              onSubmitEditing={saveRename}
+              style={{ borderWidth: 1, borderColor: colors.line, backgroundColor: colors.bg, color: colors.ink, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 }}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}>
+              <Pressable onPress={() => setRenaming(null)} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
+                <Text style={{ color: colors.muted }}>{text.cancel}</Text>
+              </Pressable>
+              <Pressable onPress={saveRename} style={{ backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 }}>
+                <Text style={{ color: colors.onAccent }}>{text.save}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      ) : null}
       </SafeAreaProvider>
     </Modal>
   );
@@ -232,12 +272,19 @@ function ChatGroup({
             <Icon name={modeIcon(item.mode)} color={colors.accent} size={16} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.ink, fontSize: 16 }} numberOfLines={1}>
-              {item.title || text.newChat}
-            </Text>
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
-              {modeLabel(item.mode, text)} · {formatWhen(item.lastMessageAt, locale)}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+              <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }} numberOfLines={1}>
+                {item.title || text.newChat}
+              </Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>{formatWhen(item.lastMessageAt, locale)}</Text>
+            </View>
+            {item.preview ? (
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                {item.preview}
+              </Text>
+            ) : (
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>{modeLabel(item.mode, text)}</Text>
+            )}
           </View>
           {item.pinnedAt ? <Icon name="bookmark" color={colors.accent} size={16} /> : null}
         </Pressable>

@@ -8,6 +8,7 @@ import { Screen } from "../../shared/ui/Screen";
 import { cardsFromDiscover, HERO_ART, STYLE_ART } from "../discover/catalog";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { mediaUrl, spring } from "../../shared/lib/api";
+import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -25,7 +26,7 @@ export function ImageScreen({ navigation }: Props) {
   const [prompt, setPrompt] = useState("");
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
-  const chats = useQuery({ queryKey: ["conversations", "image"], queryFn: () => spring.conversations({ mode: "image" }), enabled: signedIn });
+  const chats = useHistory({ mode: "image" });
   const catalog = useQuery({ queryKey: ["catalog-styles"], queryFn: () => spring.catalogStyles() });
   const discover = useQuery({ queryKey: ["catalog-discover"], queryFn: () => spring.catalogDiscover() });
   const styles = catalog.data?.items ?? IMAGE_STYLES;
@@ -34,7 +35,7 @@ export function ImageScreen({ navigation }: Props) {
     () => (styles.some((style) => style.id === styleId) ? styleId : (styles[0]?.id ?? "ink")),
     [styles, styleId],
   );
-  const recent = (chats.data?.items ?? []).slice(0, 8);
+  const recent = chats.items.slice(0, 8);
   const scroll = useRef<ScrollView>(null);
   const blocked = caps.data?.image === false;
 

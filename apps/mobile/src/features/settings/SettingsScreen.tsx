@@ -6,8 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
-import { openAuth, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
+import { openAuth, openChat, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
+import { useHistory, useHistoryStore } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -27,6 +28,7 @@ export function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const sessionUser = usePrefs((state) => state.user);
+  const last = useHistory().lastActive;
   const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
   const usage = useQuery({ queryKey: ["me-usage"], queryFn: () => spring.meUsage(), enabled: signedIn });
   const user = me.data?.user ?? sessionUser;
@@ -93,7 +95,16 @@ export function SettingsScreen() {
         )}
       </View>
       <Group title={text.shortcuts} colors={colors}>
-        <SettingLine icon="chatbubble-outline" label={text.lastChat} colors={colors} chevron onPress={() => navigation.navigate("Inbox")} />
+        <SettingLine
+          icon="chatbubble-outline"
+          label={last?.title || text.lastChat}
+          colors={colors}
+          chevron
+          onPress={() => {
+            if (last) openChat(navigation, { conversationId: last.id, mode: last.mode });
+            else navigation.navigate("Inbox");
+          }}
+        />
         <SettingLine icon="compass-outline" label={text.discover} colors={colors} chevron onPress={() => navigation.navigate("Discover")} />
         <SettingLine icon="image-outline" label={text.image} colors={colors} chevron onPress={() => navigation.navigate("Image")} />
       </Group>
@@ -123,8 +134,28 @@ export function SettingsScreen() {
       </Group>
       {signedIn ? (
         <Group title={text.account} colors={colors}>
-          <SettingLine icon="log-out-outline" label={text.logout} colors={colors} onPress={() => { void spring.logout(true).catch(() => undefined); clear(); }} />
-          <SettingLine icon="trash-outline" label={text.deleteAccount} danger colors={colors} onPress={() => { void spring.deleteMe().then(() => clear()).catch(() => undefined); }} />
+          <SettingLine
+            icon="log-out-outline"
+            label={text.logout}
+            colors={colors}
+            onPress={() => {
+              void spring.logout(true).catch(() => undefined);
+              void useHistoryStore.getState().hydrate(null);
+              clear();
+            }}
+          />
+          <SettingLine
+            icon="trash-outline"
+            label={text.deleteAccount}
+            danger
+            colors={colors}
+            onPress={() => {
+              void spring.deleteMe().then(() => {
+                void useHistoryStore.getState().hydrate(null);
+                clear();
+              }).catch(() => undefined);
+            }}
+          />
         </Group>
       ) : null}
       </ScrollView>

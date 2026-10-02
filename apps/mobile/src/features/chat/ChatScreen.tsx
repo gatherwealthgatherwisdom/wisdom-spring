@@ -7,6 +7,7 @@ import { Image, Pressable, Text, TextInput, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { createClientMessageId, mediaUrl, spring } from "../../shared/lib/api";
+import { isOfflineError, refreshAfterSend, useHistoryStore, useThread } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { pickPdf, pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
@@ -44,20 +45,11 @@ export function ChatScreen({ navigation, route }: Props) {
   const trimmedSearch = searchQ.trim();
   const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
   const stream = useStream();
-  const history = useQuery({
-    queryKey: ["messages", conversationId],
-    queryFn: () => spring.messages(conversationId ?? ""),
-    enabled: Boolean(conversationId),
-  });
+  const thread = useThread(conversationId);
   const found = useQuery({
     queryKey: ["messages", conversationId, trimmedSearch],
     queryFn: () => spring.messages(conversationId ?? "", { q: trimmedSearch }),
-    enabled: Boolean(conversationId && searchOpen && trimmedSearch),
-  });
-  const chats = useQuery({
-    queryKey: ["conversations", ""],
-    queryFn: () => spring.conversations(),
-    enabled: Boolean(token),
+    enabled: Boolean(conversationId && searchOpen && trimmedSearch && thread.online),
   });
   const caps = useQuery({
     queryKey: ["capabilities"],
@@ -69,12 +61,15 @@ export function ChatScreen({ navigation, route }: Props) {
   const suggestions = copyQuery.data?.emptyHero ?? [...SUGGESTED_PROMPTS_ZH];
   const flagOn = (key: FeatureFlagKey, fallback = true) =>
     flags.data?.items.find((item) => item.key === key)?.enabled ?? fallback;
-  const chatTitle = chats.data?.items.find((item) => item.id === conversationId)?.title || text.app;
+  const chatTitle = thread.conversation?.title || text.app;
 
   const searching = searchOpen && trimmedSearch.length > 0;
+  const localMessages = thread.messages.filter((item) => item.status !== "SUPERSEDED");
   const messages: MessageView[] = searching
-    ? (found.data?.items ?? [])
-    : (history.data?.items ?? []).filter((item) => item.status !== "SUPERSEDED");
+    ? thread.online
+      ? (found.data?.items ?? [])
+      : localMessages.filter((item) => item.content.includes(trimmedSearch))
+    : localMessages;
   const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
   const showDraft = searching
     ? null
@@ -168,8 +163,10 @@ export function ChatScreen({ navigation, route }: Props) {
           onDelta: (event) => stream.delta(event.text),
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
-            void queryClient.invalidateQueries({ queryKey: ["messages"] });
-            void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            const id = conversationId ?? useStream.getState().conversationId;
+            void refreshAfterSend().then(() => {
+              if (id) void useHistoryStore.getState().loadThread(id);
+            });
             void refreshAccount().catch(() => undefined);
           },
           onError: (event) => {
@@ -182,6 +179,12 @@ export function ChatScreen({ navigation, route }: Props) {
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      if (isOfflineError(error)) {
+        useHistoryStore.getState().markOffline();
+        stream.fail(text.offlineSend);
+        setBanner(text.offlineSend);
+        return;
+      }
       const message = error instanceof ApiError ? error.message : text.placeholder;
       stream.fail(message);
       setBanner(message);
@@ -206,7 +209,10 @@ export function ChatScreen({ navigation, route }: Props) {
           onDelta: (event) => stream.delta(event.text),
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
-            void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+            const id = conversationId ?? useStream.getState().conversationId;
+            void refreshAfterSend().then(() => {
+              if (id) void useHistoryStore.getState().loadThread(id);
+            });
             void refreshAccount().catch(() => undefined);
           },
           onError: (event) => {
@@ -219,6 +225,12 @@ export function ChatScreen({ navigation, route }: Props) {
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      if (isOfflineError(error)) {
+        useHistoryStore.getState().markOffline();
+        stream.fail(text.offlineSend);
+        setBanner(text.offlineSend);
+        return;
+      }
       const message = error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。";
       stream.fail(message);
       setBanner(message);
@@ -277,7 +289,7 @@ export function ChatScreen({ navigation, route }: Props) {
   async function rate(messageId: string, rating: "up" | "down") {
     try {
       await spring.feedback(messageId, { rating });
-      void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+      if (conversationId) void useHistoryStore.getState().loadThread(conversationId);
     } catch (error) {
       const message = error instanceof ApiError ? error.message : text.placeholder;
       setBanner(message);
@@ -346,6 +358,9 @@ export function ChatScreen({ navigation, route }: Props) {
           </View>
         ) : null}
         {trialLeft !== null ? <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8, textAlign: "center" }}>{text.trialLeft(trialLeft)}</Text> : null}
+        {!thread.online && conversationId ? (
+          <Text style={{ color: colors.muted, fontSize: 12, textAlign: "center", marginBottom: 8 }}>{text.offlineHistory}</Text>
+        ) : null}
         <QuotaBanner
           message={banner}
           action={guestBlocked ? text.completeRegistration : null}
@@ -359,7 +374,7 @@ export function ChatScreen({ navigation, route }: Props) {
             mode={mode}
             regenerateLabel={text.regenerate}
             listenLabel={text.listen}
-            emptyLabel={searching ? (found.isFetched ? text.emptySearch : " ") : undefined}
+            emptyLabel={searching ? (thread.online && !found.isFetched ? " " : text.emptySearch) : undefined}
             onCard={(card) => {
               if (card === "email") navigation.navigate("Chat", { mode: "write", templateId: "email" });
               if (card === "translate") navigation.replace("Chat", { mode: "translate" });

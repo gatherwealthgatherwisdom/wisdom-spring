@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { Screen } from "../../shared/ui/Screen";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
+import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -21,11 +22,10 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
   const [targetLang, setTargetLang] = useState("en");
   const [side, setSide] = useState<"source" | "target">("source");
   const [body, setBody] = useState("");
-  const signedIn = usePrefs((state) => Boolean(state.accessToken));
-  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const chats = useHistory({ mode: "translate" });
   const catalog = useQuery({ queryKey: ["catalog-languages"], queryFn: () => spring.catalogLanguages() });
   const languages = catalog.data?.items ?? TRANSLATE_LANGUAGES;
-  const recent = (chats.data?.items ?? []).filter((item) => item.mode === "translate").slice(0, 5);
+  const recent = chats.items.slice(0, 5);
   const source = useMemo(
     () => (languages.some((item) => item.id === sourceLang) ? sourceLang : (languages[0]?.id ?? "zh-HK")),
     [languages, sourceLang],

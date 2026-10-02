@@ -175,7 +175,7 @@ export class SpringClient {
     return this.request("/v1/catalog/discover");
   }
 
-  conversations(query?: { q?: string; cursor?: string; mode?: string }): Promise<PageOf<ConversationView>> {
+  conversations(query?: { q?: string; cursor?: string; mode?: string; limit?: string }): Promise<PageOf<ConversationView>> {
     return this.request(`/v1/conversations${queryString(query)}`);
   }
 

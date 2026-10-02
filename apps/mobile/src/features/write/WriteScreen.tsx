@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
 import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
+import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -27,11 +28,10 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
-  const signedIn = usePrefs((state) => Boolean(state.accessToken));
-  const chats = useQuery({ queryKey: ["conversations", ""], queryFn: () => spring.conversations(), enabled: signedIn });
+  const chats = useHistory({ mode: "write" });
   const catalog = useQuery({ queryKey: ["catalog-write"], queryFn: () => spring.catalogWrite() });
   const templates = catalog.data?.items ?? WRITE_TEMPLATES;
-  const recent = (chats.data?.items ?? []).filter((item) => item.mode === "write").slice(0, 5);
+  const recent = chats.items.slice(0, 5);
   const featured = templates.filter((item) => FEATURED.includes(item.id));
   return (
     <Screen>

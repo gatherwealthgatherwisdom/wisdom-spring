@@ -1,4 +1,5 @@
 import { SpringClient } from "@spring/api-client";
+import { localMediaUri } from "./history/media";
 import { usePrefs } from "./prefs";
 
 export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -25,7 +26,9 @@ export function createClientMessageId(): string {
 
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
-  if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
+  const local = localMediaUri(path);
+  if (local) return local;
+  if (/^https?:\/\//i.test(path) || path.startsWith("data:") || path.startsWith("file:")) return path;
   const base = API_URL.replace(/\/$/, "");
   return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
 }
