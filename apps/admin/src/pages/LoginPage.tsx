@@ -195,7 +195,12 @@ export function LoginPage() {
             </>
           )}
           <ErrorAlert message={error} />
-          <Button type="submit" disabled={pending || (step === "phone" ? !phoneReady : !codeReady)}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full rounded-xl"
+            disabled={pending || (step === "phone" ? !phoneReady : !codeReady)}
+          >
             {pending ? (step === "phone" ? "發送中…" : "登入中…") : step === "phone" ? "發送驗證碼" : "登入"}
           </Button>
         </Card>
