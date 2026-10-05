@@ -3,7 +3,7 @@ import { ConversationStatus } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
@@ -49,6 +49,7 @@ export function DrawerMenu({
   const trimmed = q.trim();
   const history = useHistory({ q: trimmed, mode });
   const conversations = useHistoryStore((state) => state.conversations);
+  const syncing = useHistoryStore((state) => state.syncing);
   const groups = groupHistory(history.items);
   const hitsById = useMemo(() => new Map(history.hits.map((hit) => [hit.conversationId, hit])), [history.hits]);
   const searching = trimmed.length > 0;
@@ -209,7 +210,22 @@ export function DrawerMenu({
               </>
             ) : null}
           </View>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 16 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 16 }}
+            refreshControl={
+              signedIn ? (
+                <RefreshControl
+                  refreshing={syncing}
+                  onRefresh={() => {
+                    void useHistoryStore.getState().sync();
+                  }}
+                  tintColor={colors.accent}
+                  colors={[colors.accent]}
+                />
+              ) : undefined
+            }
+          >
             {signedIn && !history.online ? (
               <View style={{ marginHorizontal: 8, marginTop: 8, marginBottom: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 }}>
                 <Text style={{ color: colors.muted, fontSize: 13 }}>{text.offlineHistory}</Text>

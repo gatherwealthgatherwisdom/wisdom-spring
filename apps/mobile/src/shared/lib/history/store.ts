@@ -1,5 +1,5 @@
 import { ApiError } from "@spring/api-client";
-import { ConversationStatus, type ConversationView, type MessageView } from "@spring/shared";
+import { ConversationStatus, LIMITS, type ConversationBatchResult, type ConversationView, type MessageView } from "@spring/shared";
 import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { spring } from "../api";
@@ -24,6 +24,7 @@ import { localThread, pullHistory, pullThread, queueOp } from "./sync";
 type HistoryState = {
   ready: boolean;
   online: boolean;
+  syncing: boolean;
   userId: string | null;
   pulledAt: string | null;
   conversations: ConversationView[];
@@ -51,10 +52,12 @@ export function isOfflineError(error: unknown): boolean {
 }
 
 let hydrateGen = 0;
+let syncLock: Promise<void> | null = null;
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   ready: false,
   online: true,
+  syncing: false,
   userId: null,
   pulledAt: null,
   conversations: [],
@@ -66,7 +69,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       if (previous) await wipeUser(previous).catch(() => undefined);
       if (gen !== hydrateGen) return;
       clearMediaMap();
-      set({ userId: null, conversations: [], messages: {}, pulledAt: null, ready: true, online: true });
+      set({ userId: null, conversations: [], messages: {}, pulledAt: null, ready: true, online: true, syncing: false });
       return;
     }
     await loadMediaRows().catch(() => undefined);
@@ -79,21 +82,31 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   async sync() {
     const userId = get().userId;
     if (!userId) return;
+    if (syncLock) return syncLock;
     const gen = hydrateGen;
-    try {
-      const conversations = await pullHistory(userId);
-      if (get().userId !== userId || gen !== hydrateGen) return;
-      const messages = { ...get().messages };
-      for (const id of Object.keys(messages)) {
-        messages[id] = await listMessages(userId, id).catch(() => messages[id] ?? []);
+    set({ syncing: true });
+    const run = (async () => {
+      try {
+        const conversations = await pullHistory(userId);
+        if (get().userId !== userId || gen !== hydrateGen) return;
+        const messages = { ...get().messages };
+        for (const id of Object.keys(messages)) {
+          messages[id] = await listMessages(userId, id).catch(() => messages[id] ?? []);
+        }
+        const pulledAt = await getPulledAt(userId).catch(() => get().pulledAt);
+        set({ conversations, messages, pulledAt, online: true });
+      } catch {
+        if (get().userId !== userId || gen !== hydrateGen) return;
+        const conversations = await listConversations(userId).catch(() => get().conversations);
+        set({ conversations, online: false });
+      } finally {
+        set({ syncing: false });
       }
-      const pulledAt = await getPulledAt(userId).catch(() => get().pulledAt);
-      set({ conversations, messages, pulledAt, online: true });
-    } catch {
-      if (get().userId !== userId || gen !== hydrateGen) return;
-      const conversations = await listConversations(userId).catch(() => get().conversations);
-      set({ conversations, online: false });
-    }
+    })();
+    syncLock = run.finally(() => {
+      syncLock = null;
+    });
+    return syncLock;
   },
   async loadThread(conversationId) {
     const userId = get().userId;
@@ -152,13 +165,43 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     }
   },
   async pinMany(ids, pinned) {
-    for (const id of ids) await get().pin(id, pinned);
+    const userId = get().userId;
+    if (!userId) return;
+    await batchLocal(
+      ids,
+      (item) => ({ ...item, pinnedAt: pinned ? new Date().toISOString() : null }),
+      (chunk) => spring.batchConversations({ ids: chunk, pinned }),
+      (id) => queueOp(userId, id, "pin", { pinned }),
+    );
   },
   async setStatusMany(ids, status) {
-    for (const id of ids) await get().setStatus(id, status);
+    const userId = get().userId;
+    if (!userId) return;
+    await batchLocal(
+      ids,
+      (item) => ({ ...item, status, pinnedAt: status === ConversationStatus.ARCHIVED ? null : item.pinnedAt }),
+      (chunk) => spring.batchConversations({ ids: chunk, status }),
+      (id) => queueOp(userId, id, "status", { status }),
+    );
   },
   async removeMany(ids) {
-    for (const id of ids) await get().remove(id);
+    const unique = [...new Set(ids)];
+    const userId = get().userId;
+    if (!userId || unique.length === 0) return;
+    for (const id of unique) await deleteConversation(userId, id).catch(() => undefined);
+    set((state) => ({
+      conversations: state.conversations.filter((item) => !unique.includes(item.id)),
+      messages: Object.fromEntries(Object.entries(state.messages).filter(([key]) => !unique.includes(key))),
+    }));
+    try {
+      for (const chunk of chunkIds(unique)) {
+        await spring.batchConversations({ ids: chunk, delete: true });
+      }
+      set({ online: true });
+    } catch {
+      for (const id of unique) await queueOp(userId, id, "delete", {});
+      set({ online: false });
+    }
   },
   markOffline() {
     set({ online: false });
@@ -208,6 +251,52 @@ async function mutate(
     }));
   } catch {
     await queueOp(userId, id, pending.kind, pending.payload);
+    useHistoryStore.setState({ online: false });
+  }
+}
+
+function chunkIds(ids: string[]): string[][] {
+  const size = LIMITS.conversationBatchMax;
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) chunks.push(ids.slice(i, i + size));
+  return chunks;
+}
+
+async function applyRemoteBatch(result: ConversationBatchResult): Promise<void> {
+  const userId = useHistoryStore.getState().userId;
+  if (!userId) return;
+  const deleted = new Set(result.deletedIds);
+  for (const id of deleted) await deleteConversation(userId, id).catch(() => undefined);
+  for (const item of result.items) await upsertConversation(userId, item).catch(() => undefined);
+  useHistoryStore.setState((state) => {
+    const byId = new Map(result.items.map((item) => [item.id, item]));
+    return {
+      conversations: state.conversations.filter((item) => !deleted.has(item.id)).map((item) => byId.get(item.id) ?? item),
+    };
+  });
+}
+
+async function batchLocal(
+  ids: string[],
+  update: (item: ConversationView) => ConversationView,
+  send: (chunk: string[]) => Promise<ConversationBatchResult>,
+  enqueue: (conversationId: string) => Promise<void>,
+): Promise<void> {
+  const unique = [...new Set(ids)];
+  const { userId, conversations } = useHistoryStore.getState();
+  if (!userId || unique.length === 0) return;
+  const next = conversations.map((item) => (unique.includes(item.id) ? update(item) : item));
+  for (const item of next.filter((row) => unique.includes(row.id))) {
+    await upsertConversation(userId, item).catch(() => undefined);
+  }
+  useHistoryStore.setState({ conversations: next });
+  try {
+    for (const chunk of chunkIds(unique)) {
+      await applyRemoteBatch(await send(chunk));
+    }
+    useHistoryStore.setState({ online: true });
+  } catch {
+    for (const id of unique) await enqueue(id);
     useHistoryStore.setState({ online: false });
   }
 }

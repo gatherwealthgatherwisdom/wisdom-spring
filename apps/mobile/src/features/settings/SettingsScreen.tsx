@@ -32,6 +32,7 @@ export function SettingsScreen() {
   const last = useHistory().lastActive;
   const pulledAt = useHistoryStore((state) => state.pulledAt);
   const savedCount = useHistoryStore((state) => state.conversations.length);
+  const syncing = useHistoryStore((state) => state.syncing);
   const [notice, setNotice] = useState<string | null>(null);
   const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
   const usage = useQuery({ queryKey: ["me-usage"], queryFn: () => spring.meUsage(), enabled: signedIn });
@@ -121,6 +122,20 @@ export function SettingsScreen() {
             </Text>
             {notice ? <Text style={{ color: colors.accent, marginTop: 8 }}>{notice}</Text> : null}
           </View>
+          <SettingLine
+            icon="sync-outline"
+            label={text.syncNow}
+            colors={colors}
+            disabled={syncing}
+            onPress={() => {
+              void useHistoryStore
+                .getState()
+                .sync()
+                .then(() => {
+                  if (useHistoryStore.getState().online) setNotice(text.synced);
+                });
+            }}
+          />
           <SettingLine
             icon="trash-outline"
             label={text.clearCache}
@@ -213,6 +228,7 @@ function SettingLine({
   selected,
   danger,
   chevron,
+  disabled,
   colors,
   onPress,
 }: {
@@ -221,11 +237,16 @@ function SettingLine({
   selected?: boolean;
   danger?: boolean;
   chevron?: boolean;
+  disabled?: boolean;
   colors: { ink: string; accent: string; danger: string; line: string };
   onPress: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line, opacity: disabled ? 0.45 : 1 }}
+    >
       <Icon name={icon} color={danger ? colors.danger : colors.accent} size={20} />
       <Text style={{ flex: 1, color: danger ? colors.danger : colors.ink, fontSize: 16 }}>{label}</Text>
       {selected ? <Icon name="checkmark" color={colors.accent} size={18} /> : null}

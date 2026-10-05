@@ -381,4 +381,51 @@ describe("conversation search, feedback, export", () => {
     expect(delta.items[0]?.title).toBe("改名後");
     expect(delta.deletedIds).toEqual([removed.conversationId]);
   });
+
+  it("archives and deletes several conversations in one request", async () => {
+    const { token, userId } = await register(app, `batch-${Date.now()}@gwgwgroup.com`);
+    const other = await register(app, `batch-other-${Date.now()}@gwgwgroup.com`);
+    const first = await seedThread(app.ctx.prisma, userId, "一批一");
+    const second = await seedThread(app.ctx.prisma, userId, "一批二");
+    const third = await seedThread(app.ctx.prisma, userId, "一批三");
+    const stranger = await seedThread(app.ctx.prisma, other.userId, "別人");
+    const archived = await app.inject({
+      method: "POST",
+      url: "/v1/conversations/batch",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        ids: [first.conversationId, second.conversationId, third.conversationId, stranger.conversationId],
+        status: "ARCHIVED",
+      },
+    });
+    expect(archived.statusCode).toBe(200);
+    const archivedBody = archived.json() as { items: Array<{ id: string; status: string; pinnedAt: string | null }>; deletedIds: string[] };
+    expect(archivedBody.items.map((row) => row.id).sort()).toEqual(
+      [first.conversationId, second.conversationId, third.conversationId].sort(),
+    );
+    expect(archivedBody.items.every((row) => row.status === "ARCHIVED" && row.pinnedAt === null)).toBe(true);
+    expect(archivedBody.deletedIds).toEqual([]);
+
+    const tooMany = await app.inject({
+      method: "POST",
+      url: "/v1/conversations/batch",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { ids: Array.from({ length: 51 }, () => createId()), delete: true },
+    });
+    expect(tooMany.statusCode).toBe(400);
+    expect(tooMany.json().error.code).toBe(ErrorCode.VALIDATION);
+
+    const removed = await app.inject({
+      method: "POST",
+      url: "/v1/conversations/batch",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { ids: [first.conversationId, second.conversationId, third.conversationId], delete: true },
+    });
+    expect(removed.statusCode).toBe(200);
+    const deletedBody = removed.json() as { items: unknown[]; deletedIds: string[] };
+    expect(deletedBody.items).toEqual([]);
+    expect(deletedBody.deletedIds.sort()).toEqual(
+      [first.conversationId, second.conversationId, third.conversationId].sort(),
+    );
+  });
 });

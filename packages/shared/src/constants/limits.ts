@@ -5,6 +5,7 @@ export const LIMITS = {
   attachmentsMax: 4,
   uploadMaxBytes: 4 * 1024 * 1024,
   historyMaxMessages: 40,
+  conversationBatchMax: 50,
   reserveOutputTokens: 4096,
   fallbacksMax: 2,
   sendRetryOnRegionBlock: 1,

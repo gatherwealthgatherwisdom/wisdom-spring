@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LIMITS } from "../constants/limits";
 import { CONVERSATION_MODES } from "../constants/tools";
 import { ConversationStatus } from "../enums/conversation-status";
 import { MessageRole } from "../enums/message-role";
@@ -54,4 +55,22 @@ export const ConversationSyncSchema = z.object({
   items: z.array(ConversationViewSchema),
   deletedIds: z.array(z.string().ulid()),
   pulledAt: z.string(),
+});
+
+export const ConversationBatchSchema = z
+  .object({
+    ids: z.array(z.string().ulid()).min(1).max(LIMITS.conversationBatchMax),
+    pinned: z.boolean().optional(),
+    status: z.enum([ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED]).optional(),
+    delete: z.literal(true).optional(),
+  })
+  .refine((value) => new Set(value.ids).size === value.ids.length, { message: "ids" })
+  .refine(
+    (value) => [value.pinned !== undefined, value.status !== undefined, value.delete === true].filter(Boolean).length === 1,
+    { message: "action" },
+  );
+
+export const ConversationBatchResultSchema = z.object({
+  items: z.array(ConversationViewSchema),
+  deletedIds: z.array(z.string().ulid()),
 });

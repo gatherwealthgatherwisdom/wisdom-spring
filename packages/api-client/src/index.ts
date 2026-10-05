@@ -19,6 +19,8 @@ import type {
   AuditLogView,
   AssetView,
   AuthResponse,
+  ConversationBatchRequest,
+  ConversationBatchResult,
   ConversationExport,
   ConversationSync,
   ConversationView,
@@ -182,6 +184,10 @@ export class SpringClient {
 
   syncConversations(query?: { since?: string }): Promise<ConversationSync> {
     return this.request(`/v1/conversations/sync${queryString(query)}`);
+  }
+
+  batchConversations(body: ConversationBatchRequest): Promise<ConversationBatchResult> {
+    return this.request("/v1/conversations/batch", { method: "POST", body: JSON.stringify(body) });
   }
 
   conversation(id: string): Promise<ConversationView> {

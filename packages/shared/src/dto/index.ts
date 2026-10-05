@@ -43,6 +43,8 @@ import type {
   UserPublicSchema,
 } from "../schema/auth.schema";
 import type {
+  ConversationBatchResultSchema,
+  ConversationBatchSchema,
   ConversationSyncSchema,
   ConversationViewSchema,
   CreateConversationSchema,
@@ -104,6 +106,8 @@ export type PublicCopy = z.infer<typeof PublicCopySchema>;
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 export type ConversationView = z.infer<typeof ConversationViewSchema>;
 export type ConversationSync = z.infer<typeof ConversationSyncSchema>;
+export type ConversationBatchRequest = z.infer<typeof ConversationBatchSchema>;
+export type ConversationBatchResult = z.infer<typeof ConversationBatchResultSchema>;
 export type CreateConversationRequest = z.infer<typeof CreateConversationSchema>;
 export type UpdateConversationRequest = z.infer<typeof UpdateConversationSchema>;
 export type ListConversationsQuery = z.infer<typeof ListConversationsQuerySchema>;

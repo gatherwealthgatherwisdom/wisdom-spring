@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Prisma } from "@prisma/client";
 import {
   AppError,
+  ConversationBatchSchema,
   ConversationStatus,
   ConversationSyncQuerySchema,
   CreateConversationSchema,
@@ -142,6 +143,48 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       deletedIds: deleted.map((row) => row.id),
       pulledAt: pulledAt.toISOString(),
     };
+  });
+
+  app.post("/v1/conversations/batch", perMinute(30), async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const body = ConversationBatchSchema.parse(request.body ?? {});
+    const owned = await app.ctx.prisma.conversation.findMany({
+      where: { userId: user.id, id: { in: body.ids } },
+    });
+    const live = owned.filter((row) => row.status !== ConversationStatus.DELETED);
+    if (body.delete) {
+      const deletedIds = owned.map((row) => row.id);
+      if (deletedIds.length > 0) {
+        await app.ctx.prisma.conversation.updateMany({
+          where: { userId: user.id, id: { in: deletedIds } },
+          data: { status: ConversationStatus.DELETED },
+        });
+      }
+      return { items: [], deletedIds };
+    }
+    const liveIds = live.map((row) => row.id);
+    if (liveIds.length > 0) {
+      const data =
+        body.pinned !== undefined
+          ? { pinnedAt: body.pinned ? new Date() : null }
+          : body.status
+            ? {
+                status: body.status,
+                ...(body.status === ConversationStatus.ARCHIVED ? { pinnedAt: null } : {}),
+              }
+            : null;
+      if (!data) throw new AppError(ErrorCode.VALIDATION);
+      await app.ctx.prisma.conversation.updateMany({
+        where: { userId: user.id, id: { in: liveIds }, status: { not: ConversationStatus.DELETED } },
+        data,
+      });
+    }
+    const rows = liveIds.length
+      ? await app.ctx.prisma.conversation.findMany({ where: { userId: user.id, id: { in: liveIds } } })
+      : [];
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const ordered = liveIds.map((id) => byId.get(id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
+    return { items: await conversationViews(app.ctx.prisma, ordered), deletedIds: [] };
   });
 
   app.get("/v1/conversations/:id", async (request) => {
