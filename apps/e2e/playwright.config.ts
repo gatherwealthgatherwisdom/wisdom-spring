@@ -6,6 +6,14 @@ const adminUse = {
   ...chrome,
   baseURL: "http://127.0.0.1:5173",
 };
+const mobileUse = {
+  ...devices["Desktop Chrome"],
+  ...chrome,
+  isMobile: true,
+  hasTouch: true,
+  baseURL: "http://127.0.0.1:8081",
+  viewport: { width: 390, height: 844 },
+};
 
 export default defineConfig({
   testDir: "./tests",
@@ -52,16 +60,20 @@ export default defineConfig({
       use: { ...adminUse, viewport: { width: 1280, height: 800 } },
     },
     {
+      name: "mobile-setup",
+      testMatch: /mobile\.setup\.ts/,
+      use: { ...mobileUse },
+    },
+    {
+      name: "mobile-anon",
+      testMatch: /mobile\.(smoke|browse|auth)\.spec\.ts/,
+      use: { ...mobileUse },
+    },
+    {
       name: "mobile",
-      testMatch: /mobile\..*\.spec\.ts/,
-      use: {
-        ...devices["Desktop Chrome"],
-        ...chrome,
-        isMobile: true,
-        hasTouch: true,
-        baseURL: "http://127.0.0.1:8081",
-        viewport: { width: 390, height: 844 },
-      },
+      dependencies: ["mobile-setup"],
+      testMatch: /mobile\.(signed|history)\.spec\.ts/,
+      use: { ...mobileUse, storageState: ".auth/mobile.json" },
     },
   ],
 });
