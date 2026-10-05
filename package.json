@@ -12,6 +12,7 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "e2e": "pnpm --filter @spring/e2e e2e",
     "lint": "turbo lint",
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @spring/api exec prisma generate",

@@ -14,3 +14,7 @@ apps/api/src/generated
 data/generated
 data/uploads
 *.log
+apps/e2e/test-results
+apps/e2e/playwright-report
+apps/e2e/blob-report
+apps/e2e/.auth
