@@ -11,9 +11,16 @@ export function PrimaryCell({
   className?: string;
 }) {
   return (
-    <div className={cn("min-w-0", className)}>
-      <div className="leading-snug font-medium text-ink">{title}</div>
-      {subtitle ? <div className="mt-0.5 leading-snug text-xs text-muted">{subtitle}</div> : null}
+    <div className={cn("min-w-0 max-w-[16rem]", className)}>
+      <div
+        className="truncate leading-snug font-medium text-ink"
+        title={typeof title === "string" ? title : undefined}
+      >
+        {title}
+      </div>
+      {subtitle ? (
+        <div className="mt-0.5 truncate leading-snug text-xs text-muted">{subtitle}</div>
+      ) : null}
     </div>
   );
 }

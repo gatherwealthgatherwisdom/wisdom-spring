@@ -69,7 +69,10 @@ export function DataTable({
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className="max-h-[calc(100vh-24rem)] overflow-auto" aria-busy={loading || undefined}>
+      <div
+        className="min-w-0 overflow-x-auto overflow-y-auto overscroll-x-contain lg:max-h-[calc(100vh-24rem)]"
+        aria-busy={loading || undefined}
+      >
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">

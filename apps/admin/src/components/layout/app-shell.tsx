@@ -7,13 +7,15 @@ import {
   LayoutTemplate,
   LogOut,
   Megaphone,
+  Menu,
   ScrollText,
   Type,
   Users,
   Wrench,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { clearSession, client } from "@/session";
 import { cn } from "@/lib/utils";
@@ -53,12 +55,70 @@ const GROUPS: Array<{
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_1fr]">
-      <aside className="flex flex-col gap-1 bg-ink px-4 py-6 text-cream lg:sticky lg:top-0 lg:h-screen">
-        <div className="mb-4 px-2">
-          <div className="font-serif text-[28px] tracking-[0.08em]">智泉</div>
-          <div className="mt-1 font-serif text-xs tracking-[0.16em] text-pine-2">ADMIN · GWGW</div>
+    <div className="min-h-screen lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 bg-ink px-3 text-cream lg:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="border-white/15 text-cream hover:bg-ink-2 hover:text-white"
+          aria-label="開啟選單"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <Menu className="size-5" />
+        </Button>
+        <div className="min-w-0">
+          <div className="font-serif text-lg leading-none tracking-[0.08em]">智泉</div>
+          <div className="mt-1 font-serif text-[10px] tracking-[0.16em] text-pine-2">ADMIN · GWGW</div>
+        </div>
+      </header>
+      {open ? (
+        <button
+          type="button"
+          aria-label="關閉選單"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={cn(
+          "flex w-[min(16.5rem,88vw)] flex-col gap-1 bg-ink px-4 py-6 text-cream transition-transform duration-200",
+          "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:shadow-[8px_0_24px_rgba(0,0,0,0.28)]",
+          open ? "max-lg:translate-x-0" : "max-lg:pointer-events-none max-lg:-translate-x-full",
+          "lg:sticky lg:top-0 lg:h-screen lg:w-auto",
+        )}
+      >
+        <div className="mb-4 flex items-start justify-between gap-2 px-2">
+          <div>
+            <div className="font-serif text-[28px] tracking-[0.08em]">智泉</div>
+            <div className="mt-1 font-serif text-xs tracking-[0.16em] text-pine-2">ADMIN · GWGW</div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="border-white/15 text-cream hover:bg-ink-2 hover:text-white lg:hidden"
+            aria-label="關閉選單"
+            onClick={() => setOpen(false)}
+          >
+            <X className="size-4" />
+          </Button>
         </div>
         <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
           {GROUPS.map((group) => (
@@ -71,6 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <NavLink
                       key={item.to}
                       to={item.to}
+                      onClick={() => setOpen(false)}
                       className={({ isActive }) =>
                         cn(
                           "flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-cream/80 no-underline hover:bg-ink-2 hover:text-white",
@@ -100,7 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           登出
         </Button>
       </aside>
-      <main className="min-w-0 px-5 py-6 lg:px-8">{children}</main>
+      <main className="min-w-0 px-4 py-5 lg:px-8 lg:py-6">{children}</main>
     </div>
   );
 }

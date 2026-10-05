@@ -36,13 +36,13 @@ function formatProbe(iso: string | null): string {
 }
 
 const MODEL_COLUMNS = [
-  { key: "model", header: "模型", className: "min-w-[14rem]" },
+  { key: "model", header: "模型", className: "min-w-[10.5rem]" },
   { key: "kind", header: "能力", className: "whitespace-nowrap" },
-  { key: "status", header: "狀態", className: "min-w-[13.5rem]" },
-  { key: "weight", header: "權重", className: "min-w-[10rem]" },
-  { key: "plan", header: "計劃", className: "min-w-[8rem]" },
+  { key: "status", header: "狀態", className: "min-w-[10.5rem]" },
+  { key: "weight", header: "權重／質素", className: "min-w-[8.5rem]" },
+  { key: "plan", header: "計劃", className: "min-w-[6.75rem]" },
   { key: "stats", header: "24h", align: "right" as const, className: "whitespace-nowrap" },
-  { key: "actions", header: "", className: "w-[6.5rem]" },
+  { key: "actions", header: "操作", className: "whitespace-nowrap" },
 ];
 
 export function ModelsPage() {
@@ -258,7 +258,7 @@ function ModelRow({
         <Badge tone="cream">{capabilityLabel(row)}</Badge>
       </TableCell>
       <TableCell>
-        <div className="flex flex-nowrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex">
@@ -276,30 +276,26 @@ function ModelRow({
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex items-end gap-3">
-          <label className="grid gap-0.5">
-            <span className="text-[10px] text-muted">權重</span>
-            <CompactNumber
-              value={row.weight}
-              min={0}
-              max={10_000}
-              onCommit={(weight) => onChange({ weight })}
-            />
-          </label>
-          <label className="grid gap-0.5">
-            <span className="text-[10px] text-muted">質素</span>
-            <CompactNumber
-              value={row.qualityScore}
-              min={0}
-              max={100}
-              onCommit={(qualityScore) => onChange({ qualityScore })}
-            />
-          </label>
+        <div className="flex items-center gap-2">
+          <CompactNumber
+            aria-label="權重"
+            value={row.weight}
+            min={0}
+            max={10_000}
+            onCommit={(weight) => onChange({ weight })}
+          />
+          <CompactNumber
+            aria-label="質素"
+            value={row.qualityScore}
+            min={0}
+            max={100}
+            onCommit={(qualityScore) => onChange({ qualityScore })}
+          />
         </div>
       </TableCell>
       <TableCell>
         <NativeSelect
-          className="h-8 min-w-[7.5rem]"
+          className="h-8 w-[6.75rem]"
           value={row.minPlanTier}
           onChange={(event) => onChange({ minPlanTier: event.target.value as PlanTier })}
         >
@@ -310,18 +306,29 @@ function ModelRow({
         <p className="mt-1 text-xs text-muted tabular-nums">{price(row.completionUsdMicrosPerMillion)} / 1M</p>
       </TableCell>
       <TableCell className="whitespace-nowrap text-right">
-        <p className="tabular-nums text-ink">
-          {row.success24h}
-          <span className="text-muted"> / {row.fail24h}</span>
-        </p>
-        <p className="mt-0.5 text-xs text-muted">{formatProbe(row.lastProbeAt)}</p>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-block cursor-default tabular-nums text-ink">
+              {row.success24h}
+              <span className="text-muted"> / {row.fail24h}</span>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {row.lastProbeAt ? `上次探測 ${formatProbe(row.lastProbeAt)}` : "未探測"}
+          </TooltipContent>
+        </Tooltip>
       </TableCell>
       <TableCell>
-        <div className="flex flex-col items-stretch gap-1">
-          <Button variant="ghost" size="sm" onClick={onProbe}>
+        <div className="flex items-center gap-1 whitespace-nowrap">
+          <Button variant="ghost" size="sm" className="px-2.5" onClick={onProbe}>
             探測
           </Button>
-          <Button variant="danger" size="sm" onClick={() => onChange({ regionStatus: ModelRegionStatus.HK_BLOCKED })}>
+          <Button
+            variant="danger"
+            size="sm"
+            className="px-2.5"
+            onClick={() => onChange({ regionStatus: ModelRegionStatus.HK_BLOCKED })}
+          >
             封鎖
           </Button>
         </div>

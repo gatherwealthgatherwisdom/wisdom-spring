@@ -8,12 +8,14 @@ export function CompactNumber({
   min,
   max,
   className,
+  "aria-label": ariaLabel,
 }: {
   value: number;
   onCommit: (value: number) => void;
   min?: number;
   max?: number;
   className?: string;
+  "aria-label"?: string;
 }) {
   const [raw, setRaw] = useState(String(value));
   useEffect(() => {
@@ -44,6 +46,7 @@ export function CompactNumber({
       onChange={(event) => setRaw(event.target.value)}
       onBlur={commit}
       onKeyDown={onKeyDown}
+      aria-label={ariaLabel}
       className={cn("h-8 w-16 px-2 text-right tabular-nums", className)}
     />
   );
