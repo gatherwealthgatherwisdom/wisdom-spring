@@ -20,6 +20,7 @@ import type {
   AssetView,
   AuthResponse,
   ConversationExport,
+  ConversationSync,
   ConversationView,
   FeatureFlagView,
   FeedbackRequest,
@@ -177,6 +178,10 @@ export class SpringClient {
 
   conversations(query?: { q?: string; cursor?: string; mode?: string; limit?: string }): Promise<PageOf<ConversationView>> {
     return this.request(`/v1/conversations${queryString(query)}`);
+  }
+
+  syncConversations(query?: { since?: string }): Promise<ConversationSync> {
+    return this.request(`/v1/conversations/sync${queryString(query)}`);
   }
 
   conversation(id: string): Promise<ConversationView> {

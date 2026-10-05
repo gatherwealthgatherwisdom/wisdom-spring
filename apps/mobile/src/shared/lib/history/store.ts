@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { spring } from "../api";
 import {
+  clearMediaRows,
   deleteConversation,
   getConversation,
+  getPulledAt,
   listConversations,
   listMessages,
   loadMediaRows,
@@ -15,7 +17,7 @@ import {
 } from "./db";
 import { markdownFromThread } from "./export";
 import { lastActiveOf } from "./groups";
-import { clearMediaMap } from "./media";
+import { clearCachedMedia, clearMediaMap } from "./media";
 import type { HistoryHit } from "./search";
 import { localThread, pullHistory, pullThread, queueOp } from "./sync";
 
@@ -23,6 +25,7 @@ type HistoryState = {
   ready: boolean;
   online: boolean;
   userId: string | null;
+  pulledAt: string | null;
   conversations: ConversationView[];
   messages: Record<string, MessageView[]>;
   hydrate: (userId: string | null) => Promise<void>;
@@ -37,6 +40,7 @@ type HistoryState = {
   removeMany: (ids: string[]) => Promise<void>;
   markOffline: () => void;
   exportThread: (id: string) => Promise<string>;
+  clearMediaCache: () => Promise<void>;
 };
 
 export function isOfflineError(error: unknown): boolean {
@@ -52,6 +56,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   ready: false,
   online: true,
   userId: null,
+  pulledAt: null,
   conversations: [],
   messages: {},
   async hydrate(userId) {
@@ -61,13 +66,14 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       if (previous) await wipeUser(previous).catch(() => undefined);
       if (gen !== hydrateGen) return;
       clearMediaMap();
-      set({ userId: null, conversations: [], messages: {}, ready: true, online: true });
+      set({ userId: null, conversations: [], messages: {}, pulledAt: null, ready: true, online: true });
       return;
     }
     await loadMediaRows().catch(() => undefined);
     const conversations = await listConversations(userId).catch(() => []);
+    const pulledAt = await getPulledAt(userId).catch(() => null);
     if (gen !== hydrateGen) return;
-    set({ userId, conversations, messages: {}, ready: true });
+    set({ userId, conversations, messages: {}, pulledAt, ready: true });
     await get().sync();
   },
   async sync() {
@@ -81,7 +87,8 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       for (const id of Object.keys(messages)) {
         messages[id] = await listMessages(userId, id).catch(() => messages[id] ?? []);
       }
-      set({ conversations, messages, online: true });
+      const pulledAt = await getPulledAt(userId).catch(() => get().pulledAt);
+      set({ conversations, messages, pulledAt, online: true });
     } catch {
       if (get().userId !== userId || gen !== hydrateGen) return;
       const conversations = await listConversations(userId).catch(() => get().conversations);
@@ -155,6 +162,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   },
   markOffline() {
     set({ online: false });
+  },
+  async clearMediaCache() {
+    await clearMediaRows().catch(() => undefined);
+    await clearCachedMedia();
   },
   async exportThread(id) {
     const userId = get().userId;

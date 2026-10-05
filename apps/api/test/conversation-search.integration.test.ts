@@ -341,4 +341,44 @@ describe("conversation search, feedback, export", () => {
     expect(body2.items.map((row) => row.content)).toEqual(["第一句"]);
     expect(body2.nextCursor).toBeNull();
   });
+
+  it("syncs only conversations changed since the watermark", async () => {
+    const { token, userId } = await register(app, `sync-${Date.now()}@gwgwgroup.com`);
+    const keep = await seedThread(app.ctx.prisma, userId, "保留");
+    const renamed = await seedThread(app.ctx.prisma, userId, "改名前");
+    const removed = await seedThread(app.ctx.prisma, userId, "將刪");
+    const first = await app.inject({
+      method: "GET",
+      url: "/v1/conversations/sync",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(first.statusCode).toBe(200);
+    const initial = first.json() as { items: Array<{ id: string }>; deletedIds: string[]; pulledAt: string };
+    expect(initial.items.map((row) => row.id).sort()).toEqual([keep.conversationId, renamed.conversationId, removed.conversationId].sort());
+    expect(initial.deletedIds).toEqual([]);
+    expect(initial.pulledAt).toBeTruthy();
+
+    await app.inject({
+      method: "PATCH",
+      url: `/v1/conversations/${renamed.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: "改名後" },
+    });
+    await app.inject({
+      method: "DELETE",
+      url: `/v1/conversations/${removed.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    const second = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/sync?since=${encodeURIComponent(initial.pulledAt)}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(second.statusCode).toBe(200);
+    const delta = second.json() as { items: Array<{ id: string; title: string | null }>; deletedIds: string[] };
+    expect(delta.items.map((row) => row.id)).toEqual([renamed.conversationId]);
+    expect(delta.items[0]?.title).toBe("改名後");
+    expect(delta.deletedIds).toEqual([removed.conversationId]);
+  });
 });

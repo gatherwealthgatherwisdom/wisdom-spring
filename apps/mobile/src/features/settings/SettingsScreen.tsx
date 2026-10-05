@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
 import { openAuth, openChat, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
@@ -11,6 +11,7 @@ import { spring } from "../../shared/lib/api";
 import { useHistory, useHistoryStore } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
+import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
 import { Icon, type IconName } from "../../shared/ui/Icon";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
@@ -29,6 +30,9 @@ export function SettingsScreen() {
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const sessionUser = usePrefs((state) => state.user);
   const last = useHistory().lastActive;
+  const pulledAt = useHistoryStore((state) => state.pulledAt);
+  const savedCount = useHistoryStore((state) => state.conversations.length);
+  const [notice, setNotice] = useState<string | null>(null);
   const me = useQuery({ queryKey: ["me"], queryFn: () => spring.me(), enabled: signedIn });
   const usage = useQuery({ queryKey: ["me-usage"], queryFn: () => spring.meUsage(), enabled: signedIn });
   const user = me.data?.user ?? sessionUser;
@@ -108,6 +112,28 @@ export function SettingsScreen() {
         <SettingLine icon="compass-outline" label={text.discover} colors={colors} chevron onPress={() => navigation.navigate("Discover")} />
         <SettingLine icon="image-outline" label={text.image} colors={colors} chevron onPress={() => navigation.navigate("Image")} />
       </Group>
+      {signedIn ? (
+        <Group title={text.storage} colors={colors}>
+          <View style={{ paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+            <Text style={{ color: colors.ink, fontSize: 16 }}>{text.onDevice(savedCount)}</Text>
+            <Text style={{ color: colors.muted, marginTop: 4 }}>
+              {pulledAt ? text.lastSync(formatWhen(pulledAt, locale)) : text.neverSync}
+            </Text>
+            {notice ? <Text style={{ color: colors.accent, marginTop: 8 }}>{notice}</Text> : null}
+          </View>
+          <SettingLine
+            icon="trash-outline"
+            label={text.clearCache}
+            colors={colors}
+            onPress={() => {
+              void useHistoryStore
+                .getState()
+                .clearMediaCache()
+                .then(() => setNotice(text.cacheCleared));
+            }}
+          />
+        </Group>
+      ) : null}
       <Group title={text.notify} colors={colors}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 }}>
           <Icon name="volume-medium-outline" color={colors.accent} size={20} />

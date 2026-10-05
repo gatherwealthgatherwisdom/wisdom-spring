@@ -134,6 +134,7 @@ model Conversation {
   messages      Message[]
 
   @@index([userId, lastMessageAt])
+  @@index([userId, updatedAt])
 }
 
 model Message {

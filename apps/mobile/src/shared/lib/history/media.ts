@@ -16,6 +16,14 @@ export function clearMediaMap(): void {
   localByUrl.clear();
 }
 
+export async function clearCachedMedia(): Promise<void> {
+  const root = FileSystem.documentDirectory;
+  if (root) {
+    await FileSystem.deleteAsync(`${root}spring-media`, { idempotent: true }).catch(() => undefined);
+  }
+  clearMediaMap();
+}
+
 export function hydrateMediaMap(entries: Array<{ url: string; localPath: string }>): void {
   localByUrl.clear();
   for (const entry of entries) localByUrl.set(entry.url, entry.localPath);

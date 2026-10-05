@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import {
   AppError,
   ConversationStatus,
+  ConversationSyncQuerySchema,
   CreateConversationSchema,
   ErrorCode,
   ListConversationsQuerySchema,
@@ -113,6 +114,34 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       data: { id: createId(), userId: user.id, title: body.title },
     });
     return reply.status(201).send(conversationView(row));
+  });
+
+  app.get("/v1/conversations/sync", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const query = ConversationSyncQuerySchema.parse(request.query);
+    const pulledAt = new Date();
+    const since = query.since ? new Date(query.since) : null;
+    if (since && Number.isNaN(since.getTime())) throw new AppError(ErrorCode.VALIDATION);
+    const sinceClause = since ? { updatedAt: { gte: since } } : {};
+    const live = await app.ctx.prisma.conversation.findMany({
+      where: {
+        userId: user.id,
+        status: { in: [ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED] },
+        ...sinceClause,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    const deleted = since
+      ? await app.ctx.prisma.conversation.findMany({
+          where: { userId: user.id, status: ConversationStatus.DELETED, updatedAt: { gte: since } },
+          select: { id: true },
+        })
+      : [];
+    return {
+      items: await conversationViews(app.ctx.prisma, live),
+      deletedIds: deleted.map((row) => row.id),
+      pulledAt: pulledAt.toISOString(),
+    };
   });
 
   app.get("/v1/conversations/:id", async (request) => {

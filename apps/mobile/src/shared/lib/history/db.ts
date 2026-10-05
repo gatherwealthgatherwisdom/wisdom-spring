@@ -295,6 +295,13 @@ export async function setPulledAt(userId: string, pulledAt: string): Promise<voi
   await db.runAsync("INSERT OR REPLACE INTO sync_meta (userId, pulledAt) VALUES (?, ?)", [userId, pulledAt]);
 }
 
+export async function getPulledAt(userId: string): Promise<string | null> {
+  if (usesMemory()) return memory.pulledAt.get(userId) ?? null;
+  const db = await database();
+  const row = await db.getFirstAsync<{ pulledAt: string | null }>("SELECT pulledAt FROM sync_meta WHERE userId = ?", [userId]);
+  return row?.pulledAt ?? null;
+}
+
 export async function rememberMediaRow(url: string, localPath: string): Promise<void> {
   if (usesMemory()) {
     memory.media.set(url, localPath);
@@ -314,6 +321,15 @@ export async function loadMediaRows(): Promise<Array<{ url: string; localPath: s
   const rows = await db.getAllAsync<{ url: string; localPath: string }>("SELECT url, localPath FROM media");
   hydrateMediaMap(rows);
   return rows;
+}
+
+export async function clearMediaRows(): Promise<void> {
+  if (usesMemory()) {
+    memory.media.clear();
+    return;
+  }
+  const db = await database();
+  await db.runAsync("DELETE FROM media");
 }
 
 export async function wipeUser(userId: string): Promise<void> {

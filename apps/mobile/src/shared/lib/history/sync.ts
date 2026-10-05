@@ -4,6 +4,7 @@ import {
   deleteConversation,
   enqueueOp,
   getConversation,
+  getPulledAt,
   listConversations,
   listMessages,
   listOps,
@@ -21,22 +22,6 @@ function remoteUrl(path: string): string {
   if (/^https?:\/\//i.test(path) || path.startsWith("file:") || path.startsWith("data:")) return path;
   const base = API_URL.replace(/\/$/, "");
   return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
-}
-
-async function pullAllConversations(): Promise<ConversationView[]> {
-  const items: ConversationView[] = [];
-  const seen = new Set<string>();
-  let cursor: string | undefined;
-  do {
-    const page = await spring.conversations(cursor ? { cursor, limit: "100" } : { limit: "100" });
-    for (const item of page.items) {
-      if (seen.has(item.id)) continue;
-      seen.add(item.id);
-      items.push(item);
-    }
-    cursor = page.nextCursor ?? undefined;
-  } while (cursor);
-  return items;
 }
 
 async function pullAllMessages(conversationId: string): Promise<MessageView[]> {
@@ -88,16 +73,23 @@ export async function flushPending(userId: string): Promise<void> {
 
 export async function pullHistory(userId: string): Promise<ConversationView[]> {
   await flushPending(userId).catch(() => undefined);
-  const remote = await pullAllConversations();
+  const since = await getPulledAt(userId);
+  const delta = await spring.syncConversations(since ? { since } : {});
   try {
     const pending = await listOps(userId);
     const pendingDeletes = new Set(pending.filter((op) => op.kind === "delete").map((op) => op.conversationId));
-    const remoteIds = new Set(remote.map((item) => item.id));
     const local = await listConversations(userId);
-    for (const item of local) {
-      if (!remoteIds.has(item.id) && !pendingDeletes.has(item.id)) await deleteConversation(userId, item.id);
+    if (!since) {
+      const remoteIds = new Set(delta.items.map((item) => item.id));
+      for (const item of local) {
+        if (!remoteIds.has(item.id) && !pendingDeletes.has(item.id)) await deleteConversation(userId, item.id);
+      }
+    } else {
+      for (const id of delta.deletedIds) {
+        if (!pendingDeletes.has(id)) await deleteConversation(userId, id);
+      }
     }
-    for (const item of remote) {
+    for (const item of delta.items) {
       if (pendingDeletes.has(item.id)) continue;
       const previous = local.find((row) => row.id === item.id);
       await upsertConversation(userId, item);
@@ -107,10 +99,11 @@ export async function pullHistory(userId: string): Promise<ConversationView[]> {
         void cacheFor([item], messages);
       }
     }
-    await setPulledAt(userId, new Date().toISOString());
+    await setPulledAt(userId, delta.pulledAt);
     return listConversations(userId);
   } catch {
-    return remote;
+    const fallback = await listConversations(userId).catch(() => [] as ConversationView[]);
+    return fallback.length ? fallback : delta.items;
   }
 }
 

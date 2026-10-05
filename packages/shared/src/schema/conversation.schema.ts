@@ -45,3 +45,13 @@ export const ListConversationsQuerySchema = PaginationQuerySchema.extend({
   status: z.enum([ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED]).optional(),
   mode: ConversationModeSchema.optional(),
 });
+
+export const ConversationSyncQuerySchema = z.object({
+  since: z.string().min(1).max(40).optional(),
+});
+
+export const ConversationSyncSchema = z.object({
+  items: z.array(ConversationViewSchema),
+  deletedIds: z.array(z.string().ulid()),
+  pulledAt: z.string(),
+});
