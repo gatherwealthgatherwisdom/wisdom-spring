@@ -6,6 +6,7 @@ export const LIMITS = {
   uploadMaxBytes: 4 * 1024 * 1024,
   historyMaxMessages: 40,
   conversationBatchMax: 50,
+  historyTrashDays: 30,
   reserveOutputTokens: 4096,
   fallbacksMax: 2,
   sendRetryOnRegionBlock: 1,

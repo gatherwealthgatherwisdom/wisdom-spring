@@ -36,7 +36,7 @@ export function MessageList({
   onCard: (card: "email" | "translate" | "image" | "resume") => void;
   suggestions?: string[];
   onSuggest?: (sentence: string) => void;
-  onRegenerate: (messageId: string) => void;
+  onRegenerate?: (messageId: string) => void;
   onListen: (content: string) => void;
   onFeedback?: (messageId: string, rating: "up" | "down") => void;
 }) {
@@ -117,7 +117,7 @@ export function MessageList({
             thumbsDownLabel={text.thumbsDown}
             highlighted={item.id === highlightedId}
             onListen={streaming ? undefined : () => onListen(item.content)}
-            onRegenerate={streaming || mode === "image" ? undefined : () => onRegenerate(item.id)}
+            onRegenerate={streaming || mode === "image" || !onRegenerate ? undefined : () => onRegenerate(item.id)}
             onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
           />
         );

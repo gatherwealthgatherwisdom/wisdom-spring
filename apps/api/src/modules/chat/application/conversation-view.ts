@@ -37,6 +37,7 @@ export function conversationView(row: Conversation, preview: ConversationPreview
     pinnedAt: row.pinnedAt?.toISOString() ?? null,
     lastMessageAt: row.lastMessageAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
     preview: preview.preview,
     previewRole: preview.previewRole,
   };

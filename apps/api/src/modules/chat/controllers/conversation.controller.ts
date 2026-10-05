@@ -7,6 +7,7 @@ import {
   ConversationSyncQuerySchema,
   CreateConversationSchema,
   ErrorCode,
+  LIMITS,
   ListConversationsQuerySchema,
   ListMessagesQuerySchema,
   MessageRole,
@@ -16,6 +17,7 @@ import {
   createId,
   decodeCursor,
   encodeCursor,
+  hkStartDaysAgo,
   searchNeedle,
 } from "@spring/shared";
 import { requireUser } from "../../../http/auth-guard";
@@ -57,6 +59,10 @@ function ownedWhere(
   };
 }
 
+function trashSince(now = new Date()): Date {
+  return hkStartDaysAgo(now, LIMITS.historyTrashDays);
+}
+
 function perMinute(max: number): {
   config: { rateLimit: { max: number; timeWindow: string; keyGenerator: (request: FastifyRequest) => string } };
 } {
@@ -75,6 +81,14 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/conversations", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
     const query = ListConversationsQuerySchema.parse(request.query);
+    if (query.status === ConversationStatus.DELETED) {
+      const rows = await app.ctx.prisma.conversation.findMany({
+        where: ownedWhere(user.id, query, { updatedAt: { gte: trashSince() } }),
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        take: query.limit,
+      });
+      return { items: await conversationViews(app.ctx.prisma, rows), nextCursor: null };
+    }
     const cursor = query.cursor ? decodeCursor(query.cursor) : null;
     const cursorClause: Prisma.ConversationWhereInput =
       cursor?.lastMessageAt && cursor.id
@@ -132,15 +146,25 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       },
       orderBy: { updatedAt: "desc" },
     });
+    const cutoff = trashSince(pulledAt);
     const deleted = since
       ? await app.ctx.prisma.conversation.findMany({
           where: { userId: user.id, status: ConversationStatus.DELETED, updatedAt: { gte: since } },
-          select: { id: true },
+          select: { id: true, updatedAt: true },
         })
       : [];
+    const trash = await app.ctx.prisma.conversation.findMany({
+      where: {
+        userId: user.id,
+        status: ConversationStatus.DELETED,
+        updatedAt: { gte: since && since > cutoff ? since : cutoff },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
     return {
       items: await conversationViews(app.ctx.prisma, live),
       deletedIds: deleted.map((row) => row.id),
+      deletedItems: await conversationViews(app.ctx.prisma, trash),
       pulledAt: pulledAt.toISOString(),
     };
   });
@@ -151,16 +175,22 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
     const owned = await app.ctx.prisma.conversation.findMany({
       where: { userId: user.id, id: { in: body.ids } },
     });
-    const live = owned.filter((row) => row.status !== ConversationStatus.DELETED);
+    const restore = body.status === ConversationStatus.ACTIVE;
+    const live = owned.filter((row) => restore || row.status !== ConversationStatus.DELETED);
     if (body.delete) {
       const deletedIds = owned.map((row) => row.id);
       if (deletedIds.length > 0) {
         await app.ctx.prisma.conversation.updateMany({
           where: { userId: user.id, id: { in: deletedIds } },
-          data: { status: ConversationStatus.DELETED },
+          data: { status: ConversationStatus.DELETED, pinnedAt: null },
         });
       }
-      return { items: [], deletedIds };
+      const rows = deletedIds.length
+        ? await app.ctx.prisma.conversation.findMany({ where: { userId: user.id, id: { in: deletedIds } } })
+        : [];
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      const ordered = deletedIds.map((id) => byId.get(id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
+      return { items: [], deletedIds, deletedItems: await conversationViews(app.ctx.prisma, ordered) };
     }
     const liveIds = live.map((row) => row.id);
     if (liveIds.length > 0) {
@@ -170,12 +200,16 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
           : body.status
             ? {
                 status: body.status,
-                ...(body.status === ConversationStatus.ARCHIVED ? { pinnedAt: null } : {}),
+                pinnedAt: null,
               }
             : null;
       if (!data) throw new AppError(ErrorCode.VALIDATION);
       await app.ctx.prisma.conversation.updateMany({
-        where: { userId: user.id, id: { in: liveIds }, status: { not: ConversationStatus.DELETED } },
+        where: {
+          userId: user.id,
+          id: { in: liveIds },
+          ...(restore ? {} : { status: { not: ConversationStatus.DELETED } }),
+        },
         data,
       });
     }
@@ -184,14 +218,14 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
       : [];
     const byId = new Map(rows.map((row) => [row.id, row]));
     const ordered = liveIds.map((id) => byId.get(id)).filter((row): row is NonNullable<typeof row> => Boolean(row));
-    return { items: await conversationViews(app.ctx.prisma, ordered), deletedIds: [] };
+    return { items: await conversationViews(app.ctx.prisma, ordered), deletedIds: [], deletedItems: [] };
   });
 
   app.get("/v1/conversations/:id", async (request) => {
     const user = await requireUser(request, app.ctx.auth);
     const { id } = request.params as { id: string };
     const existing = await app.ctx.prisma.conversation.findFirst({
-      where: { id, userId: user.id, status: { not: "DELETED" } },
+      where: { id, userId: user.id },
     });
     if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
     return conversationView(existing, await previewForConversation(app.ctx.prisma, id));
@@ -201,16 +235,22 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
     const user = await requireUser(request, app.ctx.auth);
     const { id } = request.params as { id: string };
     const body = UpdateConversationSchema.parse(request.body ?? {});
+    const restoring = body.status === ConversationStatus.ACTIVE;
     const existing = await app.ctx.prisma.conversation.findFirst({
-      where: { id, userId: user.id, status: { not: "DELETED" } },
+      where: { id, userId: user.id, ...(restoring ? {} : { status: { not: "DELETED" } }) },
     });
     if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
+    if (existing.status === ConversationStatus.DELETED && (body.title !== undefined || body.pinned !== undefined)) {
+      throw new AppError(ErrorCode.NOT_FOUND);
+    }
     const row = await app.ctx.prisma.conversation.update({
       where: { id },
       data: {
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.pinned !== undefined ? { pinnedAt: body.pinned ? new Date() : null } : {}),
-        ...(body.status !== undefined ? { status: body.status } : {}),
+        ...(body.status !== undefined
+          ? { status: body.status, ...(restoring || body.status === ConversationStatus.ARCHIVED ? { pinnedAt: null } : {}) }
+          : {}),
       },
     });
     return conversationView(row, await previewForConversation(app.ctx.prisma, id));
@@ -221,7 +261,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
     const existing = await app.ctx.prisma.conversation.findFirst({ where: { id, userId: user.id } });
     if (!existing) throw new AppError(ErrorCode.NOT_FOUND);
-    await app.ctx.prisma.conversation.update({ where: { id }, data: { status: "DELETED" } });
+    await app.ctx.prisma.conversation.update({ where: { id }, data: { status: "DELETED", pinnedAt: null } });
     return { ok: true };
   });
 
@@ -230,7 +270,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
     const query = ListMessagesQuerySchema.parse(request.query);
     const conversation = await app.ctx.prisma.conversation.findFirst({
-      where: { id, userId: user.id, status: { not: "DELETED" } },
+      where: { id, userId: user.id },
     });
     if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
     const needle = searchNeedle(query.q);
@@ -277,7 +317,7 @@ export async function conversationRoutes(app: FastifyInstance): Promise<void> {
     const user = await requireUser(request, app.ctx.auth);
     const { id } = request.params as { id: string };
     const conversation = await app.ctx.prisma.conversation.findFirst({
-      where: { id, userId: user.id, status: { not: "DELETED" } },
+      where: { id, userId: user.id },
     });
     if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
     const rows = await app.ctx.prisma.message.findMany({

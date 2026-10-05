@@ -8,6 +8,14 @@ export function hkDayKey(now: Date): string {
   }).format(now);
 }
 
+/** Start of the Hong Kong calendar day `days` before `now`. */
+export function hkStartDaysAgo(now: Date, days: number): Date {
+  if (!Number.isInteger(days) || days < 0) throw new Error("days");
+  const noon = new Date(`${hkDayKey(now)}T12:00:00+08:00`);
+  const past = new Date(noon.getTime() - days * 24 * 60 * 60 * 1000);
+  return new Date(`${hkDayKey(past)}T00:00:00+08:00`);
+}
+
 export function hkMonthRange(now: Date): { start: Date; end: Date } {
   const day = hkDayKey(now);
   const [yearText, monthText] = day.split("-");

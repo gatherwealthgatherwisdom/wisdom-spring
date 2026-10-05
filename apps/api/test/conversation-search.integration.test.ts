@@ -1,10 +1,13 @@
 import type { PrismaClient } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  ConversationStatus,
   ErrorCode,
   EXPORT_ASSISTANT,
   EXPORT_USER,
   FEEDBACK_ONLY_ASSISTANT_COPY,
+  hkStartDaysAgo,
   MessageRole,
   MessageStatus,
   createId,
@@ -353,9 +356,10 @@ describe("conversation search, feedback, export", () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(first.statusCode).toBe(200);
-    const initial = first.json() as { items: Array<{ id: string }>; deletedIds: string[]; pulledAt: string };
+    const initial = first.json() as { items: Array<{ id: string }>; deletedIds: string[]; deletedItems: unknown[]; pulledAt: string };
     expect(initial.items.map((row) => row.id).sort()).toEqual([keep.conversationId, renamed.conversationId, removed.conversationId].sort());
     expect(initial.deletedIds).toEqual([]);
+    expect(initial.deletedItems).toEqual([]);
     expect(initial.pulledAt).toBeTruthy();
 
     await app.inject({
@@ -376,10 +380,16 @@ describe("conversation search, feedback, export", () => {
       headers: { authorization: `Bearer ${token}` },
     });
     expect(second.statusCode).toBe(200);
-    const delta = second.json() as { items: Array<{ id: string; title: string | null }>; deletedIds: string[] };
+    const delta = second.json() as {
+      items: Array<{ id: string; title: string | null }>;
+      deletedIds: string[];
+      deletedItems: Array<{ id: string; status: string }>;
+    };
     expect(delta.items.map((row) => row.id)).toEqual([renamed.conversationId]);
     expect(delta.items[0]?.title).toBe("改名後");
     expect(delta.deletedIds).toEqual([removed.conversationId]);
+    expect(delta.deletedItems.map((row) => row.id)).toEqual([removed.conversationId]);
+    expect(delta.deletedItems[0]?.status).toBe(ConversationStatus.DELETED);
   });
 
   it("archives and deletes several conversations in one request", async () => {
@@ -399,12 +409,17 @@ describe("conversation search, feedback, export", () => {
       },
     });
     expect(archived.statusCode).toBe(200);
-    const archivedBody = archived.json() as { items: Array<{ id: string; status: string; pinnedAt: string | null }>; deletedIds: string[] };
+    const archivedBody = archived.json() as {
+      items: Array<{ id: string; status: string; pinnedAt: string | null }>;
+      deletedIds: string[];
+      deletedItems: unknown[];
+    };
     expect(archivedBody.items.map((row) => row.id).sort()).toEqual(
       [first.conversationId, second.conversationId, third.conversationId].sort(),
     );
     expect(archivedBody.items.every((row) => row.status === "ARCHIVED" && row.pinnedAt === null)).toBe(true);
     expect(archivedBody.deletedIds).toEqual([]);
+    expect(archivedBody.deletedItems).toEqual([]);
 
     const tooMany = await app.inject({
       method: "POST",
@@ -422,10 +437,109 @@ describe("conversation search, feedback, export", () => {
       payload: { ids: [first.conversationId, second.conversationId, third.conversationId], delete: true },
     });
     expect(removed.statusCode).toBe(200);
-    const deletedBody = removed.json() as { items: unknown[]; deletedIds: string[] };
+    const deletedBody = removed.json() as { items: unknown[]; deletedIds: string[]; deletedItems: Array<{ id: string; status: string }> };
     expect(deletedBody.items).toEqual([]);
     expect(deletedBody.deletedIds.sort()).toEqual(
       [first.conversationId, second.conversationId, third.conversationId].sort(),
+    );
+    expect(deletedBody.deletedItems.map((row) => row.id).sort()).toEqual(
+      [first.conversationId, second.conversationId, third.conversationId].sort(),
+    );
+    expect(deletedBody.deletedItems.every((row) => row.status === ConversationStatus.DELETED)).toBe(true);
+  });
+
+  it("lets the owner restore recently deleted chats", async () => {
+    const { token, userId } = await register(app, `trash-${Date.now()}@gwgwgroup.com`);
+    const keep = await seedThread(app.ctx.prisma, userId, "可復原");
+    const stale = await seedThread(app.ctx.prisma, userId, "過期刪");
+    await app.inject({
+      method: "DELETE",
+      url: `/v1/conversations/${keep.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    await app.ctx.prisma.conversation.update({
+      where: { id: stale.conversationId },
+      data: { status: ConversationStatus.DELETED, pinnedAt: null, updatedAt: hkStartDaysAgo(new Date(), 31) },
+    });
+
+    const listed = await app.inject({
+      method: "GET",
+      url: "/v1/conversations?status=DELETED",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(listed.statusCode).toBe(200);
+    expect((listed.json().items as Array<{ id: string }>).map((row) => row.id)).toEqual([keep.conversationId]);
+
+    const opened = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${keep.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(opened.statusCode).toBe(200);
+    expect(opened.json().status).toBe(ConversationStatus.DELETED);
+    expect(opened.json().updatedAt).toBeTruthy();
+
+    const messages = await app.inject({
+      method: "GET",
+      url: `/v1/conversations/${keep.conversationId}/messages`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(messages.statusCode).toBe(200);
+    expect((messages.json().items as unknown[]).length).toBeGreaterThan(0);
+
+    const rename = await app.inject({
+      method: "PATCH",
+      url: `/v1/conversations/${keep.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: "唔應該" },
+    });
+    expect(rename.statusCode).toBe(404);
+
+    const send = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { conversationId: keep.conversationId, content: "已刪", clientMessageId: randomUUID() },
+    });
+    expect(send.statusCode).toBe(404);
+
+    const restored = await app.inject({
+      method: "PATCH",
+      url: `/v1/conversations/${keep.conversationId}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { status: ConversationStatus.ACTIVE },
+    });
+    expect(restored.statusCode).toBe(200);
+    expect(restored.json().status).toBe(ConversationStatus.ACTIVE);
+
+    const again = await seedThread(app.ctx.prisma, userId, "再刪");
+    const third = await seedThread(app.ctx.prisma, userId, "再刪二");
+    await app.inject({
+      method: "POST",
+      url: "/v1/conversations/batch",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { ids: [again.conversationId, third.conversationId], delete: true },
+    });
+    const batchRestore = await app.inject({
+      method: "POST",
+      url: "/v1/conversations/batch",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { ids: [again.conversationId, third.conversationId], status: ConversationStatus.ACTIVE },
+    });
+    expect(batchRestore.statusCode).toBe(200);
+    const body = batchRestore.json() as { items: Array<{ id: string; status: string; pinnedAt: string | null }> };
+    expect(body.items.map((row) => row.id).sort()).toEqual([again.conversationId, third.conversationId].sort());
+    expect(body.items.every((row) => row.status === ConversationStatus.ACTIVE && row.pinnedAt === null)).toBe(true);
+
+    const sync = await app.inject({
+      method: "GET",
+      url: "/v1/conversations/sync",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const synced = sync.json() as { deletedItems: Array<{ id: string }>; items: Array<{ id: string }> };
+    expect(synced.deletedItems).toEqual([]);
+    expect(synced.items.map((row) => row.id).sort()).toEqual(
+      [keep.conversationId, again.conversationId, third.conversationId].sort(),
     );
   });
 });

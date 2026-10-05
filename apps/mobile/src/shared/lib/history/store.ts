@@ -16,7 +16,7 @@ import {
   wipeUser,
 } from "./db";
 import { markdownFromThread } from "./export";
-import { lastActiveOf } from "./groups";
+import { inTrashWindow, lastActiveOf } from "./groups";
 import { clearCachedMedia, clearMediaMap } from "./media";
 import type { HistoryHit } from "./search";
 import { localThread, pullHistory, pullThread, queueOp } from "./sync";
@@ -144,17 +144,30 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     );
   },
   async setStatus(id, status) {
-    await mutate(id, (item) => ({ ...item, status, pinnedAt: status === ConversationStatus.ARCHIVED ? null : item.pinnedAt }), { kind: "status", payload: { status } }, () =>
-      spring.updateConversation(id, { status }),
+    await mutate(
+      id,
+      (item) => ({
+        ...item,
+        status,
+        pinnedAt: status === ConversationStatus.ARCHIVED || item.status === ConversationStatus.DELETED ? null : item.pinnedAt,
+        updatedAt: new Date().toISOString(),
+      }),
+      { kind: "status", payload: { status } },
+      () => spring.updateConversation(id, { status }),
     );
   },
   async remove(id) {
     const userId = get().userId;
     if (!userId) return;
-    await deleteConversation(userId, id).catch(() => undefined);
+    const current = get().conversations.find((item) => item.id === id);
+    const next = current
+      ? { ...current, status: ConversationStatus.DELETED, pinnedAt: null, updatedAt: new Date().toISOString() }
+      : null;
+    if (next) await upsertConversation(userId, next).catch(() => undefined);
     set((state) => ({
-      conversations: state.conversations.filter((item) => item.id !== id),
-      messages: Object.fromEntries(Object.entries(state.messages).filter(([key]) => key !== id)),
+      conversations: next
+        ? state.conversations.map((item) => (item.id === id ? next : item))
+        : state.conversations.filter((item) => item.id !== id),
     }));
     try {
       await spring.deleteConversation(id);
@@ -179,7 +192,12 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     if (!userId) return;
     await batchLocal(
       ids,
-      (item) => ({ ...item, status, pinnedAt: status === ConversationStatus.ARCHIVED ? null : item.pinnedAt }),
+      (item) => ({
+        ...item,
+        status,
+        pinnedAt: status === ConversationStatus.ARCHIVED || item.status === ConversationStatus.DELETED ? null : item.pinnedAt,
+        updatedAt: new Date().toISOString(),
+      }),
       (chunk) => spring.batchConversations({ ids: chunk, status }),
       (id) => queueOp(userId, id, "status", { status }),
     );
@@ -188,14 +206,18 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     const unique = [...new Set(ids)];
     const userId = get().userId;
     if (!userId || unique.length === 0) return;
-    for (const id of unique) await deleteConversation(userId, id).catch(() => undefined);
-    set((state) => ({
-      conversations: state.conversations.filter((item) => !unique.includes(item.id)),
-      messages: Object.fromEntries(Object.entries(state.messages).filter(([key]) => !unique.includes(key))),
-    }));
+    const stamp = new Date().toISOString();
+    const { conversations } = get();
+    const next = conversations.map((item) =>
+      unique.includes(item.id) ? { ...item, status: ConversationStatus.DELETED, pinnedAt: null, updatedAt: stamp } : item,
+    );
+    for (const item of next.filter((row) => unique.includes(row.id))) {
+      await upsertConversation(userId, item).catch(() => undefined);
+    }
+    set({ conversations: next });
     try {
       for (const chunk of chunkIds(unique)) {
-        await spring.batchConversations({ ids: chunk, delete: true });
+        await applyRemoteBatch(await spring.batchConversations({ ids: chunk, delete: true }));
       }
       set({ online: true });
     } catch {
@@ -265,14 +287,16 @@ function chunkIds(ids: string[]): string[][] {
 async function applyRemoteBatch(result: ConversationBatchResult): Promise<void> {
   const userId = useHistoryStore.getState().userId;
   if (!userId) return;
-  const deleted = new Set(result.deletedIds);
-  for (const id of deleted) await deleteConversation(userId, id).catch(() => undefined);
-  for (const item of result.items) await upsertConversation(userId, item).catch(() => undefined);
+  const trash = result.deletedItems ?? [];
+  const trashIds = new Set(trash.map((item) => item.id));
+  const gone = new Set(result.deletedIds.filter((id) => !trashIds.has(id)));
+  for (const id of gone) await deleteConversation(userId, id).catch(() => undefined);
+  for (const item of [...result.items, ...trash]) await upsertConversation(userId, item).catch(() => undefined);
   useHistoryStore.setState((state) => {
-    const byId = new Map(result.items.map((item) => [item.id, item]));
-    return {
-      conversations: state.conversations.filter((item) => !deleted.has(item.id)).map((item) => byId.get(item.id) ?? item),
-    };
+    const byId = new Map(state.conversations.map((item) => [item.id, item]));
+    for (const id of gone) byId.delete(id);
+    for (const item of [...result.items, ...trash]) byId.set(item.id, item);
+    return { conversations: [...byId.values()] };
   });
 }
 
@@ -301,16 +325,17 @@ async function batchLocal(
   }
 }
 
-export function useHistory(options?: { mode?: ConversationView["mode"]; q?: string }) {
+export function useHistory(options?: { mode?: ConversationView["mode"]; q?: string; trash?: boolean }) {
   const conversations = useHistoryStore((state) => state.conversations);
   const online = useHistoryStore((state) => state.online);
   const ready = useHistoryStore((state) => state.ready);
   const userId = useHistoryStore((state) => state.userId);
   const [hits, setHits] = useState<HistoryHit[] | null>(null);
+  const trash = Boolean(options?.trash);
 
   useEffect(() => {
     const needle = options?.q?.trim();
-    if (!needle || !userId) {
+    if (!needle || !userId || trash) {
       setHits(null);
       return;
     }
@@ -321,17 +346,22 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
     return () => {
       cancelled = true;
     };
-  }, [options?.q, userId, conversations]);
+  }, [options?.q, userId, conversations, trash]);
 
   const items = useMemo(() => {
-    let list = conversations;
+    let list = trash
+      ? conversations
+          .filter((item) => inTrashWindow(item))
+          .slice()
+          .sort((left, right) => (right.updatedAt ?? right.lastMessageAt).localeCompare(left.updatedAt ?? left.lastMessageAt))
+      : conversations.filter((item) => item.status !== ConversationStatus.DELETED);
     if (options?.mode) list = list.filter((item) => item.mode === options.mode);
     if (hits) {
       const ids = new Set(hits.map((hit) => hit.conversationId));
       list = list.filter((item) => ids.has(item.id));
     }
     return list;
-  }, [conversations, options?.mode, hits]);
+  }, [conversations, options?.mode, hits, trash]);
 
   return {
     items,

@@ -79,17 +79,19 @@ export async function pullHistory(userId: string): Promise<ConversationView[]> {
     const pending = await listOps(userId);
     const pendingDeletes = new Set(pending.filter((op) => op.kind === "delete").map((op) => op.conversationId));
     const local = await listConversations(userId);
+    const trash = new Map((delta.deletedItems ?? []).map((item) => [item.id, item]));
     if (!since) {
-      const remoteIds = new Set(delta.items.map((item) => item.id));
+      const remoteIds = new Set([...delta.items, ...trash.values()].map((item) => item.id));
       for (const item of local) {
         if (!remoteIds.has(item.id) && !pendingDeletes.has(item.id)) await deleteConversation(userId, item.id);
       }
     } else {
       for (const id of delta.deletedIds) {
-        if (!pendingDeletes.has(id)) await deleteConversation(userId, id);
+        if (pendingDeletes.has(id)) continue;
+        if (!trash.has(id)) await deleteConversation(userId, id);
       }
     }
-    for (const item of delta.items) {
+    for (const item of [...delta.items, ...trash.values()]) {
       if (pendingDeletes.has(item.id)) continue;
       const previous = local.find((row) => row.id === item.id);
       await upsertConversation(userId, item);

@@ -1,4 +1,4 @@
-import { ConversationStatus, hkDayKey, type ConversationView } from "@spring/shared";
+import { ConversationStatus, LIMITS, hkDayKey, hkStartDaysAgo, type ConversationView } from "@spring/shared";
 
 export type HistoryGroups = {
   pinned: ConversationView[];
@@ -17,6 +17,12 @@ function byLastMessage(left: ConversationView, right: ConversationView): number 
   return right.lastMessageAt.localeCompare(left.lastMessageAt);
 }
 
+export function inTrashWindow(item: ConversationView, now = new Date()): boolean {
+  if (item.status !== ConversationStatus.DELETED) return false;
+  if (!item.updatedAt) return true;
+  return new Date(item.updatedAt).getTime() >= hkStartDaysAgo(now, LIMITS.historyTrashDays).getTime();
+}
+
 export function lastActiveOf(items: ConversationView[]): ConversationView | undefined {
   return items
     .filter((item) => item.status === ConversationStatus.ACTIVE)
@@ -25,12 +31,13 @@ export function lastActiveOf(items: ConversationView[]): ConversationView | unde
 }
 
 export function groupHistory(items: ConversationView[], now = new Date()): HistoryGroups {
-  const pinned = items
+  const live = items.filter((item) => item.status !== ConversationStatus.DELETED);
+  const pinned = live
     .filter((item) => item.pinnedAt && item.status !== ConversationStatus.ARCHIVED)
     .slice()
     .sort((left, right) => (right.pinnedAt ?? "").localeCompare(left.pinnedAt ?? ""));
-  const archived = items.filter((item) => item.status === ConversationStatus.ARCHIVED).slice().sort(byLastMessage);
-  const rest = items
+  const archived = live.filter((item) => item.status === ConversationStatus.ARCHIVED).slice().sort(byLastMessage);
+  const rest = live
     .filter((item) => !item.pinnedAt && item.status !== ConversationStatus.ARCHIVED)
     .slice()
     .sort(byLastMessage);

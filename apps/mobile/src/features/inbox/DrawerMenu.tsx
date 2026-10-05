@@ -8,7 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { mediaUrl } from "../../shared/lib/api";
-import { groupHistory, useHistory, useHistoryStore, type HistoryHit } from "../../shared/lib/history";
+import { groupHistory, inTrashWindow, useHistory, useHistoryStore, type HistoryHit } from "../../shared/lib/history";
 import { copy, type Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { formatWhen } from "../../shared/lib/time";
@@ -46,14 +46,16 @@ export function DrawerMenu({
   const [renameTitle, setRenameTitle] = useState("");
   const [selected, setSelected] = useState<Set<string> | null>(null);
   const [confirmingRemove, setConfirmingRemove] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
   const trimmed = q.trim();
-  const history = useHistory({ q: trimmed, mode });
+  const history = useHistory({ q: trashOpen ? "" : trimmed, mode: trashOpen ? undefined : mode, trash: trashOpen });
   const conversations = useHistoryStore((state) => state.conversations);
   const syncing = useHistoryStore((state) => state.syncing);
   const groups = groupHistory(history.items);
   const hitsById = useMemo(() => new Map(history.hits.map((hit) => [hit.conversationId, hit])), [history.hits]);
-  const searching = trimmed.length > 0;
+  const searching = !trashOpen && trimmed.length > 0;
   const selecting = selected !== null;
+  const trashCount = conversations.filter((item) => inTrashWindow(item)).length;
   const picked = useMemo(
     () => conversations.filter((item) => selected?.has(item.id)),
     [conversations, selected],
@@ -69,6 +71,7 @@ export function DrawerMenu({
       setRenaming(null);
       setSelected(null);
       setConfirmingRemove(false);
+      setTrashOpen(false);
       return;
     }
     if (signedIn) void useHistoryStore.getState().sync();
@@ -152,19 +155,27 @@ export function DrawerMenu({
                 </>
               ) : (
                 <>
-                  <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
+                  <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>
+                    {trashOpen ? text.recentlyDeleted : text.app}
+                  </Text>
                   {signedIn && history.items.length > 0 ? (
                     <Pressable accessibilityLabel={text.tidy} onPress={() => enterSelect()} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
                       <Text style={{ color: colors.accent, fontSize: 15 }}>{text.tidy}</Text>
                     </Pressable>
                   ) : null}
-                  <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                    <Icon name="close" color={colors.ink} size={22} />
-                  </Pressable>
+                  {trashOpen ? (
+                    <Pressable onPress={() => setTrashOpen(false)} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
+                      <Text style={{ color: colors.ink, fontSize: 15 }}>{text.done}</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="close" color={colors.ink} size={22} />
+                    </Pressable>
+                  )}
                 </>
               )}
             </View>
-            {selecting ? null : (
+            {selecting || trashOpen ? null : (
               <Pressable
                 onPress={() => goChat({ mode: "chat" })}
                 style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
@@ -173,7 +184,7 @@ export function DrawerMenu({
                 <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.newChat}</Text>
               </Pressable>
             )}
-            {signedIn ? (
+            {signedIn && !trashOpen ? (
               <>
                 <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
                   <Icon name="search-outline" color={colors.muted} size={18} />
@@ -247,9 +258,24 @@ export function DrawerMenu({
             ) : !history.ready && history.items.length === 0 ? (
               <View style={{ height: 24 }} />
             ) : history.items.length === 0 ? (
-              <Text style={{ color: colors.muted, padding: 16 }}>{searching ? text.emptySearch : text.emptyChats}</Text>
-            ) : (
-              searching ? (
+              <Text style={{ color: colors.muted, padding: 16 }}>
+                {trashOpen ? text.emptyTrash : searching ? text.emptySearch : text.emptyChats}
+              </Text>
+            ) : trashOpen ? (
+              <ChatGroup
+                title=""
+                items={history.items}
+                colors={colors}
+                locale={locale}
+                text={text}
+                hits={hitsById}
+                selecting={selecting}
+                selected={selected ?? emptySelected}
+                onOpen={goChat}
+                onToggle={toggleSelect}
+                onEnter={enterSelect}
+              />
+            ) : searching ? (
                 <ChatGroup
                   title={text.searchResults}
                   items={history.items}
@@ -271,11 +297,25 @@ export function DrawerMenu({
                   <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
                   <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
                 </>
-              )
             )}
           </ScrollView>
           {selecting ? (
             <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-around" }}>
+              {trashOpen ? (
+                <BulkAction
+                  label={text.restoreDeleted}
+                  icon="arrow-undo-outline"
+                  colors={colors}
+                  disabled={picked.length === 0}
+                  onPress={() =>
+                    void history.setStatusMany(
+                      picked.map((item) => item.id),
+                      ConversationStatus.ACTIVE,
+                    ).then(() => setSelected(null))
+                  }
+                />
+              ) : (
+                <>
               <BulkAction
                 label={allPinned ? text.unpin : text.pin}
                 icon={allPinned ? "bookmark" : "bookmark-outline"}
@@ -318,9 +358,24 @@ export function DrawerMenu({
                 disabled={picked.length === 0}
                 onPress={confirmRemovePicked}
               />
+                </>
+              )}
             </View>
-          ) : (
+          ) : trashOpen ? null : (
             <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 8 }}>
+              {signedIn ? (
+                <Pressable
+                  onPress={() => {
+                    setSelected(null);
+                    setTrashOpen(true);
+                  }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
+                >
+                  <Icon name="trash-outline" color={colors.accent} size={20} />
+                  <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }}>{text.recentlyDeleted}</Text>
+                  {trashCount > 0 ? <Text style={{ color: colors.muted, fontSize: 13 }}>{trashCount}</Text> : null}
+                </Pressable>
+              ) : null}
               <Pressable
                 onPress={() => {
                   onClose();
@@ -435,7 +490,9 @@ function ChatGroup({
   if (items.length === 0) return null;
   return (
     <View style={{ marginBottom: 8 }}>
-      <Text style={{ color: colors.muted, fontSize: 12, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 }}>{title}</Text>
+      {title ? (
+        <Text style={{ color: colors.muted, fontSize: 12, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 4 }}>{title}</Text>
+      ) : null}
       {items.map((item) => {
         const hit = hits.get(item.id);
         const thumb = item.mode === "image" ? mediaUrl(item.lastImageUrl) : null;
@@ -492,7 +549,9 @@ function ChatGroup({
                 <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }} numberOfLines={1}>
                   {item.title || text.newChat}
                 </Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>{formatWhen(item.lastMessageAt, locale)}</Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  {formatWhen(item.status === ConversationStatus.DELETED ? item.updatedAt || item.lastMessageAt : item.lastMessageAt, locale)}
+                </Text>
               </View>
               <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
                 {preview}

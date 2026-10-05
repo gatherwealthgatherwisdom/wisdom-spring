@@ -1,4 +1,4 @@
-import type { ConversationView, MessageView } from "@spring/shared";
+import { ConversationStatus, type ConversationView, type MessageView } from "@spring/shared";
 import * as SQLite from "expo-sqlite";
 import { Platform } from "react-native";
 import { hydrateMediaMap } from "./media";
@@ -230,9 +230,12 @@ export async function searchConversationIds(userId: string, needle: string): Pro
 export async function searchHits(userId: string, needle: string): Promise<HistoryHit[]> {
   const q = needle.trim();
   if (!q) return [];
-  const conversations = await listConversations(userId);
+  const conversations = (await listConversations(userId)).filter((item) => item.status !== ConversationStatus.DELETED);
+  const live = new Set(conversations.map((item) => item.id));
   if (usesMemory()) {
-    const messages = [...memory.messages.values()].filter((row) => row.userId === userId).map((row) => row.item);
+    const messages = [...memory.messages.values()]
+      .filter((row) => row.userId === userId && live.has(row.conversationId))
+      .map((row) => row.item);
     return pickHits(conversations, messages, q);
   }
   const db = await database();
@@ -240,7 +243,9 @@ export async function searchHits(userId: string, needle: string): Promise<Histor
     "SELECT payload FROM messages WHERE userId = ? AND payload LIKE ?",
     [userId, likeNeedle(q)],
   );
-  const messages = rows.map((row) => parseMessage(row.payload)).filter((row): row is MessageView => Boolean(row));
+  const messages = rows
+    .map((row) => parseMessage(row.payload))
+    .filter((row): row is MessageView => row !== null && live.has(row.conversationId));
   return pickHits(conversations, messages, q);
 }
 

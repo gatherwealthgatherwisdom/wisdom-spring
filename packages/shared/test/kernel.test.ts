@@ -9,7 +9,7 @@ import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
 import { AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
-import { hkDayKey, hkMonthRange, hkMonthRangeFromKey } from "../src/lib/hk-time";
+import { hkDayKey, hkMonthRange, hkMonthRangeFromKey, hkStartDaysAgo } from "../src/lib/hk-time";
 import {
   DEFAULT_ADMIN_PHONE,
   DEV_PHONE_CODE,
@@ -99,6 +99,11 @@ describe("Hong Kong calendar", () => {
 
   it("rejects a bad month key", () => {
     expect(() => hkMonthRangeFromKey("2026-13")).toThrow("month");
+  });
+
+  it("starts a Hong Kong calendar day that many days ago", () => {
+    expect(hkStartDaysAgo(new Date("2026-10-05T15:59:00.000Z"), 30).toISOString()).toBe("2026-09-04T16:00:00.000Z");
+    expect(hkStartDaysAgo(new Date("2026-10-05T16:00:00.000Z"), 30).toISOString()).toBe("2026-09-05T16:00:00.000Z");
   });
 });
 

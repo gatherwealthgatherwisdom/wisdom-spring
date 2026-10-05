@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -47,6 +47,7 @@ export function ChatScreen({ navigation, route }: Props) {
   const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
   const stream = useStream();
   const thread = useThread(conversationId);
+  const deleted = thread.conversation?.status === ConversationStatus.DELETED;
   const found = useQuery({
     queryKey: ["messages", conversationId, trimmedSearch],
     queryFn: () => spring.messages(conversationId ?? "", { q: trimmedSearch }),
@@ -137,7 +138,7 @@ export function ChatScreen({ navigation, route }: Props) {
 
   async function send(content: string) {
     const trimmed = content.trim();
-    if ((!trimmed && pending.length === 0) || stream.status === "streaming") return;
+    if (deleted || (!trimmed && pending.length === 0) || stream.status === "streaming") return;
     if (!usePrefs.getState().accessToken) {
       navigation.navigate("Auth");
       return;
@@ -204,7 +205,7 @@ export function ChatScreen({ navigation, route }: Props) {
   }
 
   async function regenerate(messageId: string) {
-    if (stream.status === "streaming") return;
+    if (deleted || stream.status === "streaming") return;
     if (!usePrefs.getState().accessToken) {
       navigation.navigate("Auth");
       return;
@@ -405,11 +406,24 @@ export function ChatScreen({ navigation, route }: Props) {
             }}
             suggestions={suggestions}
             onSuggest={setDraft}
-            onRegenerate={(id) => void regenerate(id)}
+            onRegenerate={deleted ? undefined : (id) => void regenerate(id)}
             onListen={(content) => speak(content, locale)}
             onFeedback={(id, rating) => void rate(id, rating)}
           />
         </View>
+        {deleted ? (
+          <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}>
+            <Text style={{ color: colors.muted, fontSize: 13, textAlign: "center" }}>{text.deletedBanner}</Text>
+            {conversationId ? (
+              <Pressable
+                onPress={() => void useHistoryStore.getState().setStatus(conversationId, ConversationStatus.ACTIVE)}
+                style={{ backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 12, alignItems: "center" }}
+              >
+                <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.restoreDeleted}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : (
         <KeyboardDock>
           {pending.length > 0 ? (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 6, paddingTop: 8 }}>
@@ -463,6 +477,7 @@ export function ChatScreen({ navigation, route }: Props) {
             }}
           />
         </KeyboardDock>
+        )}
       </View>
     </Screen>
   );

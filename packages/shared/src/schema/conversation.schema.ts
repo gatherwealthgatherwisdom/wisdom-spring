@@ -22,6 +22,7 @@ export const ConversationViewSchema = z.object({
   pinnedAt: z.string().nullable(),
   lastMessageAt: z.string(),
   createdAt: z.string(),
+  updatedAt: z.string(),
   preview: z.string().nullable(),
   previewRole: ConversationPreviewRoleSchema.nullable(),
 });
@@ -43,7 +44,7 @@ export const UpdateConversationSchema = z
 
 export const ListConversationsQuerySchema = PaginationQuerySchema.extend({
   q: z.string().max(200).optional(),
-  status: z.enum([ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED]).optional(),
+  status: z.enum([ConversationStatus.ACTIVE, ConversationStatus.ARCHIVED, ConversationStatus.DELETED]).optional(),
   mode: ConversationModeSchema.optional(),
 });
 
@@ -54,6 +55,7 @@ export const ConversationSyncQuerySchema = z.object({
 export const ConversationSyncSchema = z.object({
   items: z.array(ConversationViewSchema),
   deletedIds: z.array(z.string().ulid()),
+  deletedItems: z.array(ConversationViewSchema),
   pulledAt: z.string(),
 });
 
@@ -73,4 +75,5 @@ export const ConversationBatchSchema = z
 export const ConversationBatchResultSchema = z.object({
   items: z.array(ConversationViewSchema),
   deletedIds: z.array(z.string().ulid()),
+  deletedItems: z.array(ConversationViewSchema),
 });
