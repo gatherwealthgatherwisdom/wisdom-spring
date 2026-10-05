@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import { clearPhoneRateLimits } from "./rate-limit";
 
 const URLS = [
@@ -22,6 +23,7 @@ async function waitFor(url: string): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  mkdirSync(".auth", { recursive: true });
   clearPhoneRateLimits();
   for (const url of URLS) await waitFor(url);
 }

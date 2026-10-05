@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const chrome = { channel: "chrome" as const };
+const adminUse = {
+  ...devices["Desktop Chrome"],
+  ...chrome,
+  baseURL: "http://127.0.0.1:5173",
+};
 
 export default defineConfig({
   testDir: "./tests",
@@ -17,14 +22,34 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "admin-setup",
+      testMatch: /admin\.setup\.ts/,
+      use: { ...adminUse, viewport: { width: 1280, height: 800 } },
+    },
+    {
       name: "admin",
-      testMatch: /admin\..*\.spec\.ts/,
+      dependencies: ["admin-setup"],
+      testMatch: /admin\.(smoke|cms)\.spec\.ts/,
       use: {
-        ...devices["Desktop Chrome"],
-        ...chrome,
-        baseURL: "http://127.0.0.1:5173",
+        ...adminUse,
         viewport: { width: 1280, height: 800 },
+        storageState: ".auth/admin.json",
       },
+    },
+    {
+      name: "admin-phone",
+      dependencies: ["admin-setup"],
+      testMatch: /admin\.shell\.spec\.ts/,
+      use: {
+        ...adminUse,
+        viewport: { width: 390, height: 844 },
+        storageState: ".auth/admin.json",
+      },
+    },
+    {
+      name: "admin-anon",
+      testMatch: /admin\.auth\.spec\.ts/,
+      use: { ...adminUse, viewport: { width: 1280, height: 800 } },
     },
     {
       name: "mobile",

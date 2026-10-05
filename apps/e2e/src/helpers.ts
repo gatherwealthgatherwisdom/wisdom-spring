@@ -22,22 +22,26 @@ export async function clickText(page: Page, label: string): Promise<void> {
   if (!clicked) throw new Error(`clickText: no node with text ${JSON.stringify(label)}`);
 }
 
-export async function loginAdmin(page: Page): Promise<void> {
-  await page.goto("/models");
-  const heading = page.getByRole("heading", { name: "模型池" });
-  if (await heading.isVisible().catch(() => false)) return;
+export async function submitAdminOtp(page: Page, localDigits: string): Promise<void> {
   await expect(page.getByText("ADMIN · GWGW")).toBeVisible();
-  const phone = page.getByRole("textbox", { name: /電話/ });
-  if (await phone.isVisible().catch(() => false)) {
-    const shown = await phone.inputValue();
-    if (!shown.replace(/\D/g, "").includes(ADMIN_LOCAL)) {
-      await phone.fill(formatLocalDigits("852", ADMIN_LOCAL));
-    }
-  }
+  const phone = page.locator('input[type="tel"]');
+  await phone.fill(formatLocalDigits("852", localDigits));
   await page.getByRole("button", { name: "發送驗證碼" }).click();
   const code = page.getByRole("textbox", { name: "驗證碼" });
   await expect(code).toBeVisible();
   await code.fill(DEV_CODE);
+  const busy = page.getByRole("alert").filter({ hasText: "系統繁忙" });
+  if (await busy.isVisible().catch(() => false)) {
+    clearPhoneRateLimits();
+    await page.getByRole("button", { name: "登入" }).click();
+  }
+}
+
+export async function loginAdmin(page: Page): Promise<void> {
+  await page.goto("/models");
+  const heading = page.getByRole("heading", { name: "模型池" });
+  if (await heading.isVisible().catch(() => false)) return;
+  await submitAdminOtp(page, ADMIN_LOCAL);
   const busy = page.getByRole("alert").filter({ hasText: "系統繁忙" });
   await Promise.race([heading.waitFor({ state: "visible" }), busy.waitFor({ state: "visible" })]).catch(
     () => undefined,
