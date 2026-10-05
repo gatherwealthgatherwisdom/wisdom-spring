@@ -23,6 +23,8 @@ const MODE_CHIPS: Array<{ mode?: ConversationView["mode"]; label: (text: Copy) =
   { mode: "image", label: (text) => text.image },
 ];
 
+const emptySelected = new Set<string>();
+
 export function DrawerMenu({
   open,
   onClose,
@@ -42,11 +44,21 @@ export function DrawerMenu({
   const [mode, setMode] = useState<ConversationView["mode"] | undefined>();
   const [renaming, setRenaming] = useState<ConversationView | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
+  const [selected, setSelected] = useState<Set<string> | null>(null);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const trimmed = q.trim();
   const history = useHistory({ q: trimmed, mode });
+  const conversations = useHistoryStore((state) => state.conversations);
   const groups = groupHistory(history.items);
   const hitsById = useMemo(() => new Map(history.hits.map((hit) => [hit.conversationId, hit])), [history.hits]);
   const searching = trimmed.length > 0;
+  const selecting = selected !== null;
+  const picked = useMemo(
+    () => conversations.filter((item) => selected?.has(item.id)),
+    [conversations, selected],
+  );
+  const allPinned = picked.length > 0 && picked.every((item) => item.pinnedAt);
+  const allArchived = picked.length > 0 && picked.every((item) => item.status === ConversationStatus.ARCHIVED);
   const initial = user?.displayName?.trim().charAt(0) ?? "";
 
   useEffect(() => {
@@ -54,6 +66,8 @@ export function DrawerMenu({
       setQ("");
       setMode(undefined);
       setRenaming(null);
+      setSelected(null);
+      setConfirmingRemove(false);
       return;
     }
     if (signedIn) void useHistoryStore.getState().sync();
@@ -64,62 +78,44 @@ export function DrawerMenu({
     openChat(navigation, params);
   }
 
-  function manage(item: ConversationView) {
-    Alert.alert(item.title || text.newChat, undefined, [
-      {
-        text: item.pinnedAt ? text.unpin : text.pin,
-        onPress: () => {
-          void history.pin(item.id, !item.pinnedAt);
-        },
-      },
-      {
-        text: text.rename,
-        onPress: () => {
-          setRenaming(item);
-          setRenameTitle(item.title ?? "");
-        },
-      },
-      {
-        text: item.status === ConversationStatus.ARCHIVED ? text.restore : text.archive,
-        onPress: () => {
-          void history.setStatus(
-            item.id,
-            item.status === ConversationStatus.ARCHIVED ? ConversationStatus.ACTIVE : ConversationStatus.ARCHIVED,
-          );
-        },
-      },
-      {
-        text: text.exportChat,
-        onPress: () => {
-          void (async () => {
-            try {
-              const markdown = await useHistoryStore.getState().exportThread(item.id);
-              await Clipboard.setStringAsync(markdown);
-              Alert.alert(text.copiedChat);
-            } catch {
-              Alert.alert(text.exportChat);
-            }
-          })();
-        },
-      },
-      {
-        text: text.remove,
-        style: "destructive",
-        onPress: () => {
-          Alert.alert(text.confirmRemove, item.title || text.newChat, [
-            { text: text.cancel, style: "cancel" },
-            {
-              text: text.remove,
-              style: "destructive",
-              onPress: () => {
-                void history.remove(item.id);
-              },
-            },
-          ]);
-        },
-      },
-      { text: text.cancel, style: "cancel" },
-    ]);
+  function enterSelect(id?: string) {
+    setSelected(new Set(id ? [id] : []));
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((current) => {
+      const next = new Set(current ?? []);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function fillCount(template: string, n: number) {
+    return template.replace("{n}", String(n));
+  }
+
+  async function exportPicked() {
+    const item = picked[0];
+    if (!item) return;
+    try {
+      const markdown = await useHistoryStore.getState().exportThread(item.id);
+      await Clipboard.setStringAsync(markdown);
+      Alert.alert(text.copiedChat);
+    } catch {
+      Alert.alert(text.exportChat);
+    }
+  }
+
+  function confirmRemovePicked() {
+    if (picked.length === 0) return;
+    setConfirmingRemove(true);
+  }
+
+  function removePicked() {
+    const ids = picked.map((item) => item.id);
+    setConfirmingRemove(false);
+    void history.removeMany(ids).then(() => setSelected(null));
   }
 
   function saveRename() {
@@ -141,18 +137,41 @@ export function DrawerMenu({
         <View style={{ width: "82%", backgroundColor: colors.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
           <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40 }}>
-              <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
-              <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="close" color={colors.ink} size={22} />
-              </Pressable>
+              {selecting ? (
+                <>
+                  <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>
+                    {fillCount(text.selectedCount, picked.length)}
+                  </Text>
+                  <Pressable onPress={() => setSelected(new Set(history.items.map((item) => item.id)))} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
+                    <Text style={{ color: colors.accent, fontSize: 15 }}>{text.selectAll}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setSelected(null)} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
+                    <Text style={{ color: colors.ink, fontSize: 15 }}>{text.cancel}</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={{ flex: 1, color: colors.ink, fontFamily: "Palatino", fontSize: 22 }}>{text.app}</Text>
+                  {signedIn && history.items.length > 0 ? (
+                    <Pressable accessibilityLabel={text.tidy} onPress={() => enterSelect()} style={{ paddingHorizontal: 10, height: 40, justifyContent: "center" }}>
+                      <Text style={{ color: colors.accent, fontSize: 15 }}>{text.tidy}</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+                    <Icon name="close" color={colors.ink} size={22} />
+                  </Pressable>
+                </>
+              )}
             </View>
-            <Pressable
-              onPress={() => goChat({ mode: "chat" })}
-              style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
-            >
-              <Icon name="add" color={colors.onAccent} size={20} />
-              <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.newChat}</Text>
-            </Pressable>
+            {selecting ? null : (
+              <Pressable
+                onPress={() => goChat({ mode: "chat" })}
+                style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+              >
+                <Icon name="add" color={colors.onAccent} size={20} />
+                <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.newChat}</Text>
+              </Pressable>
+            )}
             {signedIn ? (
               <>
                 <View style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
@@ -222,57 +241,125 @@ export function DrawerMenu({
                   locale={locale}
                   text={text}
                   hits={hitsById}
+                  selecting={selecting}
+                  selected={selected ?? emptySelected}
                   onOpen={goChat}
-                  onManage={manage}
+                  onToggle={toggleSelect}
+                  onEnter={enterSelect}
                 />
               ) : (
                 <>
-                  <ChatGroup title={text.pinned} items={groups.pinned} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
-                  <ChatGroup title={text.today} items={groups.today} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
-                  <ChatGroup title={text.yesterday} items={groups.yesterday} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
-                  <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
-                  <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} hits={hitsById} onOpen={goChat} onManage={manage} />
+                  <ChatGroup title={text.pinned} items={groups.pinned} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
+                  <ChatGroup title={text.today} items={groups.today} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
+                  <ChatGroup title={text.yesterday} items={groups.yesterday} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
+                  <ChatGroup title={text.earlier} items={groups.earlier} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
+                  <ChatGroup title={text.archive} items={groups.archived} colors={colors} locale={locale} text={text} hits={hitsById} selecting={selecting} selected={selected ?? emptySelected} onOpen={goChat} onToggle={toggleSelect} onEnter={enterSelect} />
                 </>
               )
             )}
           </ScrollView>
-          <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 8 }}>
-            <Pressable
-              onPress={() => {
-                onClose();
-                navigation.navigate("Discover");
-              }}
-              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
-            >
-              <Icon name="compass-outline" color={colors.accent} size={20} />
-              <Text style={{ color: colors.ink, fontSize: 16 }}>{text.discover}</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                onClose();
-                if (signedIn) navigation.navigate("Settings");
-                else openAuth(navigation);
-              }}
-              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
-            >
-              <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: signedIn ? colors.accent : colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}>
-                {signedIn && initial ? (
-                  <Text style={{ color: colors.ink, fontSize: 13 }}>{initial}</Text>
-                ) : (
-                  <Icon name="person-outline" color={colors.ink} size={14} />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.ink, fontSize: 16 }} numberOfLines={1}>
-                  {signedIn ? user?.displayName?.trim() || user?.phone || text.account : text.signedOut}
-                </Text>
-                <Text style={{ color: colors.muted, fontSize: 12 }}>{signedIn ? text.mine : text.login}</Text>
-              </View>
-            </Pressable>
-          </View>
+          {selecting ? (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 6, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-around" }}>
+              <BulkAction
+                label={allPinned ? text.unpin : text.pin}
+                icon={allPinned ? "bookmark" : "bookmark-outline"}
+                colors={colors}
+                disabled={picked.length === 0}
+                onPress={() => void history.pinMany(picked.map((item) => item.id), !allPinned)}
+              />
+              <BulkAction
+                label={allArchived ? text.restore : text.archive}
+                icon="archive-outline"
+                colors={colors}
+                disabled={picked.length === 0}
+                onPress={() =>
+                  void history.setStatusMany(
+                    picked.map((item) => item.id),
+                    allArchived ? ConversationStatus.ACTIVE : ConversationStatus.ARCHIVED,
+                  )
+                }
+              />
+              {picked.length === 1 ? (
+                <BulkAction
+                  label={text.rename}
+                  icon="create-outline"
+                  colors={colors}
+                  onPress={() => {
+                    const item = picked[0];
+                    setRenaming(item);
+                    setRenameTitle(item.title ?? "");
+                  }}
+                />
+              ) : null}
+              {picked.length === 1 ? (
+                <BulkAction label={text.exportChat} icon="share-outline" colors={colors} onPress={() => void exportPicked()} />
+              ) : null}
+              <BulkAction
+                label={text.remove}
+                icon="trash-outline"
+                colors={colors}
+                danger
+                disabled={picked.length === 0}
+                onPress={confirmRemovePicked}
+              />
+            </View>
+          ) : (
+            <View style={{ borderTopWidth: 1, borderTopColor: colors.line, paddingHorizontal: 8, paddingVertical: 8 }}>
+              <Pressable
+                onPress={() => {
+                  onClose();
+                  navigation.navigate("Discover");
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
+              >
+                <Icon name="compass-outline" color={colors.accent} size={20} />
+                <Text style={{ color: colors.ink, fontSize: 16 }}>{text.discover}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  onClose();
+                  if (signedIn) navigation.navigate("Settings");
+                  else openAuth(navigation);
+                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
+              >
+                <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: signedIn ? colors.accent : colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}>
+                  {signedIn && initial ? (
+                    <Text style={{ color: colors.ink, fontSize: 13 }}>{initial}</Text>
+                  ) : (
+                    <Icon name="person-outline" color={colors.ink} size={14} />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.ink, fontSize: 16 }} numberOfLines={1}>
+                    {signedIn ? user?.displayName?.trim() || user?.phone || text.account : text.signedOut}
+                  </Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>{signedIn ? text.mine : text.login}</Text>
+                </View>
+              </Pressable>
+            </View>
+          )}
         </View>
         <Pressable accessibilityLabel={text.back} onPress={onClose} style={{ flex: 1, backgroundColor: "#00000066" }} />
       </View>
+      {confirmingRemove ? (
+        <View style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: "#00000066", justifyContent: "center", padding: 24 }}>
+          <Pressable onPress={() => setConfirmingRemove(false)} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.line }}>
+            <Text style={{ color: colors.ink, fontSize: 16, marginBottom: 16 }}>
+              {fillCount(picked.length === 1 ? text.confirmRemove : text.confirmRemoveMany, picked.length)}
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}>
+              <Pressable onPress={() => setConfirmingRemove(false)} style={{ paddingHorizontal: 12, paddingVertical: 10 }}>
+                <Text style={{ color: colors.muted }}>{text.cancel}</Text>
+              </Pressable>
+              <Pressable onPress={removePicked} style={{ backgroundColor: colors.danger, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 }}>
+                <Text style={{ color: colors.onAccent }}>{text.remove}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
       {renaming ? (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, backgroundColor: "#00000066", justifyContent: "center", padding: 24 }}>
           <Pressable onPress={() => setRenaming(null)} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }} />
@@ -311,8 +398,11 @@ function ChatGroup({
   locale,
   text,
   hits,
+  selecting,
+  selected,
   onOpen,
-  onManage,
+  onToggle,
+  onEnter,
 }: {
   title: string;
   items: ConversationView[];
@@ -320,8 +410,11 @@ function ChatGroup({
   locale: "zh-HK" | "en";
   text: Copy;
   hits: Map<string, HistoryHit>;
+  selecting: boolean;
+  selected: Set<string>;
   onOpen: (params: Parameters<typeof openChat>[1]) => void;
-  onManage: (item: ConversationView) => void;
+  onToggle: (id: string) => void;
+  onEnter: (id: string) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -331,19 +424,46 @@ function ChatGroup({
         const hit = hits.get(item.id);
         const thumb = item.mode === "image" ? mediaUrl(item.lastImageUrl) : null;
         const preview = hit?.snippet ?? item.preview ?? modeLabel(item.mode, text);
+        const on = selected.has(item.id);
         return (
           <Pressable
             key={item.id}
-            onPress={() =>
-              onOpen({
-                conversationId: item.id,
-                mode: item.mode,
-                ...(hit?.messageId ? { focusMessageId: hit.messageId } : {}),
-              })
-            }
-            onLongPress={() => onManage(item)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 }}
+            onPress={() => {
+              if (selecting) onToggle(item.id);
+              else
+                onOpen({
+                  conversationId: item.id,
+                  mode: item.mode,
+                  ...(hit?.messageId ? { focusMessageId: hit.messageId } : {}),
+                });
+            }}
+            onLongPress={() => (selecting ? onToggle(item.id) : onEnter(item.id))}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 12,
+              backgroundColor: on ? colors.card : "transparent",
+            }}
           >
+            {selecting ? (
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  borderWidth: 1,
+                  borderColor: on ? colors.accent : colors.line,
+                  backgroundColor: on ? colors.accent : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {on ? <Icon name="checkmark" color={colors.onAccent} size={14} /> : null}
+              </View>
+            ) : null}
             <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
               {thumb ? (
                 <Image source={{ uri: thumb }} style={{ width: 36, height: 36 }} />
@@ -362,11 +482,35 @@ function ChatGroup({
                 {preview}
               </Text>
             </View>
-            {item.pinnedAt ? <Icon name="bookmark" color={colors.accent} size={16} /> : null}
+            {item.pinnedAt && !selecting ? <Icon name="bookmark" color={colors.accent} size={16} /> : null}
           </Pressable>
         );
       })}
     </View>
+  );
+}
+
+function BulkAction({
+  label,
+  icon,
+  colors,
+  onPress,
+  disabled,
+  danger,
+}: {
+  label: string;
+  icon: IconName;
+  colors: Palette;
+  onPress: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  const tint = disabled ? colors.muted : danger ? colors.danger : colors.ink;
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={{ alignItems: "center", minWidth: 64, paddingVertical: 8, opacity: disabled ? 0.4 : 1 }}>
+      <Icon name={icon} color={tint} size={20} />
+      <Text style={{ color: tint, fontSize: 12, marginTop: 4 }}>{label}</Text>
+    </Pressable>
   );
 }
 

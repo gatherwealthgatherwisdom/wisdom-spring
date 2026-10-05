@@ -32,6 +32,9 @@ type HistoryState = {
   rename: (id: string, title: string) => Promise<void>;
   setStatus: (id: string, status: ConversationStatus.ACTIVE | ConversationStatus.ARCHIVED) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  pinMany: (ids: string[], pinned: boolean) => Promise<void>;
+  setStatusMany: (ids: string[], status: ConversationStatus.ACTIVE | ConversationStatus.ARCHIVED) => Promise<void>;
+  removeMany: (ids: string[]) => Promise<void>;
   markOffline: () => void;
   exportThread: (id: string) => Promise<string>;
 };
@@ -141,6 +144,15 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       set({ online: false });
     }
   },
+  async pinMany(ids, pinned) {
+    for (const id of ids) await get().pin(id, pinned);
+  },
+  async setStatusMany(ids, status) {
+    for (const id of ids) await get().setStatus(id, status);
+  },
+  async removeMany(ids) {
+    for (const id of ids) await get().remove(id);
+  },
   markOffline() {
     set({ online: false });
   },
@@ -231,6 +243,9 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
     rename: useHistoryStore.getState().rename,
     setStatus: useHistoryStore.getState().setStatus,
     remove: useHistoryStore.getState().remove,
+    pinMany: useHistoryStore.getState().pinMany,
+    setStatusMany: useHistoryStore.getState().setStatusMany,
+    removeMany: useHistoryStore.getState().removeMany,
     sync: useHistoryStore.getState().sync,
     exportThread: useHistoryStore.getState().exportThread,
   };
