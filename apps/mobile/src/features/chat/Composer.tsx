@@ -32,10 +32,10 @@ export function Composer({
 }) {
   const colors = useColors();
   const [attachOpen, setAttachOpen] = useState(false);
-  const extras: { name: IconName; kind: "camera" | "library" | "file" }[] = [
-    { name: "camera-outline", kind: "camera" },
-    { name: "image-outline", kind: "library" },
-    ...(allowPdf ? [{ name: "document-text-outline" as const, kind: "file" as const }] : []),
+  const extras: { name: IconName; kind: "camera" | "library" | "file"; label: string }[] = [
+    { name: "camera-outline", kind: "camera", label: "camera" },
+    { name: "image-outline", kind: "library", label: "library" },
+    ...(allowPdf ? [{ name: "document-text-outline" as const, kind: "file" as const, label: "file" }] : []),
   ];
   return (
     <View style={{ marginTop: 8, gap: 8 }}>
@@ -44,6 +44,7 @@ export function Composer({
           {extras.map((item) => (
             <Pressable
               key={item.name}
+              accessibilityLabel={item.label}
               onPress={() => {
                 setAttachOpen(false);
                 onAttach(item.kind);

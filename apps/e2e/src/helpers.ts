@@ -127,6 +127,237 @@ export async function submitAdminOtp(page: Page, localDigits: string): Promise<v
   }
 }
 
+export const LIVE_SKIP_COPY = [
+  "系統繁忙，請稍後再試。",
+  "今日對話次數已用完。",
+  "試用 5 次已用完。完成註冊後可以繼續用。",
+  "暫時未有可用圖像模型。",
+  "暫時未有可用睇圖模型。",
+] as const;
+
+export async function clickNewChatButton(page: Page): Promise<void> {
+  const clicked = await page.evaluate(() => {
+    const shown = (node: HTMLElement) => {
+      let current: HTMLElement | null = node;
+      while (current) {
+        if (current.getAttribute("aria-hidden") === "true") return false;
+        const style = getComputedStyle(current);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+        current = current.parentElement;
+      }
+      return true;
+    };
+    const pine = new Set(["rgb(31, 107, 74)", "rgb(61, 155, 110)"]);
+    const nodes = Array.from(document.querySelectorAll("body *"));
+    for (const node of nodes) {
+      if (!(node instanceof HTMLElement) || !shown(node)) continue;
+      if (node.innerText.trim() !== "新對話") continue;
+      let current: HTMLElement | null = node;
+      while (current) {
+        if (pine.has(getComputedStyle(current).backgroundColor)) {
+          current.click();
+          return true;
+        }
+        current = current.parentElement;
+      }
+    }
+    return false;
+  });
+  if (!clicked) throw new Error("clickNewChatButton: pine 新對話 not found");
+}
+
+export async function openNewChat(page: Page): Promise<void> {
+  await clickText(page, "對話");
+  await clickLabel(page, "對話列表");
+  await clickNewChatButton(page);
+  await expect(page.getByPlaceholder("搜尋對話").filter({ visible: true })).toHaveCount(0);
+  await expect(page.getByPlaceholder("問智泉").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("寫一封電郵").filter({ visible: true })).toBeVisible();
+}
+
+export async function readQuota(page: Page): Promise<{ used: number; limit: number }> {
+  await clickText(page, "我的");
+  const label = page.getByText(/已用 \d+／\d+/).filter({ visible: true });
+  await expect(label).toBeVisible();
+  const text = (await label.innerText()).trim();
+  const match = text.match(/已用 (\d+)／(\d+)/);
+  if (!match) throw new Error(`readQuota: ${JSON.stringify(text)}`);
+  return { used: Number(match[1]), limit: Number(match[2]) };
+}
+
+export async function leaveChat(page: Page): Promise<void> {
+  if (await page.getByPlaceholder("搜尋對話").filter({ visible: true }).isVisible().catch(() => false)) {
+    await clickLabel(page, "返回");
+  }
+  await clickLabel(page, "對話");
+}
+
+export async function expectQuotaIncreased(page: Page, before: { used: number }): Promise<void> {
+  const token = await sessionAccessToken(page);
+  if (!token) throw new Error("expectQuotaIncreased: no session");
+  await expect
+    .poll(
+      async () => {
+        const response = await page.request.get("http://127.0.0.1:3000/v1/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok()) return before.used;
+        const body = (await response.json()) as {
+          user?: { guestUses?: number; registered?: boolean };
+          quota?: { dailyUsed?: number };
+        };
+        if (body.user?.registered === false) return body.user.guestUses ?? before.used;
+        return body.quota?.dailyUsed ?? before.used;
+      },
+      { timeout: 30_000 },
+    )
+    .toBeGreaterThan(before.used);
+}
+
+export async function sessionAccessToken(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const raw = window.localStorage.getItem("spring.mobile.session");
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as { accessToken?: string | null };
+      return parsed.accessToken ?? null;
+    } catch {
+      return null;
+    }
+  });
+}
+
+export async function fetchCapabilities(page: Page): Promise<{ image: boolean; vision: boolean } | null> {
+  const token = await sessionAccessToken(page);
+  if (!token) return null;
+  const response = await page.request.get("http://127.0.0.1:3000/v1/capabilities", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok()) return null;
+  return (await response.json()) as { image: boolean; vision: boolean };
+}
+
+export async function attachPhotoFixture(page: Page, filePath: string): Promise<"ok" | string> {
+  await clickLabel(page, "+");
+  await expect(page.locator('[aria-label="library"]').filter({ visible: true })).toBeVisible();
+  await page.evaluate(() => {
+    const body = document.body;
+    const orig = body.appendChild.bind(body);
+    body.appendChild = ((node: Node) => {
+      if (node instanceof HTMLInputElement) {
+        node.addEventListener("cancel", (event) => event.stopImmediatePropagation(), true);
+      }
+      return orig(node);
+    }) as typeof body.appendChild;
+  });
+  await clickLabel(page, "library");
+  if (await page.getByText("暫時未有可用睇圖模型。").filter({ visible: true }).isVisible().catch(() => false)) {
+    return "暫時未有可用睇圖模型。";
+  }
+  const file = page.locator('[data-testid="file-input"]');
+  try {
+    await file.waitFor({ state: "attached", timeout: 8_000 });
+  } catch {
+    return "no file input";
+  }
+  await file.setInputFiles(filePath);
+  try {
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() =>
+            Array.from(document.querySelectorAll("img")).some((img) => {
+              const rect = img.getBoundingClientRect();
+              return rect.width >= 48 && rect.width <= 80 && rect.height >= 48 && rect.height <= 80;
+            }),
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+  } catch {
+    return "no file input";
+  }
+  return "ok";
+}
+
+export async function waitForLiveTurn(
+  page: Page,
+  options: { image?: boolean; prompt?: string } = {},
+): Promise<"ok" | string> {
+  const badge = page.getByText(/智泉 · /).filter({ visible: true });
+  let seen = badge;
+  for (const copy of LIVE_SKIP_COPY) {
+    seen = seen.or(page.getByText(copy, { exact: true }).filter({ visible: true }));
+  }
+  await expect(seen.first()).toBeVisible({ timeout: 120_000 });
+  for (const copy of LIVE_SKIP_COPY) {
+    if (await page.getByText(copy, { exact: true }).filter({ visible: true }).isVisible().catch(() => false)) {
+      return copy;
+    }
+  }
+  if (options.image) {
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            return Array.from(document.querySelectorAll("img")).some((img) => {
+              let current: HTMLElement | null = img;
+              while (current) {
+                if (current.getAttribute("aria-hidden") === "true") return false;
+                const style = getComputedStyle(current);
+                if (style.display === "none" || style.visibility === "hidden") return false;
+                current = current.parentElement;
+              }
+              const rect = img.getBoundingClientRect();
+              return rect.width >= 180 && rect.height >= 180;
+            });
+          }),
+        { timeout: 120_000 },
+      )
+      .toBe(true);
+    return "ok";
+  }
+  const regen = page.locator('[aria-label="再生成"]').filter({ visible: true });
+  const prompt = options.prompt;
+  if (!prompt) {
+    await expect(regen).toBeVisible({ timeout: 120_000 });
+    return "ok";
+  }
+  await expect
+    .poll(
+      async () => {
+        if (await regen.isVisible().catch(() => false)) return true;
+        return page.evaluate((needle: string) => {
+          const noise = [
+            "寫一封電郵",
+            "翻譯呢段",
+            "畫一幅",
+            "繼續上次",
+            "共飲智慧之泉",
+            "問智泉",
+            "試用剩餘",
+            "剛剛",
+            "分鐘前",
+            "用三點解釋",
+            "幫我寫一封禮貌",
+            "將呢段文言",
+            "今日有咩國際新聞",
+            "幫我列一個健康",
+          ];
+          const text = document.body.innerText || "";
+          const idx = text.indexOf(needle);
+          if (idx < 0) return false;
+          let rest = text.slice(idx + needle.length).replace(/智泉 · [^\n]+/g, " ");
+          for (const item of noise) rest = rest.split(item).join(" ");
+          return /[\u4e00-\u9fffA-Za-z]{1,40}/.test(rest.replace(/\s+/g, ""));
+        }, prompt);
+      },
+      { timeout: 120_000 },
+    )
+    .toBe(true);
+  return "ok";
+}
+
 export async function loginAdmin(page: Page): Promise<void> {
   await page.goto("/models");
   const heading = page.getByRole("heading", { name: "模型池" });

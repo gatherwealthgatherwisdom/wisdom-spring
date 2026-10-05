@@ -75,5 +75,12 @@ export default defineConfig({
       testMatch: /mobile\.(signed|history)\.spec\.ts/,
       use: { ...mobileUse, storageState: ".auth/mobile.json" },
     },
+    {
+      name: "mobile-live",
+      dependencies: ["mobile-setup"],
+      testMatch: /mobile\.live\.spec\.ts/,
+      timeout: 180_000,
+      use: { ...mobileUse, storageState: ".auth/mobile.json" },
+    },
   ],
 });

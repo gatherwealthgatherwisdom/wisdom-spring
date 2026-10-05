@@ -174,13 +174,14 @@ export function InboxScreen({ navigation }: Props) {
           <View style={{ flexDirection: "row", gap: 10 }}>
             {(
               [
-                { name: "camera-outline" as const, kind: "camera" as const },
-                { name: "image-outline" as const, kind: "library" as const },
-                { name: "document-text-outline" as const, kind: "file" as const },
+                { name: "camera-outline" as const, kind: "camera" as const, label: "camera" },
+                { name: "image-outline" as const, kind: "library" as const, label: "library" },
+                { name: "document-text-outline" as const, kind: "file" as const, label: "file" },
               ]
             ).map((item) => (
               <Pressable
                 key={item.name}
+                accessibilityLabel={item.label}
                 onPress={() => {
                   setAttachOpen(false);
                   setHint(null);

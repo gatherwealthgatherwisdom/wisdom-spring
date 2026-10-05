@@ -5,7 +5,7 @@ test("the conversation drawer searches, filters, and opens recently deleted", as
   await waitForApp(page);
   await clickText(page, "對話");
   await clickLabel(page, "對話列表");
-  await expect(visibleText(page, "新對話")).toBeVisible();
+  await expect(visibleText(page, "新對話").first()).toBeVisible();
   await expect(page.getByPlaceholder("搜尋對話").filter({ visible: true })).toBeVisible();
   await expect(visibleText(page, "全部")).toBeVisible();
   await expect(visibleText(page, "寫作")).toBeVisible();
