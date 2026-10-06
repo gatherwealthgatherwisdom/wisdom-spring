@@ -74,6 +74,10 @@ export async function clickLabel(page: Page, label: string): Promise<void> {
   if (!clicked) throw new Error(`clickLabel: no node with aria-label ${JSON.stringify(label)}`);
 }
 
+export function composerBox(page: Page, placeholder: string) {
+  return page.getByPlaceholder(placeholder).filter({ visible: true }).last();
+}
+
 export function visibleText(page: Page, text: string | RegExp) {
   const locator = typeof text === "string" ? page.getByText(text, { exact: true }) : page.getByText(text);
   return locator.filter({ visible: true });
@@ -235,7 +239,7 @@ export async function openNewChat(page: Page): Promise<void> {
   await clickLabel(page, "對話列表");
   await clickNewChatButton(page);
   await expect(page.getByPlaceholder("搜尋對話").filter({ visible: true })).toHaveCount(0);
-  await expect(page.getByPlaceholder("問智泉").filter({ visible: true })).toBeVisible();
+  await expect(composerBox(page, "問智泉")).toBeVisible();
   await expect(page.getByText("寫一封電郵").filter({ visible: true })).toBeVisible();
 }
 
@@ -303,7 +307,8 @@ export async function fetchCapabilities(page: Page): Promise<{ image: boolean; v
 
 export async function attachPhotoFixture(page: Page, filePath: string): Promise<"ok" | string> {
   await clickLabel(page, "+");
-  await expect(page.locator('[aria-label="library"]').filter({ visible: true })).toBeVisible();
+  await clickLabel(page, "睇圖");
+  await expect(page.locator('[aria-label="相簿"]').filter({ visible: true })).toBeVisible();
   await page.evaluate(() => {
     const body = document.body;
     const orig = body.appendChild.bind(body);
@@ -314,7 +319,7 @@ export async function attachPhotoFixture(page: Page, filePath: string): Promise<
       return orig(node);
     }) as typeof body.appendChild;
   });
-  await clickLabel(page, "library");
+  await clickLabel(page, "相簿");
   if (await page.getByText("暫時未有可用睇圖模型。").filter({ visible: true }).isVisible().catch(() => false)) {
     return "暫時未有可用睇圖模型。";
   }
@@ -348,22 +353,23 @@ export async function waitForLiveTurn(
   page: Page,
   options: { image?: boolean; prompt?: string } = {},
 ): Promise<"ok" | string> {
-  const badge = page.getByText(KIND_BADGE).filter({ visible: true });
-  let seen = badge;
+  const progress = page.getByText(/思考/).or(page.getByText("▍")).or(page.locator('[aria-label="再生成"]'));
+  let seen = progress.filter({ visible: true });
   for (const copy of LIVE_SKIP_COPY) {
     seen = seen.or(page.getByText(copy, { exact: true }).filter({ visible: true }));
   }
-  await expect(seen.first()).toBeVisible({ timeout: 120_000 });
-  for (const copy of LIVE_SKIP_COPY) {
-    if (await page.getByText(copy, { exact: true }).filter({ visible: true }).isVisible().catch(() => false)) {
-      return copy;
-    }
-  }
   if (options.image) {
+    let outcome = "";
     await expect
       .poll(
-        async () =>
-          page.evaluate(() => {
+        async () => {
+          for (const copy of LIVE_SKIP_COPY) {
+            if (await page.getByText(copy, { exact: true }).filter({ visible: true }).isVisible().catch(() => false)) {
+              outcome = copy;
+              return true;
+            }
+          }
+          const hasImage = await page.evaluate(() => {
             return Array.from(document.querySelectorAll("img")).some((img) => {
               let current: HTMLElement | null = img;
               while (current) {
@@ -375,11 +381,23 @@ export async function waitForLiveTurn(
               const rect = img.getBoundingClientRect();
               return rect.width >= 180 && rect.height >= 180;
             });
-          }),
+          });
+          if (hasImage) {
+            outcome = "ok";
+            return true;
+          }
+          return false;
+        },
         { timeout: 120_000 },
       )
       .toBe(true);
-    return "ok";
+    return outcome;
+  }
+  await expect(seen.first()).toBeVisible({ timeout: 120_000 });
+  for (const copy of LIVE_SKIP_COPY) {
+    if (await page.getByText(copy, { exact: true }).filter({ visible: true }).isVisible().catch(() => false)) {
+      return copy;
+    }
   }
   const regen = page.locator('[aria-label="再生成"]').filter({ visible: true });
   const prompt = options.prompt;
@@ -399,6 +417,11 @@ export async function waitForLiveTurn(
             "繼續上次",
             "共飲智慧之泉",
             "問智泉",
+            "描述你想畫嘅圖",
+            "問呢張圖",
+            "問呢份文件",
+            "畫圖",
+            "睇圖",
             "試用剩餘",
             "剛剛",
             "分鐘前",

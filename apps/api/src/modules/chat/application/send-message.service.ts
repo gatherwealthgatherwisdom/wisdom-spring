@@ -20,7 +20,7 @@ import { runGeneration, type GenerationDeps } from "./generation";
 
 export type PreparedSend =
   | { kind: "replay"; row: ClientMessage }
-  | { kind: "generate"; conversationId: string; assistantMessageId: string };
+  | { kind: "generate"; conversationId: string; assistantMessageId: string; turnMode: string; imageStyle: string | null };
 
 function isUnique(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "P2002";
@@ -40,15 +40,16 @@ export class SendMessageService {
     if (existing) return { kind: "replay", row: existing };
 
     const attachmentIds = assetIdsOf(input.attachments.map((item) => item.assetId));
-    let conversationMode: string = input.mode ?? "chat";
+    let listedMode: string = input.mode ?? "chat";
     if (input.conversationId) {
       const conversation = await this.prisma.conversation.findFirst({
         where: { id: input.conversationId, userId: user.id, status: { not: "DELETED" } },
       });
       if (!conversation) throw new AppError(ErrorCode.NOT_FOUND);
-      conversationMode = conversation.mode;
+      listedMode = conversation.mode;
     }
-    if (attachmentIds.length > 0 && conversationMode === "image") {
+    const turnMode = input.mode ?? listedMode;
+    if (attachmentIds.length > 0 && turnMode === "image") {
       throw new AppError(ErrorCode.VALIDATION, IMAGE_MODE_NO_UPLOAD_COPY);
     }
     const owned =
@@ -60,9 +61,10 @@ export class SendMessageService {
         : [];
     if (owned.length !== attachmentIds.length) throw new AppError(ErrorCode.NOT_FOUND);
     await assertCapabilityFlags(this.prisma, {
-      mode: conversationMode,
+      mode: turnMode,
       mimes: owned.map((row) => row.mime),
     });
+    const imageStyle = turnMode === "image" ? (input.imageStyle ?? "ink") : null;
 
     const now = this.generation.now();
     const charge = await prepareCharge(this.prisma, this.quota, user.id, user.planTier, now);
@@ -132,7 +134,7 @@ export class SendMessageService {
       throw error;
     }
 
-    return { kind: "generate", conversationId, assistantMessageId };
+    return { kind: "generate", conversationId, assistantMessageId, turnMode, imageStyle };
   }
 
   async continue(user: ActingUser, prepared: PreparedSend, sink: SseSink): Promise<void> {
@@ -147,6 +149,8 @@ export class SendMessageService {
         planTier: user.planTier,
         conversationId: prepared.conversationId,
         assistantMessageId: prepared.assistantMessageId,
+        turnMode: prepared.turnMode,
+        imageStyle: prepared.imageStyle,
       },
       sink,
     );

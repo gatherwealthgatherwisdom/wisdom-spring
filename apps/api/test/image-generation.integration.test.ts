@@ -209,6 +209,49 @@ describe("image generation", () => {
     expect(messages.some((row) => row.role === "ASSISTANT" && row.imageUrl === "https://cdn.example/spring.png")).toBe(true);
   });
 
+  it("draws in an existing chat without changing the drawer category", async () => {
+    const me = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const userId = me.json().user.id as string;
+    const conversationId = createId();
+    await app.ctx.prisma.conversation.create({
+      data: {
+        id: conversationId,
+        userId,
+        mode: "chat",
+        lastMessageAt: new Date(),
+      },
+    });
+    const sent = await app.inject({
+      method: "POST",
+      url: "/v1/messages",
+      headers: { authorization: `Bearer ${token}` },
+      payload: {
+        conversationId,
+        content: "一枝松",
+        clientMessageId: randomUUID(),
+        mode: "image",
+        imageStyle: "ink",
+      },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("\"generationKind\":\"text-to-image\"");
+    expect(client.streamCalls).toBe(0);
+    expect(client.imageCalls).toBeGreaterThan(1);
+    const row = await app.ctx.prisma.conversation.findUnique({ where: { id: conversationId } });
+    expect(row?.mode).toBe("chat");
+    const chats = await app.inject({
+      method: "GET",
+      url: "/v1/conversations?mode=chat",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const items = chats.json().items as Array<{ id: string; mode: string }>;
+    expect(items.some((item) => item.id === conversationId && item.mode === "chat")).toBe(true);
+  });
+
   it("rejects image mode when image_gen is off", async () => {
     await app.ctx.prisma.featureFlag.upsert({
       where: { key: FeatureFlagKey.IMAGE_GEN },

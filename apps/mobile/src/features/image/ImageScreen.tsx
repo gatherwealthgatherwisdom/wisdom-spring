@@ -2,7 +2,7 @@ import { IMAGE_STYLES } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
-import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { cardsFromDiscover, HERO_ART, STYLE_ART } from "../discover/catalog";
@@ -15,6 +15,8 @@ import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
+import { Composer } from "../chat/Composer";
+import { placeholderFor, type ComposerAction } from "../chat/composer-action";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Image">;
 
@@ -24,6 +26,8 @@ export function ImageScreen({ navigation }: Props) {
   const text = copy[locale];
   const [styleId, setStyleId] = useState(IMAGE_STYLES[0]?.id ?? "ink");
   const [prompt, setPrompt] = useState("");
+  const [action, setAction] = useState<ComposerAction>("draw");
+  const [hint, setHint] = useState<string | null>(null);
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const caps = useQuery({ queryKey: ["capabilities"], queryFn: () => spring.capabilities(), enabled: signedIn });
   const chats = useHistory({ mode: "image" });
@@ -41,9 +45,25 @@ export function ImageScreen({ navigation }: Props) {
 
   function send(seed?: string, style?: string) {
     const content = (seed ?? prompt).trim();
-    if (!content || blocked) return;
-    openChat(navigation, { mode: "image", imageStyle: style ?? selected, seed: content });
+    if (!content) return;
+    if (style || action === "draw") {
+      if (blocked) return;
+      openChat(navigation, { mode: "image", imageStyle: style ?? selected, seed: content });
+      setPrompt("");
+      setHint(null);
+      return;
+    }
+    if (action === "look") {
+      setHint(text.needPhoto);
+      return;
+    }
+    if (action === "file") {
+      setHint(text.needFile);
+      return;
+    }
+    openChat(navigation, { mode: "chat", seed: content });
     setPrompt("");
+    setHint(null);
   }
 
   return (
@@ -127,24 +147,28 @@ export function ImageScreen({ navigation }: Props) {
         )}
       </ScrollView>
       <KeyboardDock tabBar>
-      <View style={{ flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
-        <Pressable style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-          <Icon name="add" color={colors.ink} />
-        </Pressable>
-        <TextInput
+      <View style={{ marginHorizontal: 16, marginBottom: 6, gap: 8 }}>
+        {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
+        <Composer
           value={prompt}
-          onChangeText={setPrompt}
-          placeholder={text.placeholder}
-          placeholderTextColor={colors.muted}
-          style={{ flex: 1, minHeight: 36, color: colors.ink, fontSize: 16 }}
+          placeholder={placeholderFor(text, action)}
+          action={action}
+          streaming={false}
+          stopLabel={text.stop}
+          onChange={setPrompt}
+          onSend={() => send()}
+          onStop={() => undefined}
+          onAction={(next) => {
+            setAction(next);
+            setHint(null);
+          }}
+          onAttach={(kind) => {
+            setHint(null);
+            openChat(navigation, { mode: "chat", attach: kind });
+          }}
+          voice={false}
+          onMic={() => undefined}
         />
-        <Pressable
-          accessibilityLabel={text.start}
-          onPress={() => send()}
-          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center", opacity: blocked ? 0.4 : 1 }}
-        >
-          <Icon name="arrow-up" color={colors.onAccent} size={18} />
-        </Pressable>
       </View>
       </KeyboardDock>
     </Screen>

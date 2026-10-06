@@ -73,6 +73,8 @@ export async function runGeneration(
     planTier: PlanTier;
     conversationId: string;
     assistantMessageId: string;
+    turnMode?: string;
+    imageStyle?: string | null;
   },
   sink: SseSink,
 ): Promise<void> {
@@ -98,12 +100,14 @@ export async function runGeneration(
   });
   let excludeSlugs = previous.flatMap((row) => (row.requestedModel ? [row.requestedModel] : []));
   const conversation = await deps.prisma.conversation.findUnique({ where: { id: input.conversationId } });
+  const listedMode = conversation?.mode ?? "chat";
+  const turnMode = input.turnMode ?? listedMode;
   const modeFields = {
-    mode: conversation?.mode ?? "chat",
-    templateId: conversation?.templateId ?? null,
-    sourceLang: conversation?.sourceLang ?? null,
-    targetLang: conversation?.targetLang ?? null,
-    imageStyle: conversation?.imageStyle ?? null,
+    mode: turnMode,
+    templateId: turnMode === "write" ? (conversation?.templateId ?? null) : turnMode === listedMode ? (conversation?.templateId ?? null) : null,
+    sourceLang: turnMode === "translate" ? (conversation?.sourceLang ?? null) : null,
+    targetLang: turnMode === "translate" ? (conversation?.targetLang ?? null) : null,
+    imageStyle: turnMode === "image" ? (input.imageStyle ?? conversation?.imageStyle ?? "ink") : (conversation?.imageStyle ?? null),
   };
   const lastUser = [...history].reverse().find((row) => row.role === "USER");
   const mediaIds = modeFields.mode === "image" ? [] : assetIdsOf(lastUser?.attachments);

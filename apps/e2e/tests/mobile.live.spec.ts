@@ -5,6 +5,7 @@ import {
   attachPhotoFixture,
   clickLabel,
   clickText,
+  composerBox,
   expectNoVendorModels,
   expectQuotaIncreased,
   fetchCapabilities,
@@ -30,12 +31,12 @@ test("a short signed-in chat streams a 智泉 reply and counts against quota", a
   const before = await readQuota(page);
   if (before.used >= before.limit) test.skip(true, "quota exhausted");
   await openNewChat(page);
-  await page.getByPlaceholder("問智泉").filter({ visible: true }).fill(TEXT_PROMPT);
+  await composerBox(page, "問智泉").fill(TEXT_PROMPT);
   await clickLabel(page, "send");
   const result = await waitForLiveTurn(page, { prompt: TEXT_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, TEXT_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE)).toHaveCount(0);
   await expectNoVendorModels(page);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);
@@ -51,12 +52,12 @@ test("the image tab generates a picture when the pool has an image model", async
   if (await visibleText(page, "暫時未有可用圖像模型。").isVisible().catch(() => false)) {
     test.skip(true, "暫時未有可用圖像模型。");
   }
-  await page.getByPlaceholder("問智泉").filter({ visible: true }).fill(IMAGE_PROMPT);
-  await clickLabel(page, "開始");
+  await composerBox(page, "描述你想畫嘅圖").fill(IMAGE_PROMPT);
+  await clickLabel(page, "send");
   const result = await waitForLiveTurn(page, { image: true });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, IMAGE_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE)).toHaveCount(0);
   await expectNoVendorModels(page);
   const name = await expectLightboxSave(page);
   expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);
@@ -73,12 +74,12 @@ test("a photo attach asks a vision model when the pool can look at pictures", as
   await openNewChat(page);
   const attached = await attachPhotoFixture(page, LOOK_PNG);
   if (attached !== "ok") test.skip(true, attached);
-  await page.getByPlaceholder("問智泉").filter({ visible: true }).fill(VISION_PROMPT);
+  await composerBox(page, "問呢張圖").fill(VISION_PROMPT);
   await clickLabel(page, "send");
   const result = await waitForLiveTurn(page, { prompt: VISION_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, VISION_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE)).toHaveCount(0);
   await expectNoVendorModels(page);
   const name = await expectLightboxSave(page);
   expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);

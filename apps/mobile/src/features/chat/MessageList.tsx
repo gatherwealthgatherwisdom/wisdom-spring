@@ -1,5 +1,4 @@
-import { generationKind, type MessageView } from "@spring/shared";
-import { KindBadge } from "./KindBadge";
+import type { MessageView } from "@spring/shared";
 import { useEffect, useRef } from "react";
 import { FlatList, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
@@ -89,9 +88,8 @@ export function MessageList({
         const streaming = item.id === "draft";
         const previous = data[index - 1];
         const original = previous && "content" in previous ? previous.content : "";
-        const kind =
-          ("generationKind" in item && item.generationKind) || generationKind({ mode });
-        if (mode === "translate") {
+        const imageUrl = "imageUrl" in item ? item.imageUrl : null;
+        if (mode === "translate" && !imageUrl) {
           return (
             <TranslatePair
               original={original}
@@ -100,7 +98,6 @@ export function MessageList({
               translatedLabel={text.translated}
               streaming={streaming}
               highlighted={item.id === highlightedId}
-              generationKind={kind}
               thinking={"thinking" in item ? item.thinking : null}
               thinkingLabel={text.thinking}
               thinkingNowLabel={text.thinkingNow}
@@ -110,8 +107,7 @@ export function MessageList({
         return (
           <AssistantBubble
             content={item.content}
-            imageUrl={"imageUrl" in item ? item.imageUrl : null}
-            generationKind={kind}
+            imageUrl={imageUrl}
             thinking={"thinking" in item ? item.thinking : null}
             thinkingLabel={text.thinking}
             thinkingNowLabel={text.thinkingNow}
@@ -125,7 +121,7 @@ export function MessageList({
             thumbsDownLabel={text.thumbsDown}
             highlighted={item.id === highlightedId}
             onListen={streaming ? undefined : () => onListen(item.content)}
-            onRegenerate={streaming || mode === "image" || !onRegenerate ? undefined : () => onRegenerate(item.id)}
+            onRegenerate={streaming || mode === "image" || Boolean(imageUrl) || !onRegenerate ? undefined : () => onRegenerate(item.id)}
             onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
           />
         );
@@ -141,7 +137,6 @@ function TranslatePair({
   translatedLabel,
   streaming,
   highlighted,
-  generationKind: kind,
   thinking,
   thinkingLabel,
   thinkingNowLabel,
@@ -152,7 +147,6 @@ function TranslatePair({
   translatedLabel: string;
   streaming: boolean;
   highlighted?: boolean;
-  generationKind: string | null;
   thinking?: string | null;
   thinkingLabel: string;
   thinkingNowLabel: string;
@@ -161,7 +155,6 @@ function TranslatePair({
   return (
     <View style={{ borderWidth: 1, borderColor: highlighted ? colors.accent : colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
       <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
-        <KindBadge kind={kind} />
         <ThinkingBlock
           thinking={thinking}
           streaming={streaming}

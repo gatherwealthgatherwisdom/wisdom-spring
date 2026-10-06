@@ -7,7 +7,6 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { saveMedia } from "../../shared/lib/save-media";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
-import { KindBadge } from "./KindBadge";
 import { MediaLightbox } from "./MediaLightbox";
 import { StreamingCursor } from "./StreamingCursor";
 
@@ -73,7 +72,6 @@ function splitImage(content: string): { text: string; uri: string | null } {
 export function AssistantBubble({
   content,
   imageUrl,
-  generationKind,
   thinking,
   thinkingLabel,
   thinkingNowLabel,
@@ -92,7 +90,6 @@ export function AssistantBubble({
 }: {
   content: string;
   imageUrl?: string | null;
-  generationKind: string | null;
   thinking?: string | null;
   thinkingLabel?: string;
   thinkingNowLabel?: string;
@@ -147,7 +144,6 @@ export function AssistantBubble({
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
-      <KindBadge kind={generationKind} />
       <ThinkingBlock
         thinking={thinking}
         streaming={streaming}

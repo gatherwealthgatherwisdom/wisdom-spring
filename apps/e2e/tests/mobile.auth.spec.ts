@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { clickLabel, clickText, visibleText, waitForApp } from "../src/helpers";
+import { clickLabel, clickText, composerBox, visibleText, waitForApp } from "../src/helpers";
 
 test("avatar opens phone login with Hong Kong, Macao, and China dials", async ({ page }) => {
   await waitForApp(page);
@@ -31,10 +31,10 @@ test("sending a chat without a session opens sign-in", async ({ page }) => {
   await waitForApp(page);
   await clickLabel(page, "對話列表");
   await clickText(page, "新對話");
-  await expect(page.getByPlaceholder("問智泉")).toBeVisible();
+  await expect(composerBox(page, "問智泉")).toBeVisible();
   await expect(page.getByText("寫一封電郵")).toBeVisible();
   await expect(page.getByText("翻譯呢段")).toBeVisible();
-  await page.getByPlaceholder("問智泉").fill("你好");
+  await composerBox(page, "問智泉").fill("你好");
   await clickLabel(page, "send");
   await expect(page.getByText("取得驗證碼")).toBeVisible();
 });

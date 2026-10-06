@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, generationKind, isPdfMime, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, generationKind, isImageMime, isPdfMime, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -19,6 +19,7 @@ import { Screen } from "../../shared/ui/Screen";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { Composer } from "./Composer";
+import { actionFromRoute, placeholderFor, turnModeFor, type ComposerAction } from "./composer-action";
 import { MessageList } from "./MessageList";
 import { QuotaBanner } from "./QuotaBanner";
 
@@ -38,6 +39,7 @@ export function ChatScreen({ navigation, route }: Props) {
   const askedToSignIn = useRef(false);
   const account = usePrefs((state) => state.user);
   const [draft, setDraft] = useState("");
+  const [action, setAction] = useState<ComposerAction>(() => actionFromRoute(route.params));
   const [pending, setPending] = useState<AssetView[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
   const [guestBlocked, setGuestBlocked] = useState(false);
@@ -113,6 +115,7 @@ export function ChatScreen({ navigation, route }: Props) {
         const picked = await pickPdf();
         if (!picked) return;
         const uploaded = await spring.upload({ mime: picked.mime, data: picked.data });
+        setAction("file");
         setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
       } catch (error) {
         const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : text.attachLater;
@@ -129,11 +132,26 @@ export function ChatScreen({ navigation, route }: Props) {
       const picked = await pickPhoto(kind);
       if (!picked) return;
       const uploaded = await spring.upload(picked);
+      setAction("look");
       setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
     } catch (error) {
       const message = error instanceof ApiError ? error.message : text.noVisionModel;
       setBanner(message);
     }
+  }
+
+  function selectAction(next: ComposerAction) {
+    setAction(next);
+    setBanner(null);
+    if (next === "ask" || next === "draw") {
+      setPending([]);
+      return;
+    }
+    if (next === "look") {
+      setPending((current) => current.filter((item) => isImageMime(item.mime)));
+      return;
+    }
+    setPending((current) => current.filter((item) => isPdfMime(item.mime)));
   }
 
   async function send(content: string) {
@@ -143,11 +161,24 @@ export function ChatScreen({ navigation, route }: Props) {
       navigation.navigate("Auth");
       return;
     }
+    if (action === "look" && !pending.some((item) => isImageMime(item.mime))) {
+      setBanner(text.needPhoto);
+      return;
+    }
+    if (action === "file" && !pending.some((item) => isPdfMime(item.mime))) {
+      setBanner(text.needFile);
+      return;
+    }
+    if (action === "draw" && caps.data?.image === false) {
+      setBanner(text.noImageModel);
+      return;
+    }
     setBanner(null);
     setGuestBlocked(false);
     const controller = new AbortController();
     stream.begin(controller);
-    const attachments = pending.map((item) => ({ assetId: item.id }));
+    const attachments = action === "draw" ? [] : pending.map((item) => ({ assetId: item.id }));
+    const thisMode = turnModeFor(action, mode);
     try {
       const params = route.params;
       await spring.sendMessage(
@@ -155,14 +186,16 @@ export function ChatScreen({ navigation, route }: Props) {
           content: trimmed,
           attachments,
           clientMessageId: createClientMessageId(),
+          mode: thisMode,
+          ...(thisMode === "image"
+            ? { imageStyle: params?.imageStyle ?? thread.conversation?.imageStyle ?? "ink" }
+            : {}),
           ...(conversationId
             ? { conversationId }
             : {
-                ...(params?.mode ? { mode: params.mode } : {}),
-                ...(params?.templateId ? { templateId: params.templateId } : {}),
+                ...(params?.templateId && thisMode !== "image" ? { templateId: params.templateId } : {}),
                 ...(params?.sourceLang ? { sourceLang: params.sourceLang } : {}),
                 ...(params?.targetLang ? { targetLang: params.targetLang } : {}),
-                ...(params?.imageStyle ? { imageStyle: params.imageStyle } : {}),
               }),
         },
         {
@@ -353,6 +386,7 @@ export function ChatScreen({ navigation, route }: Props) {
                 onPress={() => {
                   stream.reset();
                   setDraft("");
+                  setAction("ask");
                   setPending([]);
                   setBanner(null);
                   setGuestBlocked(false);
@@ -459,12 +493,14 @@ export function ChatScreen({ navigation, route }: Props) {
           ) : null}
           <Composer
             value={draft}
-            placeholder={text.placeholder}
+            placeholder={placeholderFor(text, action)}
+            action={action}
             streaming={stream.status === "streaming"}
             stopLabel={text.stop}
             onChange={setDraft}
             onSend={() => void send(draft)}
             onStop={stop}
+            onAction={selectAction}
             onAttach={(kind) => {
               setGuestBlocked(false);
               void attach(kind);

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   clickLargestLabel,
   clickText,
+  composerBox,
   expectLightboxSave,
   expectNoVendorModels,
   TEST_USER_PHONE,
@@ -28,7 +29,7 @@ test("write opens from the home rewrite tool", async ({ page }) => {
   await expect(visibleText(page, "熱門智能體")).toBeVisible();
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
-  await expect(page.getByPlaceholder("問智泉").filter({ visible: true })).toBeVisible();
+  await expect(composerBox(page, "問智泉")).toBeVisible();
 });
 
 test("translate opens from the all-tools catalog", async ({ page }) => {

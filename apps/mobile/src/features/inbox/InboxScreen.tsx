@@ -1,7 +1,7 @@
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { aidesFromCatalog, cardsFromDiscover, toolsFromCatalog } from "../discover/catalog";
@@ -17,6 +17,8 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
+import { Composer } from "../chat/Composer";
+import { placeholderFor, turnModeFor, type ComposerAction } from "../chat/composer-action";
 
 type Props = BottomTabScreenProps<MainTabParamList, "Inbox">;
 
@@ -44,14 +46,28 @@ export function InboxScreen({ navigation }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [poolOpen, setPoolOpen] = useState(false);
   const [draft, setDraft] = useState("");
-  const [attachOpen, setAttachOpen] = useState(false);
+  const [action, setAction] = useState<ComposerAction>("ask");
   const [hint, setHint] = useState<string | null>(null);
   const homeTools = toolsFromCatalog(catalogTools.data?.items).filter((tool) => tool.page === 0).slice(0, 4);
 
   function sendHome() {
+    if (action === "look") {
+      setHint(text.needPhoto);
+      return;
+    }
+    if (action === "file") {
+      setHint(text.needFile);
+      return;
+    }
     const seed = draft.trim();
+    const mode = turnModeFor(action, "chat");
     setDraft("");
-    openChat(navigation, seed ? { mode: "chat", seed } : { mode: "chat" });
+    setHint(null);
+    openChat(navigation, {
+      mode,
+      ...(seed ? { seed } : {}),
+      ...(mode === "image" ? { imageStyle: "ink" } : {}),
+    });
   }
 
   return (
@@ -170,30 +186,6 @@ export function InboxScreen({ navigation }: Props) {
       <KeyboardDock tabBar>
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6, gap: 8, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.line }}>
         {hint ? <Text style={{ color: colors.ink }}>{hint}</Text> : null}
-        {attachOpen ? (
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            {(
-              [
-                { name: "camera-outline" as const, kind: "camera" as const, label: "camera" },
-                { name: "image-outline" as const, kind: "library" as const, label: "library" },
-                { name: "document-text-outline" as const, kind: "file" as const, label: "file" },
-              ]
-            ).map((item) => (
-              <Pressable
-                key={item.name}
-                accessibilityLabel={item.label}
-                onPress={() => {
-                  setAttachOpen(false);
-                  setHint(null);
-                  openChat(navigation, { mode: "chat", attach: item.kind });
-                }}
-                style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
-              >
-                <Icon name={item.name} color={colors.ink} size={18} />
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {last ? (
             <Pressable onPress={() => openChat(navigation, { conversationId: last.id, mode: last.mode })} style={chip(colors)}>
@@ -205,25 +197,26 @@ export function InboxScreen({ navigation }: Props) {
             <Text style={{ color: colors.ink }}>{text.app}</Text>
           </Pressable>
         </ScrollView>
-        <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card, borderRadius: 28, paddingHorizontal: 8, paddingVertical: 6 }}>
-          <Pressable accessibilityLabel="+" onPress={() => { setAttachOpen((open) => !open); setHint(null); }} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-            <Icon name={attachOpen ? "close" : "add"} color={colors.ink} />
-          </Pressable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={text.message}
-            placeholderTextColor={colors.muted}
-            onSubmitEditing={sendHome}
-            style={{ flex: 1, color: colors.ink, paddingVertical: 8 }}
-          />
-          <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="mic-outline" color={colors.ink} />
-          </Pressable>
-          <Pressable onPress={() => openChat(navigation, { mode: "chat" })} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-            <Icon name="call-outline" color={colors.ink} />
-          </Pressable>
-        </View>
+        <Composer
+          value={draft}
+          placeholder={placeholderFor(text, action)}
+          action={action}
+          streaming={false}
+          stopLabel={text.stop}
+          onChange={setDraft}
+          onSend={sendHome}
+          onStop={() => undefined}
+          onAction={(next) => {
+            setAction(next);
+            setHint(null);
+          }}
+          onAttach={(kind) => {
+            setHint(null);
+            openChat(navigation, { mode: "chat", attach: kind });
+          }}
+          onMic={() => openChat(navigation, { mode: turnModeFor(action, "chat"), ...(turnModeFor(action, "chat") === "image" ? { imageStyle: "ink" } : {}) })}
+          onCall={() => openChat(navigation, { mode: turnModeFor(action, "chat") })}
+        />
       </View>
       </KeyboardDock>
       </View>

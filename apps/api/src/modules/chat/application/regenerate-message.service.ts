@@ -7,7 +7,7 @@ import type { ActingUser } from "../../auth/acting-user";
 import { chargeGuest, prepareCharge } from "./charge-generation";
 import { runGeneration, type GenerationDeps } from "./generation";
 
-export type PreparedRegenerate = { conversationId: string; assistantMessageId: string };
+export type PreparedRegenerate = { conversationId: string; assistantMessageId: string; turnMode: string };
 
 export class RegenerateMessageService {
   constructor(
@@ -35,9 +35,10 @@ export class RegenerateMessageService {
     const mediaIds = assetIdsOf(lastUser?.attachments);
     const media =
       mediaIds.length > 0 ? await this.prisma.asset.findMany({ where: { id: { in: mediaIds } }, select: { mime: true } }) : [];
+    const turnMode = message.generationKind === "text-to-image" ? "image" : (conversation?.mode ?? "chat");
     await assertCapabilityFlags(this.prisma, {
-      mode: conversation?.mode ?? "chat",
-      mimes: media.map((row) => row.mime),
+      mode: turnMode,
+      mimes: turnMode === "image" ? [] : media.map((row) => row.mime),
     });
 
     const now = this.generation.now();
@@ -66,7 +67,7 @@ export class RegenerateMessageService {
       if (charge === "plan") await this.quota.releaseDaily(user.id, now);
       throw error;
     }
-    return { conversationId: message.conversationId, assistantMessageId };
+    return { conversationId: message.conversationId, assistantMessageId, turnMode };
   }
 
   async continue(user: ActingUser, prepared: PreparedRegenerate, sink: SseSink): Promise<void> {
@@ -77,6 +78,7 @@ export class RegenerateMessageService {
         planTier: user.planTier,
         conversationId: prepared.conversationId,
         assistantMessageId: prepared.assistantMessageId,
+        turnMode: prepared.turnMode,
       },
       sink,
     );

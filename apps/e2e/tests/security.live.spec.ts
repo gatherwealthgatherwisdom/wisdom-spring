@@ -185,6 +185,7 @@ test("the phone UI shows a 智泉 badge and no secrets after the live turn", asy
   const hit = visibleText(page, TEXT_PROMPT).or(visibleText(page, "春")).first();
   await expect(hit).toBeVisible({ timeout: 20_000 });
   await hit.click();
-  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible({ timeout: 20_000 });
+  await expect(visibleText(page, TEXT_PROMPT).or(page.locator('[aria-label="再生成"]')).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(KIND_BADGE)).toHaveCount(0);
   await expect(page.getByText(/\bGPT\b|\bClaude\b|\bGemini\b/)).toHaveCount(0);
 });
