@@ -84,6 +84,29 @@ export async function waitForApp(page: Page): Promise<void> {
   await expect(page.getByText("對話", { exact: true }).first()).toBeVisible();
 }
 
+export async function loadMobileSession(
+  page: Page,
+  session: { accessToken: string; refreshToken: string; user: unknown },
+): Promise<void> {
+  await page.goto("/");
+  await page.evaluate((stored) => {
+    window.localStorage.setItem(
+      "spring.mobile.session",
+      JSON.stringify({
+        accessToken: stored.accessToken,
+        refreshToken: stored.refreshToken,
+        user: stored.user,
+        appearance: "system",
+        locale: "zh-HK",
+        speakNotify: true,
+        dismissedAnnouncementId: null,
+      }),
+    );
+  }, session);
+  await page.reload();
+  await waitForApp(page);
+}
+
 export async function expectNoVendorModels(page: Page): Promise<void> {
   await expect(page.getByText(/\bGPT\b|\bClaude\b|\bGemini\b/)).toHaveCount(0);
 }

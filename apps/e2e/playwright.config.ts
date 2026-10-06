@@ -103,5 +103,10 @@ export default defineConfig({
         viewport: { width: 1280, height: 800 },
       },
     },
+    {
+      name: "security-idor",
+      testMatch: /security\.idor\.spec\.ts/,
+      use: { ...mobileUse },
+    },
   ],
 });
