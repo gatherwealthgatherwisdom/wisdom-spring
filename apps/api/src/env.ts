@@ -40,9 +40,9 @@ export const env = {
   workerEmbedded: flag("WORKER_EMBEDDED", true),
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   appleClientId: process.env.APPLE_CLIENT_ID ?? "",
-  smsProviderKey: process.env.SMS_PROVIDER_KEY ?? "",
-  smsAccountSid: process.env.SMS_ACCOUNT_SID ?? "",
-  smsFrom: process.env.SMS_FROM ?? "",
+  smsUsername: process.env.SMS_USERNAME || process.env.SMS_ACCOUNT_SID || "",
+  smsPassword: process.env.SMS_PASSWORD || process.env.SMS_PROVIDER_KEY || "",
+  smsSenderId: process.env.SMS_SENDER_ID || process.env.SMS_FROM || "",
   generatedDir:
     process.env.GENERATED_DIR && process.env.GENERATED_DIR.length > 0
       ? process.env.GENERATED_DIR
