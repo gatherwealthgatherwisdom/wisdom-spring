@@ -108,5 +108,11 @@ export default defineConfig({
       testMatch: /security\.idor\.spec\.ts/,
       use: { ...mobileUse },
     },
+    {
+      name: "security-live",
+      testMatch: /security\.live\.spec\.ts/,
+      timeout: 180_000,
+      use: { ...mobileUse },
+    },
   ],
 });
