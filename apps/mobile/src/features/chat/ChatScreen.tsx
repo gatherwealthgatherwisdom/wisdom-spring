@@ -68,9 +68,17 @@ export function ChatScreen({ navigation, route }: Props) {
   const chatTitle = thread.conversation?.title || text.app;
 
   const searching = searchOpen && trimmedSearch.length > 0;
+  const streamHere =
+    stream.conversationId === conversationId || (!conversationId && stream.status === "streaming");
   const messages = useMemo(
-    () => thread.messages.filter((item) => item.status !== "SUPERSEDED"),
-    [thread.messages],
+    () =>
+      thread.messages.filter((item) => {
+        if (item.status === "SUPERSEDED") return false;
+        // Live draft already paints this turn; the replica STREAMING row is the same reply.
+        if (item.status === "STREAMING" && streamHere) return false;
+        return true;
+      }),
+    [thread.messages, streamHere],
   );
   const localMatchIds = useMemo(
     () => (trimmedSearch ? messages.flatMap((item) => (hitFromMessage(item, trimmedSearch) ? [item.id] : [])) : []),
@@ -84,14 +92,13 @@ export function ChatScreen({ navigation, route }: Props) {
     return messages.filter((item) => ids.has(item.id)).map((item) => item.id);
   }, [searching, localMatchIds, remoteMatchIds, thread.online, found.isFetched, messages]);
   const highlightedId = searching ? matchIds[matchIds.length - 1] : focusMessageId;
-  const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
-  const streamHere =
-    stream.conversationId === conversationId || (!conversationId && stream.status === "streaming");
-  const showDraft = searching || !streamHere
-    ? null
-    : stream.status === "streaming" || stream.text.length > 0 || stream.thinking.length > 0
-      ? { content: stream.text, thinking: stream.thinking, generationKind: stream.generationKind }
-      : null;
+  const persistedTurn = Boolean(stream.messageId && messages.some((item) => item.id === stream.messageId));
+  const showDraft =
+    searching || !streamHere || persistedTurn
+      ? null
+      : stream.status === "streaming" || stream.text.length > 0 || stream.thinking.length > 0
+        ? { content: stream.text, thinking: stream.thinking, generationKind: stream.generationKind }
+        : null;
 
   async function refreshAccount() {
     const me = await spring.me();
@@ -430,7 +437,7 @@ export function ChatScreen({ navigation, route }: Props) {
         <View style={{ flex: 1 }}>
           <MessageList
             messages={messages}
-            draft={streamingHere || showDraft ? showDraft : null}
+            draft={showDraft}
             text={text}
             mode={mode}
             regenerateLabel={text.regenerate}
