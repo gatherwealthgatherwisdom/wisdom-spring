@@ -17,9 +17,6 @@ export function Composer({
   onStop,
   onAction,
   onAttach,
-  onMic,
-  onCall,
-  voice = true,
   allowPdf = true,
 }: {
   value: string;
@@ -32,9 +29,6 @@ export function Composer({
   onStop: () => void;
   onAction: (action: ComposerAction) => void;
   onAttach: (kind: "camera" | "library" | "file") => void;
-  onMic: () => void;
-  onCall?: () => void;
-  voice?: boolean;
   allowPdf?: boolean;
 }) {
   const colors = useColors();
@@ -111,21 +105,9 @@ export function Composer({
             <Icon name="stop" color={colors.bg} size={14} />
           </Pressable>
         ) : (
-          <>
-            {voice ? (
-              <>
-                <Pressable onPress={onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="mic-outline" color={colors.ink} size={20} />
-                </Pressable>
-                <Pressable onPress={onCall ?? onMic} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
-                  <Icon name="call-outline" color={colors.ink} size={18} />
-                </Pressable>
-              </>
-            ) : null}
-            <Pressable onPress={onSend} accessibilityLabel="send" style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
-              <Icon name="arrow-up" color={colors.onAccent} size={18} />
-            </Pressable>
-          </>
+          <Pressable onPress={onSend} accessibilityLabel="send" style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
+            <Icon name="arrow-up" color={colors.onAccent} size={18} />
+          </Pressable>
         )}
       </View>
     </View>

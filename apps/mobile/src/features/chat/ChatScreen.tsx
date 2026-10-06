@@ -12,7 +12,7 @@ import { copy } from "../../shared/lib/i18n";
 import { pickPdf, pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useStream } from "../../shared/lib/stream";
-import { speak, startDictation } from "../../shared/lib/voice";
+import { speak } from "../../shared/lib/voice";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen } from "../../shared/ui/Screen";
@@ -505,16 +505,7 @@ export function ChatScreen({ navigation, route }: Props) {
               setGuestBlocked(false);
               void attach(kind);
             }}
-            voice={flagOn(FeatureFlagKey.VOICE_UI)}
             allowPdf={flagOn(FeatureFlagKey.PDF_UPLOAD)}
-            onMic={() => {
-              const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
-              if (!heard) setBanner(text.voiceMissing);
-            }}
-            onCall={() => {
-              const heard = startDictation(locale, (value) => setDraft((current) => `${current}${value}`));
-              if (!heard) setBanner(text.voiceMissing);
-            }}
           />
         </KeyboardDock>
         )}

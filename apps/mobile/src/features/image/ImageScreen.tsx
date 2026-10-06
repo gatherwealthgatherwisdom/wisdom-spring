@@ -166,8 +166,6 @@ export function ImageScreen({ navigation }: Props) {
             setHint(null);
             openChat(navigation, { mode: "chat", attach: kind });
           }}
-          voice={false}
-          onMic={() => undefined}
         />
       </View>
       </KeyboardDock>

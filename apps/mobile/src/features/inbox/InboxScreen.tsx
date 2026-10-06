@@ -214,8 +214,6 @@ export function InboxScreen({ navigation }: Props) {
             setHint(null);
             openChat(navigation, { mode: "chat", attach: kind });
           }}
-          onMic={() => openChat(navigation, { mode: turnModeFor(action, "chat"), ...(turnModeFor(action, "chat") === "image" ? { imageStyle: "ink" } : {}) })}
-          onCall={() => openChat(navigation, { mode: turnModeFor(action, "chat") })}
         />
       </View>
       </KeyboardDock>
