@@ -5,6 +5,9 @@ import { clearPhoneRateLimits } from "./rate-limit";
 export const ADMIN_LOCAL = DEFAULT_ADMIN_PHONE.replace(/^\+852/, "");
 export const TEST_USER_LOCAL = "91118888";
 export const TEST_USER_PHONE = `+852${TEST_USER_LOCAL}`;
+export const TEST_USER_B_LOCAL = "91119999";
+export const TEST_USER_B_PHONE = `+852${TEST_USER_B_LOCAL}`;
+export const TEST_LOCKOUT_PHONE = "+85291117777";
 export const DEV_CODE = DEV_PHONE_CODE;
 
 /** RN-web Pressable often misses Playwright hit-testing; click the inner text node. */

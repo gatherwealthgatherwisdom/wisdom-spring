@@ -32,7 +32,11 @@ export async function phoneLogin(
   request: APIRequestContext,
   phone: string,
   code = DEV_PHONE_CODE,
-): Promise<{ accessToken: string; refreshToken: string; user: { id: string; role: string; planTier: string } }> {
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; role: string; planTier: string; phone?: string | null };
+}> {
   const requested = await api(request, "POST", "/v1/auth/phone/request", { data: { phone } });
   const requestedText = await requested.text();
   expect(requested.ok(), requestedText).toBeTruthy();
@@ -42,6 +46,6 @@ export async function phoneLogin(
   return JSON.parse(verifiedText) as {
     accessToken: string;
     refreshToken: string;
-    user: { id: string; role: string; planTier: string };
+    user: { id: string; role: string; planTier: string; phone?: string | null };
   };
 }

@@ -8,3 +8,7 @@ export function clearPhoneRateLimits(): void {
   if (keys.length === 0) return;
   execFileSync("redis-cli", ["del", ...keys]);
 }
+
+export function clearRouteRateLimit(routeKey: string): void {
+  execFileSync("redis-cli", ["del", `spring-rl:${routeKey}-127.0.0.1`]);
+}

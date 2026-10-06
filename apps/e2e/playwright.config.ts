@@ -95,5 +95,13 @@ export default defineConfig({
       testMatch: /security\.mobile-anon\.spec\.ts/,
       use: { ...mobileUse },
     },
+    {
+      name: "security-otp",
+      testMatch: /security\.otp\.spec\.ts/,
+      use: {
+        ...adminUse,
+        viewport: { width: 1280, height: 800 },
+      },
+    },
   ],
 });
