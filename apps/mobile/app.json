@@ -37,7 +37,8 @@
           "cameraPermission": "智泉用相機影相，方便你問圖。"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-sharing"
     ]
   }
 }

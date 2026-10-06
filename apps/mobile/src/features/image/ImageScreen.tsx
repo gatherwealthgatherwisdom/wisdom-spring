@@ -107,6 +107,8 @@ export function ImageScreen({ navigation }: Props) {
               return (
                 <Pressable
                   key={item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${text.recentImage} ${item.title || text.image}`}
                   onPress={() => openChat(navigation, { conversationId: item.id, mode: "image" })}
                   style={{ width: "47%", aspectRatio: 1, borderRadius: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line }}
                 >
@@ -115,7 +117,7 @@ export function ImageScreen({ navigation }: Props) {
                   ) : (
                     <Cover source={HERO_ART.drawHero} style={{ width: "100%", height: "100%" }} dim={0.45} />
                   )}
-                  <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, backgroundColor: "#1C1B1999" }}>
+                  <View pointerEvents="none" style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 8, backgroundColor: "#1C1B1999" }}>
                     <Text style={{ color: "#F7F6F3", fontSize: 12 }} numberOfLines={1}>{item.title || text.image}</Text>
                   </View>
                 </Pressable>

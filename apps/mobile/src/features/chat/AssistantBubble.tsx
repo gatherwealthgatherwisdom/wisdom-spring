@@ -2,9 +2,13 @@ import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { mediaUrl } from "../../shared/lib/api";
+import { copy } from "../../shared/lib/i18n";
+import { usePrefs } from "../../shared/lib/prefs";
+import { saveMedia } from "../../shared/lib/save-media";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { KindBadge } from "./KindBadge";
+import { MediaLightbox } from "./MediaLightbox";
 import { StreamingCursor } from "./StreamingCursor";
 
 function action(colors: { card: string; line: string }) {
@@ -107,8 +111,23 @@ export function AssistantBubble({
   highlighted?: boolean;
 }) {
   const colors = useColors();
+  const locale = usePrefs((state) => state.locale);
+  const labels = copy[locale];
   const image = splitImage(content);
   const uri = mediaUrl(imageUrl ?? image.uri);
+  const [open, setOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function save(): Promise<void> {
+    if (!uri) return;
+    try {
+      await saveMedia(uri);
+      setNotice(labels.saved);
+    } catch {
+      setNotice(labels.saveFailed);
+    }
+  }
+
   return (
     <View
       style={{
@@ -137,7 +156,9 @@ export function AssistantBubble({
         nowLabel={thinkingNowLabel ?? "思考中"}
       />
       {uri ? (
-        <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
+        <Pressable accessibilityRole="button" accessibilityLabel={labels.enlarge} onPress={() => setOpen(true)}>
+          <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
+        </Pressable>
       ) : null}
       {image.text ? (
         <Text style={{ color: colors.ink, fontSize: 16, lineHeight: 26 }}>
@@ -147,12 +168,19 @@ export function AssistantBubble({
       ) : streaming && !thinking ? (
         <StreamingCursor />
       ) : null}
-      {!streaming && image.text ? (
-        <View style={{ flexDirection: "row", gap: 4, marginTop: 8 }}>
-          <Pressable accessibilityLabel={copyLabel} onPress={() => void Clipboard.setStringAsync(image.text)} style={action(colors)}>
-            <Icon name="copy-outline" color={colors.muted} size={18} />
-          </Pressable>
-          {onListen ? (
+      {!streaming && (image.text || uri) ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
+          {uri ? (
+            <Pressable accessibilityLabel={labels.saveAs} onPress={() => void save()} style={action(colors)}>
+              <Icon name="download-outline" color={colors.muted} size={18} />
+            </Pressable>
+          ) : null}
+          {image.text ? (
+            <Pressable accessibilityLabel={copyLabel} onPress={() => void Clipboard.setStringAsync(image.text)} style={action(colors)}>
+              <Icon name="copy-outline" color={colors.muted} size={18} />
+            </Pressable>
+          ) : null}
+          {onListen && image.text ? (
             <Pressable accessibilityLabel={listenLabel} onPress={onListen} style={action(colors)}>
               <Icon name="volume-medium-outline" color={colors.muted} size={18} />
             </Pressable>
@@ -174,6 +202,17 @@ export function AssistantBubble({
           ) : null}
         </View>
       ) : null}
+      {notice ? <Text style={{ color: colors.muted, fontSize: 12, marginTop: 6 }}>{notice}</Text> : null}
+      <MediaLightbox
+        uri={open ? uri : null}
+        visible={open}
+        onClose={() => setOpen(false)}
+        saveLabel={labels.saveAs}
+        savedLabel={labels.saved}
+        saveFailedLabel={labels.saveFailed}
+        closeLabel={labels.close}
+        openLabel={labels.openFile}
+      />
     </View>
   );
 }

@@ -79,6 +79,43 @@ export function visibleText(page: Page, text: string | RegExp) {
   return locator.filter({ visible: true });
 }
 
+export async function clickLargestLabel(page: Page, label: string): Promise<void> {
+  const box = await page.evaluate((needle) => {
+    const nodes = Array.from(document.querySelectorAll("body *")).filter((node): node is HTMLElement => {
+      if (!(node instanceof HTMLElement)) return false;
+      if (node.getAttribute("aria-label") !== needle) return false;
+      const rect = node.getBoundingClientRect();
+      return rect.width > 80 && rect.height > 80;
+    });
+    nodes.sort((a, b) => {
+      const area = (el: HTMLElement) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width * rect.height;
+      };
+      return area(b) - area(a);
+    });
+    const target = nodes[0];
+    if (!target) return null;
+    const rect = target.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  }, label);
+  if (!box) throw new Error(`clickLargestLabel: no node with aria-label ${JSON.stringify(label)}`);
+  await page.mouse.click(box.x, box.y);
+}
+
+export async function expectLightboxSave(page: Page, openLabel = "放大"): Promise<string> {
+  await clickLabel(page, openLabel);
+  await expect(page.locator('[aria-label="關閉"]').filter({ visible: true })).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await clickLabel(page, "儲存");
+  const download = await downloadPromise;
+  const name = download.suggestedFilename();
+  expect(name).toMatch(/^智泉-.+/);
+  await expect(visibleText(page, "已儲存。").first()).toBeVisible();
+  await clickLabel(page, "關閉");
+  return name;
+}
+
 export async function waitForApp(page: Page): Promise<void> {
   await page.goto("/");
   await expect(page.getByText("智泉").first()).toBeVisible({ timeout: 45_000 });

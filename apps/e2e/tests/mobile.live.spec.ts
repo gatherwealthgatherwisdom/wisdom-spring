@@ -9,6 +9,7 @@ import {
   expectQuotaIncreased,
   fetchCapabilities,
   KIND_BADGE,
+  expectLightboxSave,
   leaveChat,
   openNewChat,
   readQuota,
@@ -57,6 +58,8 @@ test("the image tab generates a picture when the pool has an image model", async
   await expect(visibleText(page, IMAGE_PROMPT).first()).toBeVisible();
   await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
   await expectNoVendorModels(page);
+  const name = await expectLightboxSave(page);
+  expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);
 });
@@ -77,6 +80,8 @@ test("a photo attach asks a vision model when the pool can look at pictures", as
   await expect(visibleText(page, VISION_PROMPT).first()).toBeVisible();
   await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
   await expectNoVendorModels(page);
+  const name = await expectLightboxSave(page);
+  expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);
 });

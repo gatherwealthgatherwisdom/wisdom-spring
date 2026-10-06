@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { clickText, expectNoVendorModels, TEST_USER_PHONE, visibleText, waitForApp } from "../src/helpers";
+import {
+  clickLargestLabel,
+  clickText,
+  expectLightboxSave,
+  expectNoVendorModels,
+  TEST_USER_PHONE,
+  visibleText,
+  waitForApp,
+} from "../src/helpers";
 
 test("signed-in me page shows the test phone, trial quota, and sync", async ({ page }) => {
   await waitForApp(page);
@@ -32,6 +40,22 @@ test("translate opens from the all-tools catalog", async ({ page }) => {
   await clickText(page, "翻譯");
   await expect(page.getByText("由一種語言譯去另一種").filter({ visible: true })).toBeVisible();
   await expect(visibleText(page, "開始")).toBeVisible();
+});
+
+test("a saved image chat opens full-screen and downloads", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "我的");
+  await clickText(page, "立即同步");
+  await expect(page.getByText("已同步。").or(page.getByText(/上次同步/)).filter({ visible: true }).first()).toBeVisible();
+  await clickText(page, "圖像");
+  await visibleText(page, "最近圖像").scrollIntoViewIfNeeded();
+  const recent = page.locator('[aria-label^="最近圖像 "]').filter({ visible: true });
+  if ((await recent.count()) === 0) test.skip(true, "no saved image chat");
+  await clickLargestLabel(page, (await recent.first().getAttribute("aria-label")) ?? "最近圖像 圖像");
+  await expect(page.locator('[aria-label="儲存"]').filter({ visible: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('[aria-label="放大"]').filter({ visible: true })).toBeVisible();
+  const name = await expectLightboxSave(page);
+  expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);
 });
 
 test("the pool sheet names 智泉 models and has no vendor picker", async ({ page }) => {
