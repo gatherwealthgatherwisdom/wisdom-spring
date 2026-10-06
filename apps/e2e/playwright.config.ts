@@ -82,5 +82,18 @@ export default defineConfig({
       timeout: 180_000,
       use: { ...mobileUse, storageState: ".auth/mobile.json" },
     },
+    {
+      name: "security-anon",
+      testMatch: /security\.anon\.spec\.ts/,
+      use: {
+        ...adminUse,
+        viewport: { width: 1280, height: 800 },
+      },
+    },
+    {
+      name: "security-mobile-anon",
+      testMatch: /security\.mobile-anon\.spec\.ts/,
+      use: { ...mobileUse },
+    },
   ],
 });
