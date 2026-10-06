@@ -2,10 +2,13 @@ import type { ClientMessage, PrismaClient } from "@prisma/client";
 import {
   AppError,
   ErrorCode,
+  GENERATION_KINDS,
   IMAGE_MODE_NO_UPLOAD_COPY,
   assetIdsOf,
   createId,
+  generationKind,
   messageFor,
+  type GenerationKind,
   type SendMessageRequest,
 } from "@spring/shared";
 import type { SseSink } from "../../../http/sse";
@@ -152,10 +155,19 @@ export class SendMessageService {
   private async writeReplay(row: ClientMessage, sink: SseSink): Promise<void> {
     const assistant = await this.prisma.message.findUnique({ where: { id: row.assistantMessageId } });
     if (!assistant) throw new AppError(ErrorCode.NOT_FOUND);
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: row.conversationId },
+      select: { mode: true },
+    });
+    const stored = assistant.generationKind;
+    const kind: GenerationKind = GENERATION_KINDS.includes(stored as GenerationKind)
+      ? (stored as GenerationKind)
+      : generationKind({ mode: conversation?.mode ?? "chat" });
     sink.send("meta", {
       messageId: assistant.id,
       conversationId: row.conversationId,
       requestedModel: assistant.requestedModel ?? "",
+      generationKind: kind,
     });
     if (assistant.status === "COMPLETED") {
       if (assistant.content) sink.send("delta", { text: assistant.content });

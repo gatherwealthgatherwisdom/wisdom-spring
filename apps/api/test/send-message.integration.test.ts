@@ -128,6 +128,7 @@ describe("POST /v1/messages", () => {
     });
     expect(first.statusCode).toBe(200);
     expect(first.body).toContain("event: meta");
+    expect(first.body).toContain("\"generationKind\":\"text-to-text\"");
     expect(first.body).toContain("event: delta");
     expect(first.body).toContain("你好，智泉。");
     expect(first.body).toContain("event: done");

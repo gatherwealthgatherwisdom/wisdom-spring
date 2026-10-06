@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, isPdfMime, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, generationKind, isPdfMime, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -83,13 +83,13 @@ export function ChatScreen({ navigation, route }: Props) {
   }, [searching, localMatchIds, remoteMatchIds, thread.online, found.isFetched, messages]);
   const highlightedId = searching ? matchIds[matchIds.length - 1] : focusMessageId;
   const streamingHere = stream.status === "streaming" && stream.conversationId === (conversationId ?? stream.conversationId);
-  const showDraft = searching
+  const streamHere =
+    stream.conversationId === conversationId || (!conversationId && stream.status === "streaming");
+  const showDraft = searching || !streamHere
     ? null
-    : stream.status !== "idle" && stream.conversationId === conversationId && stream.text.length > 0
-      ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
-      : stream.status === "streaming" && !conversationId
-        ? { content: stream.text, requestedModel: stream.requestedModel, servedModel: stream.servedModel, fallbackUsed: stream.fallbackUsed }
-        : null;
+    : stream.status === "streaming" || stream.text.length > 0
+      ? { content: stream.text, generationKind: stream.generationKind }
+      : null;
 
   async function refreshAccount() {
     const me = await spring.me();
@@ -169,7 +169,7 @@ export function ChatScreen({ navigation, route }: Props) {
           onMeta: (event) => {
             setDraft("");
             setPending([]);
-            stream.meta(event.conversationId, event.messageId, event.requestedModel);
+            stream.meta(event.conversationId, event.messageId, event.requestedModel, event.generationKind);
             if (!conversationId) navigation.setParams({ conversationId: event.conversationId });
           },
           onDelta: (event) => stream.delta(event.text),
@@ -212,12 +212,14 @@ export function ChatScreen({ navigation, route }: Props) {
     }
     const controller = new AbortController();
     stream.begin(controller);
-    if (conversationId) stream.meta(conversationId, messageId, "");
+    if (conversationId) {
+      stream.meta(conversationId, messageId, "", generationKind({ mode }));
+    }
     try {
       await spring.regenerate(
         messageId,
         {
-          onMeta: (event) => stream.meta(event.conversationId, event.messageId, event.requestedModel),
+          onMeta: (event) => stream.meta(event.conversationId, event.messageId, event.requestedModel, event.generationKind),
           onDelta: (event) => stream.delta(event.text),
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);

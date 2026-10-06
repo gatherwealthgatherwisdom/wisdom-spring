@@ -1,5 +1,9 @@
 import type { Message, PrismaClient } from "@prisma/client";
-import { assetIdsOf, ratingOf } from "@spring/shared";
+import { GENERATION_KINDS, assetIdsOf, ratingOf, type GenerationKind } from "@spring/shared";
+
+function asGenerationKind(value: string | null): GenerationKind | null {
+  return GENERATION_KINDS.includes(value as GenerationKind) ? (value as GenerationKind) : null;
+}
 
 export async function messageViews(prisma: PrismaClient, rows: Message[]) {
   const ids = [...new Set(rows.flatMap((row) => assetIdsOf(row.attachments)))];
@@ -14,6 +18,7 @@ export async function messageViews(prisma: PrismaClient, rows: Message[]) {
     imageUrl: row.imageUrl,
     requestedModel: row.requestedModel,
     servedModel: row.servedModel,
+    generationKind: asGenerationKind(row.generationKind),
     fallbackUsed: row.fallbackUsed,
     parentMessageId: row.parentMessageId,
     errorCode: row.errorCode,

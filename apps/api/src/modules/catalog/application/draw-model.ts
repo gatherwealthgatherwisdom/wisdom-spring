@@ -19,7 +19,11 @@ export function isEligible(row: PickerCandidate, input: PickInput, limits?: Plan
   }
   if (planRank(row.minPlanTier) > planRank(input.planTier)) return false;
   if (input.capability === ModelCapability.VISION && !row.supportsVision) return false;
-  if (input.requireImageOutput && !row.supportsImageOutput) return false;
+  if (input.requireImageOutput) {
+    if (!row.supportsImageOutput) return false;
+  } else if (row.supportsImageOutput) {
+    return false;
+  }
   if (input.capability === ModelCapability.TEXT && !input.requireImageOutput && !row.supportsText) return false;
 
   const planLimits = limits ?? limitsFor(input.planTier);

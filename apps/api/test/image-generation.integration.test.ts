@@ -183,6 +183,7 @@ describe("image generation", () => {
       payload: { content: "一枝松", clientMessageId: randomUUID(), mode: "image", imageStyle: "ink" },
     });
     expect(sent.statusCode).toBe(200);
+    expect(sent.body).toContain("\"generationKind\":\"text-to-image\"");
     expect(sent.body).toContain("event: done");
     expect(sent.body).toContain("https://cdn.example/spring.png");
     expect(client.streamCalls).toBe(0);

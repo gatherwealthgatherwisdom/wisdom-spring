@@ -6,12 +6,13 @@ interface StreamState {
   text: string;
   requestedModel: string | null;
   servedModel: string | null;
+  generationKind: string | null;
   fallbackUsed: boolean;
   status: "idle" | "streaming" | "error";
   error: string | null;
   controller: AbortController | null;
   begin: (controller: AbortController) => void;
-  meta: (conversationId: string, messageId: string, requestedModel: string) => void;
+  meta: (conversationId: string, messageId: string, requestedModel: string, generationKind: string) => void;
   delta: (text: string) => void;
   done: (servedModel: string, fallbackUsed: boolean) => void;
   fail: (message: string) => void;
@@ -24,6 +25,7 @@ export const useStream = create<StreamState>((set, get) => ({
   text: "",
   requestedModel: null,
   servedModel: null,
+  generationKind: null,
   fallbackUsed: false,
   status: "idle",
   error: null,
@@ -35,14 +37,15 @@ export const useStream = create<StreamState>((set, get) => ({
       text: "",
       requestedModel: null,
       servedModel: null,
+      generationKind: null,
       fallbackUsed: false,
       status: "streaming",
       error: null,
       messageId: null,
     });
   },
-  meta(conversationId, messageId, requestedModel) {
-    set({ conversationId, messageId, requestedModel });
+  meta(conversationId, messageId, requestedModel, generationKind) {
+    set({ conversationId, messageId, requestedModel, generationKind });
   },
   delta(text) {
     set({ text: get().text + text });
@@ -61,6 +64,7 @@ export const useStream = create<StreamState>((set, get) => ({
       text: "",
       requestedModel: null,
       servedModel: null,
+      generationKind: null,
       fallbackUsed: false,
       status: "idle",
       error: null,

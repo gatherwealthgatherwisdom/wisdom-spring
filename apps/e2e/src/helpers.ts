@@ -9,6 +9,7 @@ export const TEST_USER_B_LOCAL = "91119999";
 export const TEST_USER_B_PHONE = `+852${TEST_USER_B_LOCAL}`;
 export const TEST_LOCKOUT_PHONE = "+85291117777";
 export const DEV_CODE = DEV_PHONE_CODE;
+export const KIND_BADGE = /智泉 · (text-to-text|text-to-image|image-to-text|file-to-text)/;
 
 /** RN-web Pressable often misses Playwright hit-testing; click the inner text node. */
 export async function clickText(page: Page, label: string, which: "first" | "last" = "last"): Promise<void> {
@@ -310,7 +311,7 @@ export async function waitForLiveTurn(
   page: Page,
   options: { image?: boolean; prompt?: string } = {},
 ): Promise<"ok" | string> {
-  const badge = page.getByText(/智泉 · /).filter({ visible: true });
+  const badge = page.getByText(KIND_BADGE).filter({ visible: true });
   let seen = badge;
   for (const copy of LIVE_SKIP_COPY) {
     seen = seen.or(page.getByText(copy, { exact: true }).filter({ visible: true }));

@@ -1,4 +1,5 @@
-import type { MessageView } from "@spring/shared";
+import { generationKind, type MessageView } from "@spring/shared";
+import { KindBadge } from "./KindBadge";
 import { useEffect, useRef } from "react";
 import { FlatList, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
@@ -26,7 +27,7 @@ export function MessageList({
   onFeedback,
 }: {
   messages: MessageView[];
-  draft: { content: string; requestedModel: string | null; servedModel: string | null; fallbackUsed: boolean } | null;
+  draft: { content: string; generationKind: string | null } | null;
   text: Copy;
   mode: "chat" | "write" | "translate" | "image";
   regenerateLabel: string;
@@ -88,6 +89,8 @@ export function MessageList({
         const streaming = item.id === "draft";
         const previous = data[index - 1];
         const original = previous && "content" in previous ? previous.content : "";
+        const kind =
+          ("generationKind" in item && item.generationKind) || generationKind({ mode });
         if (mode === "translate") {
           return (
             <TranslatePair
@@ -97,6 +100,7 @@ export function MessageList({
               translatedLabel={text.translated}
               streaming={streaming}
               highlighted={item.id === highlightedId}
+              generationKind={kind}
             />
           );
         }
@@ -104,9 +108,7 @@ export function MessageList({
           <AssistantBubble
             content={item.content}
             imageUrl={"imageUrl" in item ? item.imageUrl : null}
-            requestedModel={"requestedModel" in item ? item.requestedModel : null}
-            servedModel={"servedModel" in item ? item.servedModel : null}
-            fallbackUsed={"fallbackUsed" in item ? item.fallbackUsed : false}
+            generationKind={kind}
             streaming={streaming}
             regenerateLabel={regenerateLabel}
             listenLabel={listenLabel}
@@ -133,6 +135,7 @@ function TranslatePair({
   translatedLabel,
   streaming,
   highlighted,
+  generationKind: kind,
 }: {
   original: string;
   translation: string;
@@ -140,10 +143,14 @@ function TranslatePair({
   translatedLabel: string;
   streaming: boolean;
   highlighted?: boolean;
+  generationKind: string | null;
 }) {
   const colors = useColors();
   return (
     <View style={{ borderWidth: 1, borderColor: highlighted ? colors.accent : colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
+      <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
+        <KindBadge kind={kind} />
+      </View>
       <View style={{ padding: 12, backgroundColor: colors.card }}>
         <Text style={{ color: colors.muted, marginBottom: 4 }}>{originalLabel}</Text>
         <Text style={{ color: colors.ink, lineHeight: 22 }}>{original}</Text>

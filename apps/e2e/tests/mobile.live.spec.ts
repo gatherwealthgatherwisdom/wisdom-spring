@@ -8,6 +8,7 @@ import {
   expectNoVendorModels,
   expectQuotaIncreased,
   fetchCapabilities,
+  KIND_BADGE,
   leaveChat,
   openNewChat,
   readQuota,
@@ -33,7 +34,7 @@ test("a short signed-in chat streams a 智泉 reply and counts against quota", a
   const result = await waitForLiveTurn(page, { prompt: TEXT_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, TEXT_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(/智泉 · /).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
   await expectNoVendorModels(page);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);
@@ -54,7 +55,7 @@ test("the image tab generates a picture when the pool has an image model", async
   const result = await waitForLiveTurn(page, { image: true });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, IMAGE_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(/智泉 · /).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
   await expectNoVendorModels(page);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);
@@ -74,7 +75,7 @@ test("a photo attach asks a vision model when the pool can look at pictures", as
   const result = await waitForLiveTurn(page, { prompt: VISION_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, VISION_PROMPT).first()).toBeVisible();
-  await expect(page.getByText(/智泉 · /).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible();
   await expectNoVendorModels(page);
   await leaveChat(page);
   await expectQuotaIncreased(page, before);

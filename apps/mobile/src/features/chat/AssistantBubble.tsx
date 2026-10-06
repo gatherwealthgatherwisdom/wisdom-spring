@@ -3,7 +3,7 @@ import { Image, Pressable, Text, View } from "react-native";
 import { mediaUrl } from "../../shared/lib/api";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
-import { ModelBadge } from "./ModelBadge";
+import { KindBadge } from "./KindBadge";
 import { StreamingCursor } from "./StreamingCursor";
 
 function action(colors: { card: string; line: string }) {
@@ -28,9 +28,7 @@ function splitImage(content: string): { text: string; uri: string | null } {
 export function AssistantBubble({
   content,
   imageUrl,
-  requestedModel,
-  servedModel,
-  fallbackUsed,
+  generationKind,
   streaming,
   onRegenerate,
   regenerateLabel,
@@ -46,9 +44,7 @@ export function AssistantBubble({
 }: {
   content: string;
   imageUrl?: string | null;
-  requestedModel: string | null;
-  servedModel: string | null;
-  fallbackUsed: boolean;
+  generationKind: string | null;
   streaming?: boolean;
   onRegenerate?: () => void;
   regenerateLabel: string;
@@ -85,7 +81,7 @@ export function AssistantBubble({
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
-      <ModelBadge requestedModel={requestedModel} servedModel={servedModel} fallbackUsed={fallbackUsed} />
+      <KindBadge kind={generationKind} />
       {uri ? (
         <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
       ) : null}

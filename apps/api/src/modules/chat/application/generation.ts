@@ -7,6 +7,7 @@ import {
   ModelCapability,
   OPENROUTER,
   assetIdsOf,
+  generationKind,
   isImageMime,
   isPdfMime,
   createId,
@@ -111,6 +112,7 @@ export async function runGeneration(
   const pdfIds = media.filter((row) => isPdfMime(row.mime)).map((row) => row.id);
   const hasVision = visionIds.length > 0;
   const hasPdf = pdfIds.length > 0;
+  const kind = generationKind({ mode: modeFields.mode, hasVision, hasPdf });
   const [{ webOn }, extraInstruction, webLive, extraHint] = await Promise.all([
     assertCapabilityFlags(deps.prisma, {
       mode: modeFields.mode,
@@ -179,13 +181,14 @@ export async function runGeneration(
       );
       await deps.prisma.message.update({
         where: { id: input.assistantMessageId },
-        data: { requestedModel: pick.primary },
+        data: { requestedModel: pick.primary, generationKind: kind },
       });
       if (!sawDelta) {
         sink.send("meta", {
           messageId: input.assistantMessageId,
           conversationId: input.conversationId,
           requestedModel: pick.primary,
+          generationKind: kind,
         });
       }
 
@@ -274,6 +277,7 @@ export async function runGeneration(
               imageUrl,
               requestedModel: pick.primary,
               servedModel: served,
+              generationKind: kind,
               fallbackUsed,
               promptTokens: usage.promptTokens,
               completionTokens: usage.completionTokens,

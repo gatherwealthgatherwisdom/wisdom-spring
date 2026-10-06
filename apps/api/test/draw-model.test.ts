@@ -142,14 +142,26 @@ describe("drawModel", () => {
       row({ slug: "deepseek/chat" }),
       row({ slug: "qwen/image", supportsImageOutput: true }),
     ];
-    const text = drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero);
+    const text = drawModel(
+      rows,
+      { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] },
+      () => 0.99,
+    );
     expect(text.primary).toBe("deepseek/chat");
+    expect(text.fallbacks).not.toContain("qwen/image");
     const image = drawModel(
       rows,
       { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [], requireImageOutput: true },
       zero,
     );
     expect(image.primary).toBe("qwen/image");
+  });
+
+  it("never draws a text-capable image slug for a text turn", () => {
+    const rows = [row({ slug: "qwen/qwen-image-3", supportsImageOutput: true })];
+    expect(() =>
+      drawModel(rows, { planTier: PlanTier.FREE, capability: ModelCapability.TEXT, excludeSlugs: [] }, zero),
+    ).toThrow(AppError);
   });
 
   it("keeps FREE on free routes and cheap models", () => {

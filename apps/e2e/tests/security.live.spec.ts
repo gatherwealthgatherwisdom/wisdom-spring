@@ -11,6 +11,7 @@ import { API, api, phoneLogin } from "../src/api";
 import {
   clickLabel,
   clickText,
+  KIND_BADGE,
   LIVE_SKIP_COPY,
   loadMobileSession,
   TEST_USER_PHONE,
@@ -184,6 +185,6 @@ test("the phone UI shows a 智泉 badge and no secrets after the live turn", asy
   const hit = visibleText(page, TEXT_PROMPT).or(visibleText(page, "春")).first();
   await expect(hit).toBeVisible({ timeout: 20_000 });
   await hit.click();
-  await expect(page.getByText(/智泉 · /).filter({ visible: true })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(KIND_BADGE).filter({ visible: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/\bGPT\b|\bClaude\b|\bGemini\b/)).toHaveCount(0);
 });

@@ -3,6 +3,7 @@ import { ErrorCode } from "../enums/error-code";
 import { MessageRole } from "../enums/message-role";
 import { MessageStatus } from "../enums/message-status";
 import { LIMITS } from "../constants/limits";
+import { GENERATION_KINDS } from "../lib/generation-kind";
 import { ConversationModeSchema } from "./conversation.schema";
 import { PaginationQuerySchema } from "./pagination.schema";
 
@@ -50,6 +51,7 @@ export const MessageViewSchema = z.object({
   imageUrl: z.string().nullable(),
   requestedModel: z.string().nullable(),
   servedModel: z.string().nullable(),
+  generationKind: z.enum(GENERATION_KINDS).nullable().default(null),
   fallbackUsed: z.boolean(),
   parentMessageId: z.string().nullable(),
   errorCode: z.string().nullable(),
@@ -75,6 +77,7 @@ export const SseMetaSchema = z.object({
   messageId: z.string().ulid(),
   conversationId: z.string().ulid(),
   requestedModel: z.string(),
+  generationKind: z.enum(GENERATION_KINDS),
 });
 
 export const SseDeltaSchema = z.object({
