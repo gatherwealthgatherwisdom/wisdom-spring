@@ -2,7 +2,7 @@ import { Readable } from "node:stream";
 import type { FastifyReply } from "fastify";
 
 export interface SseSink {
-  send(event: "meta" | "delta" | "done" | "error", data: unknown): void;
+  send(event: "meta" | "thinking" | "delta" | "done" | "error", data: unknown): void;
   close(): void;
   signal: AbortSignal;
 }

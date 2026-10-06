@@ -6,7 +6,7 @@ import type { Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
-import { AssistantBubble } from "./AssistantBubble";
+import { AssistantBubble, ThinkingBlock } from "./AssistantBubble";
 import { EmptyHero } from "./EmptyHero";
 import { UserBubble } from "./UserBubble";
 
@@ -27,7 +27,7 @@ export function MessageList({
   onFeedback,
 }: {
   messages: MessageView[];
-  draft: { content: string; generationKind: string | null } | null;
+  draft: { content: string; thinking?: string | null; generationKind: string | null } | null;
   text: Copy;
   mode: "chat" | "write" | "translate" | "image";
   regenerateLabel: string;
@@ -101,6 +101,9 @@ export function MessageList({
               streaming={streaming}
               highlighted={item.id === highlightedId}
               generationKind={kind}
+              thinking={"thinking" in item ? item.thinking : null}
+              thinkingLabel={text.thinking}
+              thinkingNowLabel={text.thinkingNow}
             />
           );
         }
@@ -109,6 +112,9 @@ export function MessageList({
             content={item.content}
             imageUrl={"imageUrl" in item ? item.imageUrl : null}
             generationKind={kind}
+            thinking={"thinking" in item ? item.thinking : null}
+            thinkingLabel={text.thinking}
+            thinkingNowLabel={text.thinkingNow}
             streaming={streaming}
             regenerateLabel={regenerateLabel}
             listenLabel={listenLabel}
@@ -136,6 +142,9 @@ function TranslatePair({
   streaming,
   highlighted,
   generationKind: kind,
+  thinking,
+  thinkingLabel,
+  thinkingNowLabel,
 }: {
   original: string;
   translation: string;
@@ -144,12 +153,22 @@ function TranslatePair({
   streaming: boolean;
   highlighted?: boolean;
   generationKind: string | null;
+  thinking?: string | null;
+  thinkingLabel: string;
+  thinkingNowLabel: string;
 }) {
   const colors = useColors();
   return (
     <View style={{ borderWidth: 1, borderColor: highlighted ? colors.accent : colors.line, borderRadius: 14, overflow: "hidden", marginVertical: 8 }}>
       <View style={{ paddingHorizontal: 12, paddingTop: 10 }}>
         <KindBadge kind={kind} />
+        <ThinkingBlock
+          thinking={thinking}
+          streaming={streaming}
+          hasAnswer={translation.length > 0}
+          label={thinkingLabel}
+          nowLabel={thinkingNowLabel}
+        />
       </View>
       <View style={{ padding: 12, backgroundColor: colors.card }}>
         <Text style={{ color: colors.muted, marginBottom: 4 }}>{originalLabel}</Text>

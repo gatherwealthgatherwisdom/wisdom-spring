@@ -7,9 +7,22 @@ export interface StreamUsage {
 }
 
 export type SpringStreamEvent =
+  | { type: "thinking"; text: string }
   | { type: "delta"; text: string }
   | { type: "done"; model: string; usage: StreamUsage }
   | { type: "error"; status: number; message: string };
+
+function reasoningFromDelta(delta: { reasoning?: unknown; reasoning_details?: unknown }): string {
+  if (Array.isArray(delta.reasoning_details)) {
+    const parts = delta.reasoning_details.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const text = (item as { text?: unknown }).text;
+      return typeof text === "string" && text.length > 0 ? [text] : [];
+    });
+    if (parts.length > 0) return parts.join("");
+  }
+  return typeof delta.reasoning === "string" ? delta.reasoning : "";
+}
 
 export class UpstreamError extends Error {
   readonly code: ErrorCode;
@@ -125,7 +138,7 @@ export async function* parseOpenRouterSse(chunks: AsyncIterable<string>): AsyncG
     const choice = choices[0];
     if (choice && typeof choice === "object") {
       const row = choice as {
-        delta?: { content?: unknown };
+        delta?: { content?: unknown; reasoning?: unknown; reasoning_details?: unknown };
         finish_reason?: unknown;
         error?: { message?: unknown };
       };
@@ -138,6 +151,10 @@ export async function* parseOpenRouterSse(chunks: AsyncIterable<string>): AsyncG
         failed = true;
         yield { type: "error", status: 502, message: "upstream stream error" };
         return;
+      }
+      if (row.delta) {
+        const thinking = reasoningFromDelta(row.delta);
+        if (thinking.length > 0) yield { type: "thinking", text: thinking };
       }
       if (typeof row.delta?.content === "string" && row.delta.content.length > 0) {
         yield { type: "delta", text: row.delta.content };

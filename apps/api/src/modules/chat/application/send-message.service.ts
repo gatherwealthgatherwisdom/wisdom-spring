@@ -170,6 +170,7 @@ export class SendMessageService {
       generationKind: kind,
     });
     if (assistant.status === "COMPLETED") {
+      if (assistant.thinking) sink.send("thinking", { text: assistant.thinking });
       if (assistant.content) sink.send("delta", { text: assistant.content });
       sink.send("done", {
         servedModel: assistant.servedModel ?? assistant.requestedModel ?? "",
@@ -180,6 +181,7 @@ export class SendMessageService {
       });
       return;
     }
+    if (assistant.thinking) sink.send("thinking", { text: assistant.thinking });
     if (assistant.content) sink.send("delta", { text: assistant.content });
     const code =
       assistant.status === "CANCELLED"

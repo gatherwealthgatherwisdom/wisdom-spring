@@ -87,8 +87,8 @@ export function ChatScreen({ navigation, route }: Props) {
     stream.conversationId === conversationId || (!conversationId && stream.status === "streaming");
   const showDraft = searching || !streamHere
     ? null
-    : stream.status === "streaming" || stream.text.length > 0
-      ? { content: stream.text, generationKind: stream.generationKind }
+    : stream.status === "streaming" || stream.text.length > 0 || stream.thinking.length > 0
+      ? { content: stream.text, thinking: stream.thinking, generationKind: stream.generationKind }
       : null;
 
   async function refreshAccount() {
@@ -172,6 +172,7 @@ export function ChatScreen({ navigation, route }: Props) {
             stream.meta(event.conversationId, event.messageId, event.requestedModel, event.generationKind);
             if (!conversationId) navigation.setParams({ conversationId: event.conversationId });
           },
+          onThinking: (event) => stream.appendThinking(event.text),
           onDelta: (event) => stream.delta(event.text),
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
@@ -220,6 +221,7 @@ export function ChatScreen({ navigation, route }: Props) {
         messageId,
         {
           onMeta: (event) => stream.meta(event.conversationId, event.messageId, event.requestedModel, event.generationKind),
+          onThinking: (event) => stream.appendThinking(event.text),
           onDelta: (event) => stream.delta(event.text),
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);

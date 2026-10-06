@@ -19,6 +19,7 @@ export async function messageViews(prisma: PrismaClient, rows: Message[]) {
     requestedModel: row.requestedModel,
     servedModel: row.servedModel,
     generationKind: asGenerationKind(row.generationKind),
+    thinking: row.thinking,
     fallbackUsed: row.fallbackUsed,
     parentMessageId: row.parentMessageId,
     errorCode: row.errorCode,

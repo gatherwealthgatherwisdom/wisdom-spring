@@ -61,6 +61,7 @@ import type {
   SseDoneSchema,
   SseErrorSchema,
   SseMetaSchema,
+  SseThinkingSchema,
 } from "../schema/message.schema";
 import type { AssetViewSchema, UploadRequestSchema } from "../schema/upload.schema";
 import type {
@@ -118,6 +119,7 @@ export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
 export type ConversationExport = z.infer<typeof ConversationExportSchema>;
 export type SseMeta = z.infer<typeof SseMetaSchema>;
 export type SseDelta = z.infer<typeof SseDeltaSchema>;
+export type SseThinking = z.infer<typeof SseThinkingSchema>;
 export type SseDone = z.infer<typeof SseDoneSchema>;
 export type SseError = z.infer<typeof SseErrorSchema>;
 export type ModelPoolView = z.infer<typeof ModelPoolViewSchema>;

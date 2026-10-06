@@ -52,6 +52,7 @@ export const MessageViewSchema = z.object({
   requestedModel: z.string().nullable(),
   servedModel: z.string().nullable(),
   generationKind: z.enum(GENERATION_KINDS).nullable().default(null),
+  thinking: z.string().nullable().default(null),
   fallbackUsed: z.boolean(),
   parentMessageId: z.string().nullable(),
   errorCode: z.string().nullable(),
@@ -81,6 +82,10 @@ export const SseMetaSchema = z.object({
 });
 
 export const SseDeltaSchema = z.object({
+  text: z.string(),
+});
+
+export const SseThinkingSchema = z.object({
   text: z.string(),
 });
 

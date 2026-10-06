@@ -1,4 +1,5 @@
 import * as Clipboard from "expo-clipboard";
+import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { mediaUrl } from "../../shared/lib/api";
 import { useColors } from "../../shared/theme";
@@ -19,6 +20,46 @@ function action(colors: { card: string; line: string }) {
   };
 }
 
+export function ThinkingBlock({
+  thinking,
+  streaming,
+  hasAnswer,
+  label,
+  nowLabel,
+}: {
+  thinking: string | null | undefined;
+  streaming?: boolean;
+  hasAnswer: boolean;
+  label: string;
+  nowLabel: string;
+}) {
+  const colors = useColors();
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  if (!thinking) return null;
+  const autoOpen = Boolean(streaming) && !hasAnswer;
+  const open = userOpen ?? autoOpen;
+  const title = autoOpen ? nowLabel : label;
+  return (
+    <View style={{ marginBottom: 8 }}>
+      <Pressable
+        onPress={() => setUserOpen(!open)}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 }}
+      >
+        <Icon name={open ? "chevron-down-outline" : "chevron-forward-outline"} color={colors.muted} size={14} />
+        <Text style={{ color: colors.muted, fontSize: 12 }}>{title}</Text>
+      </Pressable>
+      {open ? (
+        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 20 }}>
+          {thinking}
+          {streaming && !hasAnswer ? <StreamingCursor /> : null}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
 function splitImage(content: string): { text: string; uri: string | null } {
   const match = content.match(/!\[[^\]]*\]\(([^)]+)\)/);
   if (!match?.[1]) return { text: content, uri: null };
@@ -29,6 +70,9 @@ export function AssistantBubble({
   content,
   imageUrl,
   generationKind,
+  thinking,
+  thinkingLabel,
+  thinkingNowLabel,
   streaming,
   onRegenerate,
   regenerateLabel,
@@ -45,6 +89,9 @@ export function AssistantBubble({
   content: string;
   imageUrl?: string | null;
   generationKind: string | null;
+  thinking?: string | null;
+  thinkingLabel?: string;
+  thinkingNowLabel?: string;
   streaming?: boolean;
   onRegenerate?: () => void;
   regenerateLabel: string;
@@ -82,6 +129,13 @@ export function AssistantBubble({
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
       <KindBadge kind={generationKind} />
+      <ThinkingBlock
+        thinking={thinking}
+        streaming={streaming}
+        hasAnswer={Boolean(image.text) || Boolean(uri)}
+        label={thinkingLabel ?? "思考"}
+        nowLabel={thinkingNowLabel ?? "思考中"}
+      />
       {uri ? (
         <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
       ) : null}
@@ -90,7 +144,7 @@ export function AssistantBubble({
           {image.text}
           {streaming ? <StreamingCursor /> : null}
         </Text>
-      ) : streaming ? (
+      ) : streaming && !thinking ? (
         <StreamingCursor />
       ) : null}
       {!streaming && image.text ? (

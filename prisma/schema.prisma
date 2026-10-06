@@ -149,6 +149,7 @@ model Message {
   requestedModel   String?       @db.VarChar(191)
   servedModel      String?       @db.VarChar(191)
   generationKind   String?       @db.VarChar(32)
+  thinking         String?       @db.LongText
   fallbackUsed     Boolean       @default(false)
   promptTokens     Int           @default(0)
   completionTokens Int           @default(0)

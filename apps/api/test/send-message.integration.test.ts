@@ -35,6 +35,7 @@ function fakeClient(): OpenRouterClient & { calls: number; last?: StreamChatInpu
       state.calls += 1;
       state.last = input;
       return (async function* () {
+        yield { type: "thinking" as const, text: "先想清楚。" };
         yield { type: "delta" as const, text: "你好，智泉。" };
         yield {
           type: "done" as const,
@@ -129,6 +130,8 @@ describe("POST /v1/messages", () => {
     expect(first.statusCode).toBe(200);
     expect(first.body).toContain("event: meta");
     expect(first.body).toContain("\"generationKind\":\"text-to-text\"");
+    expect(first.body).toContain("event: thinking");
+    expect(first.body).toContain("先想清楚。");
     expect(first.body).toContain("event: delta");
     expect(first.body).toContain("你好，智泉。");
     expect(first.body).toContain("event: done");
@@ -153,6 +156,9 @@ describe("POST /v1/messages", () => {
     expect(client.last?.plugins).toBeUndefined();
 
     const messageId = JSON.parse(first.body.match(/data: (\{"messageId".*\})/)?.[1] ?? "{}").messageId as string;
+    const stored = await app.ctx.prisma.message.findUnique({ where: { id: messageId } });
+    expect(stored?.content).toBe("你好，智泉。");
+    expect(stored?.thinking).toBe("先想清楚。");
     const regenerated = await app.inject({
       method: "POST",
       url: `/v1/messages/${messageId}/regenerate`,

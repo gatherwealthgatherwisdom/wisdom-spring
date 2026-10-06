@@ -149,6 +149,7 @@ export async function runGeneration(
   let slugRetries = 0;
   let sawDelta = false;
   let text = "";
+  let thinking = "";
   let imageUrl: string | null = null;
   const started = Date.now();
 
@@ -244,7 +245,10 @@ export async function runGeneration(
             controller.abort();
             throw new AppError(ErrorCode.STREAM_ABORTED);
           }
-          if (event.type === "delta") {
+          if (event.type === "thinking") {
+            thinking += event.text;
+            sink.send("thinking", { text: event.text });
+          } else if (event.type === "delta") {
             sawDelta = true;
             text += event.text;
             sink.send("delta", { text: event.text });
@@ -274,6 +278,7 @@ export async function runGeneration(
             data: {
               status: "COMPLETED",
               content: text,
+              thinking: thinking.length > 0 ? thinking : null,
               imageUrl,
               requestedModel: pick.primary,
               servedModel: served,

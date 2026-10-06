@@ -47,6 +47,7 @@ import type {
   SseDone,
   SseError,
   SseMeta,
+  SseThinking,
   UpdateCatalogEntryRequest,
   UpdateConversationRequest,
   UpdateCopyRequest,
@@ -79,6 +80,7 @@ export interface SessionTokens {
 
 export interface StreamHandlers {
   onMeta?: (event: SseMeta) => void;
+  onThinking?: (event: SseThinking) => void;
   onDelta?: (event: SseDelta) => void;
   onDone?: (event: SseDone) => void;
   onError?: (event: SseError) => void;
@@ -489,8 +491,9 @@ function dispatchSse(text: string, handlers: StreamHandlers): void {
 }
 
 function dispatchEvent(event: string, data: string, handlers: StreamHandlers): void {
-  const parsed = JSON.parse(data) as SseMeta & SseDelta & SseDone & SseError;
+  const parsed = JSON.parse(data) as SseMeta & SseDelta & SseThinking & SseDone & SseError;
   if (event === "meta") handlers.onMeta?.(parsed);
+  else if (event === "thinking") handlers.onThinking?.(parsed);
   else if (event === "delta") handlers.onDelta?.(parsed);
   else if (event === "done") handlers.onDone?.(parsed);
   else if (event === "error") handlers.onError?.(parsed);

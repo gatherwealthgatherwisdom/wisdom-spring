@@ -137,6 +137,7 @@ export class FetchOpenRouterClient implements OpenRouterClient {
         messages: input.messages,
         stream: true,
         stream_options: { include_usage: true },
+        reasoning: {},
         user: input.userRef,
         provider: {
           allow_fallbacks: true,

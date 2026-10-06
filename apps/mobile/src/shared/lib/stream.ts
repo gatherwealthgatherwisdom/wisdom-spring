@@ -4,6 +4,7 @@ interface StreamState {
   conversationId: string | null;
   messageId: string | null;
   text: string;
+  thinking: string;
   requestedModel: string | null;
   servedModel: string | null;
   generationKind: string | null;
@@ -13,6 +14,7 @@ interface StreamState {
   controller: AbortController | null;
   begin: (controller: AbortController) => void;
   meta: (conversationId: string, messageId: string, requestedModel: string, generationKind: string) => void;
+  appendThinking: (text: string) => void;
   delta: (text: string) => void;
   done: (servedModel: string, fallbackUsed: boolean) => void;
   fail: (message: string) => void;
@@ -23,6 +25,7 @@ export const useStream = create<StreamState>((set, get) => ({
   conversationId: null,
   messageId: null,
   text: "",
+  thinking: "",
   requestedModel: null,
   servedModel: null,
   generationKind: null,
@@ -35,6 +38,7 @@ export const useStream = create<StreamState>((set, get) => ({
     set({
       controller,
       text: "",
+      thinking: "",
       requestedModel: null,
       servedModel: null,
       generationKind: null,
@@ -46,6 +50,9 @@ export const useStream = create<StreamState>((set, get) => ({
   },
   meta(conversationId, messageId, requestedModel, generationKind) {
     set({ conversationId, messageId, requestedModel, generationKind });
+  },
+  appendThinking(text) {
+    set({ thinking: get().thinking + text });
   },
   delta(text) {
     set({ text: get().text + text });
@@ -62,6 +69,7 @@ export const useStream = create<StreamState>((set, get) => ({
       conversationId: null,
       messageId: null,
       text: "",
+      thinking: "",
       requestedModel: null,
       servedModel: null,
       generationKind: null,

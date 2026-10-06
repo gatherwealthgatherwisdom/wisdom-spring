@@ -17,6 +17,20 @@ async function collect(parts: string[]) {
 }
 
 describe("parseOpenRouterSse", () => {
+  it("maps reasoning into thinking and keeps it out of the answer delta", async () => {
+    const events = await collect([
+      'data: {"choices":[{"delta":{"reasoning":"先拆題。"}}]}\n\n',
+      'data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.text","text":"再答。"}]}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"三點。"}}]}\n\n',
+      "data: [DONE]\n\n",
+    ]);
+    expect(events.filter((event) => event.type === "thinking")).toEqual([
+      { type: "thinking", text: "先拆題。" },
+      { type: "thinking", text: "再答。" },
+    ]);
+    expect(events.filter((event) => event.type === "delta")).toEqual([{ type: "delta", text: "三點。" }]);
+  });
+
   it("maps deltas and usage on the final chunk", async () => {
     const events = await collect([
       ": OPENROUTER PROCESSING\n\n",
