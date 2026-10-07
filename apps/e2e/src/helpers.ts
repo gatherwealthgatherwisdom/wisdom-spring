@@ -153,6 +153,36 @@ export async function expectNoVendorModels(page: Page): Promise<void> {
   await expect(page.getByText(/\bGPT\b|\bClaude\b|\bGemini\b/)).toHaveCount(0);
 }
 
+export async function expectComposerControls(page: Page): Promise<void> {
+  await expect(page.locator('[aria-label="+"]').filter({ visible: true }).last()).toBeVisible();
+  await expect(page.locator('[aria-label="send"]').filter({ visible: true }).last()).toBeVisible();
+  const extras = await page.evaluate(() => {
+    const input = Array.from(document.querySelectorAll("textarea, input")).find((node) => {
+      const placeholder = (node as HTMLInputElement | HTMLTextAreaElement).placeholder;
+      return placeholder === "問智泉" || placeholder === "描述你想畫嘅圖" || placeholder === "問呢張圖" || placeholder === "問呢份文件";
+    });
+    if (!(input instanceof HTMLElement) || !input.parentElement) return { labels: [] as string[], mic: true, call: true };
+    const labels = Array.from(input.parentElement.querySelectorAll("[aria-label]"))
+      .map((node) => node.getAttribute("aria-label") ?? "")
+      .filter(Boolean)
+      .sort();
+    const html = input.parentElement.innerHTML;
+    return {
+      labels,
+      mic: html.includes("mic-outline") || /aria-label="mic"/i.test(html),
+      call: html.includes("call-outline") || /aria-label="call"/i.test(html),
+    };
+  });
+  expect(extras.labels).toEqual(["+", "send"]);
+  expect(extras.mic).toBe(false);
+  expect(extras.call).toBe(false);
+}
+
+export async function expectSingleCompletedReply(page: Page): Promise<void> {
+  await expect(page.locator('[aria-label="再生成"]').filter({ visible: true })).toHaveCount(1);
+  await expect(page.getByText("▍").filter({ visible: true })).toHaveCount(0);
+}
+
 export async function loginMobile(page: Page): Promise<void> {
   await waitForApp(page);
   await clickText(page, "我的");

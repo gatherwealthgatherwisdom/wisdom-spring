@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { clickLabel, clickText, composerBox, expectNoVendorModels, visibleText, waitForApp } from "../src/helpers";
+import { clickLabel, clickText, composerBox, expectComposerControls, expectNoVendorModels, visibleText, waitForApp } from "../src/helpers";
 
 test("unsigned users can open the four tabs, tools, and image studio", async ({ page }) => {
   await waitForApp(page);
@@ -45,6 +45,7 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await expect(page.locator('[aria-label="相簿"]').filter({ visible: true })).toBeVisible();
   await clickLabel(page, "問");
   await expect(composerBox(page, "問智泉")).toBeVisible();
+  await expectComposerControls(page);
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
   await expect(composerBox(page, "問智泉")).toBeVisible();
