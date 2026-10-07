@@ -1,5 +1,6 @@
 import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { useEffect, useState } from "react";
 import { AuthScreen } from "../features/auth/AuthScreen";
 import { CompleteRegistrationScreen } from "../features/auth/CompleteRegistrationScreen";
 import { ChatScreen } from "../features/chat/ChatScreen";
@@ -8,16 +9,23 @@ import { AllToolsScreen } from "../features/discover/AllToolsScreen";
 import { ToolScreen } from "../features/discover/ToolScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { usePalette } from "../shared/theme";
+import { LoadingScreen } from "./LoadingScreen";
 import { MainTabs, type AppStackParamList } from "./MainTabs";
 
 export type { AppStackParamList, ChatParams } from "./MainTabs";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
+const OPENING_MS = 700;
 
 export function RootNavigation() {
   const ready = usePrefs((state) => state.ready);
   const palette = usePalette();
-  if (!ready) return null;
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setHeld(true), OPENING_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!ready || !held) return <LoadingScreen />;
   const theme = {
     ...(palette.bg === "#141311" ? DarkTheme : DefaultTheme),
     colors: {

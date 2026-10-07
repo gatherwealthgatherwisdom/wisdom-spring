@@ -38,7 +38,20 @@
         }
       ],
       "expo-sqlite",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7F6F3",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#141311",
+            "image": "./assets/splash-icon-dark.png"
+          }
+        }
+      ]
     ]
   }
 }
