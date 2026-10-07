@@ -63,8 +63,9 @@ test("copy and quotas show live settings", async ({ page }) => {
 
   await page.goto("/quotas");
   await heading(page, "配額");
-  await expect(page.getByRole("spinbutton", { name: "試用次數" })).toBeVisible();
-  await expect(page.getByRole("spinbutton", { name: "每日次數" }).first()).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "試用次數" })).toHaveValue("5");
+  await expect(page.getByRole("spinbutton", { name: "每日次數" }).first()).toHaveValue("20");
+  await expect(page.getByRole("button", { name: "儲存" })).toBeVisible();
 });
 
 test("usage and audit render their lists", async ({ page }) => {
