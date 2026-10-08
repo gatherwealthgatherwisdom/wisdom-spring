@@ -1,9 +1,9 @@
 import { WRITE_TEMPLATES } from "@spring/shared";
-import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Screen } from "../../shared/ui/Screen";
-import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
@@ -13,6 +13,8 @@ import { Icon, type IconName } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
+type Props = NativeStackScreenProps<AppStackParamList, "Write">;
+
 const TEMPLATE_ICON: Record<string, IconName> = {
   email: "mail-outline",
   report: "list-outline",
@@ -20,11 +22,12 @@ const TEMPLATE_ICON: Record<string, IconName> = {
   formal: "document-text-outline",
   plain: "chatbox-outline",
   cantonese: "chatbubbles-outline",
+  memo: "bookmark-outline",
 };
 
 const FEATURED = ["email", "rewrite", "cantonese"];
 
-export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTabParamList> }) {
+export function WriteScreen({ navigation }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -36,12 +39,12 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <ScreenHeader title={text.write} />
+      <ScreenHeader title={text.write} onBack={() => navigation.goBack()} />
       <Text style={{ color: colors.muted, marginBottom: 10 }}>{text.popular}</Text>
       {featured.map((template) => (
         <Pressable
           key={`f-${template.id}`}
-          onPress={() => openChat(navigation, { mode: "write", templateId: template.id })}
+          onPress={() => navigation.navigate("Chat", { mode: "write", templateId: template.id })}
           style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 8 }}
         >
           <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={22} />
@@ -56,7 +59,7 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
         {templates.map((template) => (
           <Pressable
             key={template.id}
-            onPress={() => openChat(navigation, { mode: "write", templateId: template.id })}
+            onPress={() => navigation.navigate("Chat", { mode: "write", templateId: template.id })}
             style={{ width: "47%", backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16, padding: 14, gap: 6 }}
           >
             <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={20} />
@@ -67,7 +70,7 @@ export function WriteScreen({ navigation }: { navigation: NavigationProp<MainTab
       </View>
       <Text style={{ color: colors.muted, marginTop: 16, marginBottom: 8 }}>{text.recentWrite}</Text>
       {recent.length === 0 ? <RecentRow modeLabel={text.write} locale={locale} empty={text.emptyWrite} /> : recent.map((item) => (
-        <RecentRow key={item.id} item={item} modeLabel={text.write} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "write" })} />
+        <RecentRow key={item.id} item={item} modeLabel={text.write} locale={locale} onPress={() => navigation.navigate("Chat", { conversationId: item.id, mode: "write" })} />
       ))}
       </ScrollView>
     </Screen>

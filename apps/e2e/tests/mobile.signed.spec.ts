@@ -43,7 +43,10 @@ test("translate opens from the all-tools catalog", async ({ page }) => {
   await expect(visibleText(page, "即時語音")).toHaveCount(0);
   await visibleText(page, "翻譯").scrollIntoViewIfNeeded();
   await clickText(page, "翻譯");
-  await expect(page.getByText("由一種語言譯去另一種").filter({ visible: true })).toBeVisible();
+  await expect(visibleText(page, "翻譯").first()).toBeVisible();
+  await expect(visibleText(page, "由")).toBeVisible();
+  await expect(visibleText(page, "到")).toBeVisible();
+  await expect(page.getByPlaceholder("原文")).toBeVisible();
   await expect(visibleText(page, "開始")).toBeVisible();
 });
 

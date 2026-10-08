@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
-import { paramsForLiveTool, type AppStackParamList, type MainTabParamList } from "../../navigation/MainTabs";
+import { openCatalogTool, type AppStackParamList, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
@@ -38,15 +38,7 @@ export function DiscoverScreen({ navigation }: Props) {
   }
 
   function openTool(id: string) {
-    const tool = tools.find((item) => item.id === id);
-    if (tool) {
-      const params = paramsForLiveTool({ ...tool, live: true });
-      if (params) {
-        stack?.navigate("Chat", params);
-        return;
-      }
-    }
-    stack?.navigate("Tool", { id });
+    if (stack) openCatalogTool(stack, id);
   }
 
   return (

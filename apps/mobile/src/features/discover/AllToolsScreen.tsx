@@ -9,6 +9,7 @@ import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen } from "../../shared/ui/Screen";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
+import { openCatalogTool } from "../../navigation/MainTabs";
 import { toolsFromCatalog } from "./catalog";
 
 type Props = NativeStackScreenProps<AppStackParamList, "AllTools">;
@@ -24,7 +25,7 @@ export function AllToolsScreen({ navigation }: Props) {
       <ScreenHeader title={text.tools} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={{ padding: 20, flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
         {tools.map((tool) => (
-          <Pressable key={tool.id} onPress={() => navigation.navigate("Tool", { id: tool.id })} style={{ width: "21%", alignItems: "center", gap: 8 }}>
+          <Pressable key={tool.id} onPress={() => openCatalogTool(navigation, tool.id)} style={{ width: "21%", alignItems: "center", gap: 8 }}>
             <Icon name={tool.icon} color={colors.accent} size={26} />
             <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
           </Pressable>

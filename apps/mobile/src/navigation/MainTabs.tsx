@@ -39,6 +39,8 @@ export type AppStackParamList = {
   Tool: { id: string };
   AllTools: undefined;
   AllBots: undefined;
+  Write: undefined;
+  Translate: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -75,6 +77,26 @@ export function paramsForLiveTool(spec: LiveToolSpec | string): ChatParams | nul
     ...(tool.templateId ? { templateId: tool.templateId } : {}),
     ...(tool.imageStyle ? { imageStyle: tool.imageStyle } : {}),
   };
+}
+
+export function openCatalogTool(
+  navigation: Pick<NativeStackNavigationProp<AppStackParamList>, "navigate">,
+  toolId: string,
+): void {
+  if (toolId === "artifacts") {
+    navigation.navigate("Write");
+    return;
+  }
+  if (toolId === "translate" || toolId === "interpret") {
+    navigation.navigate("Translate");
+    return;
+  }
+  const params = paramsForLiveTool(toolId);
+  if (params) {
+    navigation.navigate("Chat", params);
+    return;
+  }
+  navigation.navigate("Tool", { id: toolId });
 }
 
 export function MainTabs() {

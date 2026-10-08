@@ -1,10 +1,10 @@
 import { TRANSLATE_LANGUAGES } from "@spring/shared";
-import type { NavigationProp } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Screen } from "../../shared/ui/Screen";
-import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
@@ -14,7 +14,9 @@ import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
-export function TranslateScreen({ navigation }: { navigation: NavigationProp<MainTabParamList> }) {
+type Props = NativeStackScreenProps<AppStackParamList, "Translate">;
+
+export function TranslateScreen({ navigation }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -42,7 +44,7 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
     <Screen>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
       <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-      <ScreenHeader title={text.translate} />
+      <ScreenHeader title={text.translate} onBack={() => navigation.goBack()} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <Pressable onPress={() => setSide("source")} style={sideBox(colors, side === "source")}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>{text.from}</Text>
@@ -85,12 +87,12 @@ export function TranslateScreen({ navigation }: { navigation: NavigationProp<Mai
       <Text style={{ color: colors.muted, marginTop: 6, marginBottom: 12 }}>{text.chars(body.length)}</Text>
       <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.recentTranslate}</Text>
       {recent.length === 0 ? <RecentRow modeLabel={text.translate} locale={locale} empty={text.emptyTranslate} /> : recent.map((item) => (
-        <RecentRow key={item.id} item={item} modeLabel={text.translate} locale={locale} onPress={() => openChat(navigation, { conversationId: item.id, mode: "translate" })} />
+        <RecentRow key={item.id} item={item} modeLabel={text.translate} locale={locale} onPress={() => navigation.navigate("Chat", { conversationId: item.id, mode: "translate" })} />
       ))}
       <Pressable
         onPress={() => {
           if (!body.trim()) return;
-          openChat(navigation, { mode: "translate", sourceLang: source, targetLang: target, seed: body.trim() });
+          navigation.navigate("Chat", { mode: "translate", sourceLang: source, targetLang: target, seed: body.trim() });
           setBody("");
         }}
         style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}
