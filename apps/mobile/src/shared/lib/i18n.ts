@@ -159,6 +159,8 @@ export const copy = {
     monthlyUsage: (requests: number, usd: string) => `本月 ${requests} 次 · US$${usd}`,
     dismissBanner: "關閉公告",
     notify: "通知",
+    notifyGenerationDone: "生成完成",
+    notifyQuotaLow: "額度將盡",
     speakNotify: "朗讀完成提示",
     version: "版本",
     cards: {
@@ -328,6 +330,8 @@ export const copy = {
     monthlyUsage: (requests: number, usd: string) => `This month ${requests} · US$${usd}`,
     dismissBanner: "Dismiss notice",
     notify: "Notices",
+    notifyGenerationDone: "Generation finished",
+    notifyQuotaLow: "Allowance running low",
     speakNotify: "Read-aloud notice",
     version: "Version",
     cards: {

@@ -9,6 +9,27 @@ import {
   waitForApp,
 } from "../src/helpers";
 
+test("notice switches persist after leaving 我的", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "我的");
+  await expect(visibleText(page, "通知")).toBeVisible();
+  await expect(visibleText(page, "生成完成")).toBeVisible();
+  await expect(visibleText(page, "額度將盡")).toBeVisible();
+  await expect(visibleText(page, "朗讀完成提示")).toBeVisible();
+  const generation = page.getByRole("switch", { name: "生成完成" });
+  const quota = page.getByRole("switch", { name: "額度將盡" });
+  await expect(generation).toBeVisible();
+  await expect(quota).toBeVisible();
+  const before = await generation.isChecked();
+  await generation.click();
+  await expect(generation).toBeChecked({ checked: !before });
+  await clickText(page, "對話");
+  await clickText(page, "我的");
+  await expect(page.getByRole("switch", { name: "生成完成" })).toBeChecked({ checked: !before });
+  await page.getByRole("switch", { name: "生成完成" }).click();
+  await expect(page.getByRole("switch", { name: "生成完成" })).toBeChecked({ checked: before });
+});
+
 test("signed-in me page shows the test phone, trial quota, and sync", async ({ page }) => {
   await waitForApp(page);
   await clickText(page, "我的");

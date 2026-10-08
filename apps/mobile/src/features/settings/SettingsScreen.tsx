@@ -1,8 +1,8 @@
-import { Locale, microsToUsd } from "@spring/shared";
+import { Locale, microsToUsd, type MeResponse } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
@@ -11,6 +11,7 @@ import { spring } from "../../shared/lib/api";
 import { useHistory, useHistoryStore } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs, type Appearance } from "../../shared/lib/prefs";
+import { registerPushDevice, requestPushPermission, unregisterPushDevice } from "../../shared/lib/push";
 import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
 import { Icon, type IconName } from "../../shared/ui/Icon";
@@ -27,6 +28,7 @@ export function SettingsScreen() {
   const setSpeakNotify = usePrefs((state) => state.setSpeakNotify);
   const clear = usePrefs((state) => state.clear);
   const navigation = useNavigation<NavigationProp<MainTabParamList>>();
+  const queryClient = useQueryClient();
   const signedIn = usePrefs((state) => Boolean(state.accessToken));
   const sessionUser = usePrefs((state) => state.user);
   const last = useHistory().lastActive;
@@ -47,6 +49,31 @@ export function SettingsScreen() {
     if (!usePrefs.getState().accessToken) return;
     const updated = await spring.updateMe({ locale: next === "en" ? Locale.EN : Locale.ZH_HK });
     usePrefs.getState().setUser(updated.user);
+  }
+
+  async function setNotifyFlag(patch: { notifyGenerationDone?: boolean; notifyQuotaLow?: boolean }) {
+    const previous = queryClient.getQueryData<MeResponse>(["me"]);
+    const previousUser = usePrefs.getState().user;
+    if (previousUser) {
+      const nextUser = { ...previousUser, ...patch };
+      usePrefs.getState().setUser(nextUser);
+      queryClient.setQueryData<MeResponse>(["me"], (current) =>
+        current ? { ...current, user: { ...current.user, ...patch } } : current,
+      );
+    }
+    if (patch.notifyGenerationDone === true || patch.notifyQuotaLow === true) {
+      await requestPushPermission();
+      await registerPushDevice();
+    }
+    if (!usePrefs.getState().accessToken) return;
+    try {
+      const updated = await spring.updateMe(patch);
+      usePrefs.getState().setUser(updated.user);
+      queryClient.setQueryData(["me"], updated);
+    } catch {
+      if (previousUser) usePrefs.getState().setUser(previousUser);
+      if (previous !== undefined) queryClient.setQueryData(["me"], previous);
+    }
   }
 
   const display = user?.displayName?.trim() || text.app;
@@ -150,11 +177,33 @@ export function SettingsScreen() {
         </Group>
       ) : null}
       <Group title={text.notify} colors={colors}>
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 }}>
-          <Icon name="volume-medium-outline" color={colors.accent} size={20} />
-          <Text style={{ flex: 1, color: colors.ink, fontSize: 16, marginLeft: 12 }}>{text.speakNotify}</Text>
-          <Switch value={speakNotify} onValueChange={setSpeakNotify} trackColor={{ true: colors.accent, false: colors.line }} />
-        </View>
+        {signedIn ? (
+          <>
+            <NotifySwitch
+              icon="notifications-outline"
+              label={text.notifyGenerationDone}
+              testID="notify-generation"
+              value={user?.notifyGenerationDone !== false}
+              onValueChange={(next) => void setNotifyFlag({ notifyGenerationDone: next })}
+              colors={colors}
+            />
+            <NotifySwitch
+              icon="hourglass-outline"
+              label={text.notifyQuotaLow}
+              testID="notify-quota"
+              value={user?.notifyQuotaLow !== false}
+              onValueChange={(next) => void setNotifyFlag({ notifyQuotaLow: next })}
+              colors={colors}
+            />
+          </>
+        ) : null}
+        <NotifySwitch
+          icon="volume-medium-outline"
+          label={text.speakNotify}
+          value={speakNotify}
+          onValueChange={setSpeakNotify}
+          colors={colors}
+        />
       </Group>
       <Group title={text.language} colors={colors}>
         <SettingLine icon="language-outline" label="繁中" selected={locale === "zh-HK"} colors={colors} onPress={() => void chooseLocale("zh-HK")} />
@@ -180,9 +229,13 @@ export function SettingsScreen() {
             label={text.logout}
             colors={colors}
             onPress={() => {
-              void spring.logout(true).catch(() => undefined);
-              void useHistoryStore.getState().hydrate(null);
-              clear();
+              void unregisterPushDevice()
+                .catch(() => undefined)
+                .finally(() => {
+                  void spring.logout(true).catch(() => undefined);
+                  void useHistoryStore.getState().hydrate(null);
+                  clear();
+                });
             }}
           />
           <SettingLine
@@ -218,6 +271,36 @@ function Group({ title, colors, children }: { title: string; colors: { muted: st
     <View style={{ marginBottom: 16 }}>
       <Text style={{ color: colors.muted, marginBottom: 8 }}>{title}</Text>
       <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, overflow: "hidden" }}>{children}</View>
+    </View>
+  );
+}
+
+function NotifySwitch({
+  icon,
+  label,
+  value,
+  testID,
+  colors,
+  onValueChange,
+}: {
+  icon: IconName;
+  label: string;
+  value: boolean;
+  testID?: string;
+  colors: { ink: string; accent: string; line: string };
+  onValueChange: (next: boolean) => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}>
+      <Icon name={icon} color={colors.accent} size={20} />
+      <Text style={{ flex: 1, color: colors.ink, fontSize: 16, marginLeft: 12 }}>{label}</Text>
+      <Switch
+        testID={testID}
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ true: colors.accent, false: colors.line }}
+      />
     </View>
   );
 }

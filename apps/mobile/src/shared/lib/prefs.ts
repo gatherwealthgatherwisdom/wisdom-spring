@@ -14,6 +14,7 @@ interface Persisted {
   locale: "zh-HK" | "en";
   speakNotify: boolean;
   dismissedAnnouncementId: string | null;
+  pushToken: string | null;
 }
 
 interface Prefs extends Persisted {
@@ -26,6 +27,7 @@ interface Prefs extends Persisted {
   setLocale: (locale: "zh-HK" | "en") => void;
   setSpeakNotify: (speakNotify: boolean) => void;
   setDismissedAnnouncementId: (id: string | null) => void;
+  setPushToken: (pushToken: string | null) => void;
   clear: () => void;
 }
 
@@ -37,6 +39,7 @@ const empty: Persisted = {
   locale: "zh-HK",
   speakNotify: true,
   dismissedAnnouncementId: null,
+  pushToken: null,
 };
 
 async function save(state: Persisted): Promise<void> {
@@ -82,6 +85,10 @@ export const usePrefs = create<Prefs>((set, get) => ({
   },
   setSpeakNotify(speakNotify) {
     set({ speakNotify });
+    void save(get());
+  },
+  setPushToken(pushToken) {
+    set({ pushToken });
     void save(get());
   },
   setDismissedAnnouncementId(id) {

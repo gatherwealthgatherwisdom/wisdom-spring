@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { RootNavigation } from "./src/navigation/RootNavigation";
 import { useHistoryStore } from "./src/shared/lib/history";
 import { usePrefs } from "./src/shared/lib/prefs";
+import { configurePush, registerPushDevice, subscribePushResponses } from "./src/shared/lib/push";
 import { ThemeProvider, usePalette } from "./src/shared/theme";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,20 @@ function HistoryBridge() {
   return null;
 }
 
+function PushBridge() {
+  const ready = usePrefs((state) => state.ready);
+  const token = usePrefs((state) => state.accessToken);
+  useEffect(() => {
+    configurePush();
+    return subscribePushResponses();
+  }, []);
+  useEffect(() => {
+    if (!ready || !token) return;
+    void registerPushDevice();
+  }, [ready, token]);
+  return null;
+}
+
 function Shell() {
   const hydrate = usePrefs((state) => state.hydrate);
   const ready = usePrefs((state) => state.ready);
@@ -41,6 +56,7 @@ function Shell() {
   return (
     <ThemeProvider value={palette}>
       <HistoryBridge />
+      <PushBridge />
       <ExpoStatusBar style={palette.bg === "#141311" ? "light" : "dark"} />
       <RootNavigation />
     </ThemeProvider>

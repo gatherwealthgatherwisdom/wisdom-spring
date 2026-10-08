@@ -11,6 +11,7 @@ import { hitFromMessage, isOfflineError, refreshAfterSend, useHistoryStore, useT
 import { copy } from "../../shared/lib/i18n";
 import { pickPdf, pickPhoto, type AttachKind } from "../../shared/lib/pick-image";
 import { usePrefs } from "../../shared/lib/prefs";
+import { notifyGenerationDoneLocal } from "../../shared/lib/push";
 import { useStream } from "../../shared/lib/stream";
 import { speak } from "../../shared/lib/voice";
 import { useColors } from "../../shared/theme";
@@ -217,6 +218,7 @@ export function ChatScreen({ navigation, route }: Props) {
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
             const id = conversationId ?? useStream.getState().conversationId;
+            if (id) void notifyGenerationDoneLocal(id);
             void refreshAfterSend().then(() => {
               if (id) void useHistoryStore.getState().loadThread(id);
             });
@@ -266,6 +268,7 @@ export function ChatScreen({ navigation, route }: Props) {
           onDone: (event) => {
             stream.done(event.servedModel, event.fallbackUsed);
             const id = conversationId ?? useStream.getState().conversationId;
+            if (id) void notifyGenerationDoneLocal(id);
             void refreshAfterSend().then(() => {
               if (id) void useHistoryStore.getState().loadThread(id);
             });

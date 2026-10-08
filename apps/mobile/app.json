@@ -31,6 +31,14 @@
     },
     "plugins": [
       [
+        "expo-notifications",
+        {
+          "color": "#1F6B4A",
+          "defaultChannel": "spring-default",
+          "enableBackgroundRemoteNotifications": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "智泉讀相簿相片，方便你問圖。",
