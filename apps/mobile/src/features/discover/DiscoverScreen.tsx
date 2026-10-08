@@ -40,7 +40,7 @@ export function DiscoverScreen({ navigation }: Props) {
   function openTool(id: string) {
     const tool = tools.find((item) => item.id === id);
     if (tool) {
-      const params = paramsForLiveTool({ ...tool, live: true }, locale);
+      const params = paramsForLiveTool({ ...tool, live: true });
       if (params) {
         stack?.navigate("Chat", params);
         return;

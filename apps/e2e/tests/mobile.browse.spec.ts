@@ -49,4 +49,17 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
   await expect(composerBox(page, "問智泉")).toBeVisible();
+  await clickText(page, "開始");
+  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
+  await expect(visibleText(page, "保留原意，句子更清楚。")).toHaveCount(0);
+  await expect(composerBox(page, "問智泉")).toBeVisible();
+});
+
+test("discover tools open chat without sending the catalog blurb", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "發現");
+  await clickText(page, "解答");
+  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
+  await expect(visibleText(page, "把問題拆開，逐步講清楚。")).toHaveCount(0);
+  await expect(composerBox(page, "問智泉")).toBeVisible();
 });

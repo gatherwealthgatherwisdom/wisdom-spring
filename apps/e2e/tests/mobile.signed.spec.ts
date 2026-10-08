@@ -29,6 +29,9 @@ test("write opens from the home rewrite tool", async ({ page }) => {
   await expect(visibleText(page, "熱門智能體")).toBeVisible();
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
+  await clickText(page, "開始");
+  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
+  await expect(visibleText(page, "保留原意，句子更清楚。")).toHaveCount(0);
   await expect(composerBox(page, "問智泉")).toBeVisible();
 });
 

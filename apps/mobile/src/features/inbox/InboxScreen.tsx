@@ -168,7 +168,6 @@ export function InboxScreen({ navigation }: Props) {
                 stack?.navigate("Chat", {
                   mode: "chat",
                   templateId: bot.id,
-                  seed: locale === "en" ? bot.blurbEn : bot.blurbZh,
                 })
               }
               style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}

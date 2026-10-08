@@ -47,13 +47,13 @@ export function ToolScreen({ navigation, route }: Props) {
       />
       <Pressable
         onPress={() => {
-          const live = paramsForLiveTool({ ...tool, live: true }, locale);
+          const live = paramsForLiveTool({ ...tool, live: true });
+          const typed = draft.trim();
           if (live) {
-            navigation.navigate("Chat", live.attach ? live : { ...live, seed: draft.trim() || live.seed });
+            navigation.navigate("Chat", typed && !live.attach ? { ...live, seed: typed } : live);
             return;
           }
-          const seed = draft.trim() || (locale === "en" ? tool.blurbEn : tool.blurbZh);
-          setShown(seed);
+          if (typed) setShown(typed);
         }}
         style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}
       >
