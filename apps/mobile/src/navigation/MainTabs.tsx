@@ -87,6 +87,10 @@ export function openCatalogTool(
     navigation.navigate("Write");
     return;
   }
+  if (toolId === "bot") {
+    navigation.navigate("AllBots");
+    return;
+  }
   if (toolId === "translate" || toolId === "interpret") {
     navigation.navigate("Translate");
     return;

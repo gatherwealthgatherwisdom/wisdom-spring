@@ -35,6 +35,17 @@ test("write opens from the home rewrite tool", async ({ page }) => {
   await expect(composerBox(page, "問智泉")).toBeVisible();
 });
 
+test("aides open from the all-tools catalog", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "對話");
+  await clickText(page, "查看全部", "first");
+  await visibleText(page, "助手").scrollIntoViewIfNeeded();
+  await clickText(page, "助手");
+  await expect(visibleText(page, "商務助手")).toBeVisible();
+  await expect(visibleText(page, "家庭行程")).toBeVisible();
+  await expect(visibleText(page, "寫作導師")).toBeVisible();
+});
+
 test("translate opens from the all-tools catalog", async ({ page }) => {
   await waitForApp(page);
   await clickText(page, "對話");
