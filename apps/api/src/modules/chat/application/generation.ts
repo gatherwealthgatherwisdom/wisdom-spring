@@ -48,6 +48,7 @@ export interface GenerationDeps {
   titles: TitleEnqueuer;
   ignoreProviders: string[];
   now(): Date;
+  afterCompletedTurn?(input: { userId: string; conversationId: string; left: boolean }): Promise<void>;
 }
 
 function isAbort(error: unknown): boolean {
@@ -335,6 +336,13 @@ export async function runGeneration(
           } catch {
             // A missing title leaves the client on the default label.
           }
+        }
+        if (deps.afterCompletedTurn) {
+          await deps.afterCompletedTurn({
+            userId: input.userId,
+            conversationId: input.conversationId,
+            left: sink.signal.aborted,
+          }).catch(() => undefined);
         }
         return;
       }

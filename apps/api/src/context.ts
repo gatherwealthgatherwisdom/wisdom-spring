@@ -25,6 +25,8 @@ import { AuthService } from "./modules/auth/auth.service";
 import { OAuthService } from "./modules/auth/oauth";
 import { PhoneAuthService } from "./modules/auth/phone-auth.service";
 import { createSmsSender, type SmsSender } from "./modules/auth/sms-sender";
+import { createPushSender, type PushSender } from "./modules/user/push-sender";
+import { PushService } from "./modules/user/push.service";
 
 export interface AppContext {
   prisma: PrismaClient;
@@ -42,6 +44,7 @@ export interface AppContext {
   picker: WeightedModelPicker;
   reader: PrismaModelPoolReader;
   aborts: AbortRegistry;
+  push: PushService;
   disconnect: () => Promise<void>;
 }
 
@@ -49,6 +52,7 @@ export async function createContext(options?: {
   openrouter?: OpenRouterClient;
   titles?: TitleEnqueuer;
   sms?: SmsSender;
+  push?: PushSender;
 }): Promise<AppContext> {
   const prisma = getPrisma();
   const redis = createRedis();
@@ -76,6 +80,7 @@ export async function createContext(options?: {
       await title.run(conversationId, servedModel);
     },
   };
+  const push = new PushService(prisma, redis, quota, options?.push ?? createPushSender(env));
   const generation = {
     prisma,
     picker,
@@ -85,6 +90,9 @@ export async function createContext(options?: {
     titles,
     ignoreProviders: env.ignoreProviders,
     now: () => new Date(),
+    async afterCompletedTurn(input: { userId: string; conversationId: string; left: boolean }) {
+      await push.afterCompletedTurn(input);
+    },
   };
   const auth = new AuthService(prisma, env);
   return {
@@ -103,6 +111,7 @@ export async function createContext(options?: {
     picker,
     reader,
     aborts,
+    push,
     disconnect: async () => {
       await redis.quit();
       await prisma.$disconnect();

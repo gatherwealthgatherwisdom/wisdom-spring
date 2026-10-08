@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { messageFor } from "../src/constants/messages";
-import { APP_SETTING_DEFAULTS, limitsFor } from "../src/constants/limits";
+import { APP_SETTING_DEFAULTS, LIMITS, limitsFor } from "../src/constants/limits";
 import { SUGGESTED_PROMPTS_ZH } from "../src/constants/brand";
 import { SYSTEM_PROMPT } from "../src/constants/openrouter";
 import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
@@ -23,6 +23,8 @@ import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolGroup, toolInstruction, 
 import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
+import { RegisterDeviceRequestSchema, UpdateMeRequestSchema } from "../src/schema/auth.schema";
+import { pushCopy } from "../src/constants/push";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
@@ -355,6 +357,36 @@ describe("Hong Kong mobile numbers", () => {
     expect(DEFAULT_ADMIN_PHONE).toBe("+85292578982");
     expect(normalizeMobile(DEFAULT_ADMIN_PHONE)).toBe(DEFAULT_ADMIN_PHONE);
     expect(DEV_PHONE_CODE).toBe("123456");
+  });
+});
+
+describe("push copy and device schemas", () => {
+  it("uses Hong Kong copy and quota thresholds", () => {
+    expect(pushCopy("zh-HK").generationDoneTitle).toBe("智泉已經回覆");
+    expect(pushCopy("zh-HK").quotaLowTitle).toBe("今日額度將盡");
+    expect(pushCopy("zh-HK").quotaLowBody(3)).toBe("今日仲剩 3 次。");
+    expect(pushCopy("en").generationDoneTitle).toBe("Wisdom Spring replied");
+    expect(LIMITS.notifyQuotaRemaining).toBe(3);
+    expect(LIMITS.notifyGuestRemaining).toBe(1);
+  });
+
+  it("accepts Expo push tokens and notify patches", () => {
+    expect(
+      RegisterDeviceRequestSchema.parse({
+        token: "ExponentPushToken[AbC_12-3]",
+        platform: "ios",
+      }).platform,
+    ).toBe("ios");
+    expect(
+      RegisterDeviceRequestSchema.parse({
+        token: "ExpoPushToken[xyz.token-1]",
+        platform: "android",
+      }).token,
+    ).toBe("ExpoPushToken[xyz.token-1]");
+    expect(RegisterDeviceRequestSchema.safeParse({ token: "fcm:abc", platform: "ios" }).success).toBe(false);
+    expect(UpdateMeRequestSchema.parse({ notifyQuotaLow: false }).notifyQuotaLow).toBe(false);
+    expect(UpdateMeRequestSchema.parse({ notifyGenerationDone: true }).notifyGenerationDone).toBe(true);
+    expect(UpdateMeRequestSchema.safeParse({}).success).toBe(false);
   });
 });
 

@@ -19,6 +19,8 @@ export const LIMITS = {
   internalMonthlyUsdMicros: 100_000_000,
   freeMaxPromptUsdMicrosPerMillion: 200_000,
   freeMaxCompletionUsdMicrosPerMillion: 800_000,
+  notifyQuotaRemaining: 3,
+  notifyGuestRemaining: 1,
 } as const;
 
 export const APP_SETTING_KEYS = [

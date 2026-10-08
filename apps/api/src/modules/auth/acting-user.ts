@@ -13,6 +13,8 @@ export interface ActingUser {
   registeredAt: Date | null;
   guestUses: number;
   bonusDailyMessages: number;
+  notifyGenerationDone: boolean;
+  notifyQuotaLow: boolean;
 }
 
 function asPlan(value: string): PlanTier {
@@ -42,6 +44,8 @@ export function toActingUser(user: User): ActingUser {
     registeredAt: user.registeredAt,
     guestUses: user.guestUses,
     bonusDailyMessages: user.bonusDailyMessages,
+    notifyGenerationDone: user.notifyGenerationDone,
+    notifyQuotaLow: user.notifyQuotaLow,
   };
 }
 
@@ -58,5 +62,7 @@ export function toPublic(user: ActingUser, guestLimit: number = LIMITS.guestTria
     registered: user.registeredAt != null,
     guestUses: user.guestUses,
     guestLimit,
+    notifyGenerationDone: user.notifyGenerationDone,
+    notifyQuotaLow: user.notifyQuotaLow,
   };
 }

@@ -54,6 +54,7 @@ export const env = {
     process.env.UPLOADS_DIR && process.env.UPLOADS_DIR.length > 0
       ? process.env.UPLOADS_DIR
       : resolve(root, "data/uploads"),
+  expoAccessToken: process.env.EXPO_ACCESS_TOKEN ?? "",
 };
 
 export type AppEnv = typeof env;

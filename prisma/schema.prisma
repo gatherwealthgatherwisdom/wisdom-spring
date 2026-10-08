@@ -70,6 +70,8 @@ model User {
   registeredAt         DateTime?
   guestUses            Int            @default(0)
   bonusDailyMessages   Int            @default(0)
+  notifyGenerationDone Boolean        @default(true)
+  notifyQuotaLow       Boolean        @default(true)
   createdAt            DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   conversations Conversation[]
@@ -77,6 +79,19 @@ model User {
   refreshTokens RefreshToken[]
   oauthAccounts OAuthAccount[]
   assets        Asset[]
+  deviceTokens  DeviceToken[]
+}
+
+model DeviceToken {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.VarChar(191)
+  platform  String   @db.VarChar(16)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model PhoneCode {

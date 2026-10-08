@@ -71,10 +71,28 @@ export const UpdateMeRequestSchema = z
   .object({
     displayName: z.string().trim().min(1).max(80).optional(),
     locale: z.nativeEnum(Locale).optional(),
+    notifyGenerationDone: z.boolean().optional(),
+    notifyQuotaLow: z.boolean().optional(),
   })
-  .refine((value) => value.displayName !== undefined || value.locale !== undefined, {
-    message: "empty",
-  });
+  .refine(
+    (value) =>
+      value.displayName !== undefined ||
+      value.locale !== undefined ||
+      value.notifyGenerationDone !== undefined ||
+      value.notifyQuotaLow !== undefined,
+    { message: "empty" },
+  );
+
+export const EXPO_PUSH_TOKEN_RE = /^(ExponentPushToken|ExpoPushToken)\[[A-Za-z0-9._-]+\]$/;
+
+export const RegisterDeviceRequestSchema = z.object({
+  token: z.string().trim().min(20).max(191).regex(EXPO_PUSH_TOKEN_RE),
+  platform: z.enum(["ios", "android"]),
+});
+
+export const UnregisterDeviceRequestSchema = z.object({
+  token: z.string().trim().min(20).max(191),
+});
 
 export const UserPublicSchema = z.object({
   id: z.string(),
@@ -88,6 +106,8 @@ export const UserPublicSchema = z.object({
   registered: z.boolean(),
   guestUses: z.number().int(),
   guestLimit: z.number().int().default(LIMITS.guestTrialMessages),
+  notifyGenerationDone: z.boolean().default(true),
+  notifyQuotaLow: z.boolean().default(true),
 });
 
 export const QuotaSnapshotSchema = z.object({

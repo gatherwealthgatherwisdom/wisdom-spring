@@ -39,6 +39,8 @@ import type {
   QuotaSnapshotSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
+  RegisterDeviceRequestSchema,
+  UnregisterDeviceRequestSchema,
   UpdateMeRequestSchema,
   UserPublicSchema,
 } from "../schema/auth.schema";
@@ -96,6 +98,8 @@ export type PhoneCodeRequest = z.infer<typeof PhoneCodeRequestSchema>;
 export type PhoneVerifyRequest = z.infer<typeof PhoneVerifyRequestSchema>;
 export type PhoneRegisterRequest = z.infer<typeof PhoneRegisterRequestSchema>;
 export type UpdateMeRequest = z.infer<typeof UpdateMeRequestSchema>;
+export type RegisterDeviceRequest = z.infer<typeof RegisterDeviceRequestSchema>;
+export type UnregisterDeviceRequest = z.infer<typeof UnregisterDeviceRequestSchema>;
 export type UserPublic = z.infer<typeof UserPublicSchema>;
 export type QuotaSnapshot = z.infer<typeof QuotaSnapshotSchema>;
 export type MeResponse = z.infer<typeof MeResponseSchema>;

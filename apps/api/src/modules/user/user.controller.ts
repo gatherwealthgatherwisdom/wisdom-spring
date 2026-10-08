@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import {
   FeatureFlagKey,
   ModelCapability,
+  RegisterDeviceRequestSchema,
+  UnregisterDeviceRequestSchema,
   UpdateMeRequestSchema,
   hkMonthRange,
   limitsFor,
@@ -30,6 +32,8 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       data: {
         ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
+        ...(body.notifyGenerationDone !== undefined ? { notifyGenerationDone: body.notifyGenerationDone } : {}),
+        ...(body.notifyQuotaLow !== undefined ? { notifyQuotaLow: body.notifyQuotaLow } : {}),
       },
     });
     const acting = toActingUser(updated);
@@ -45,11 +49,26 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
         where: { userId: user.id, revokedAt: null },
         data: { revokedAt: new Date() },
       }),
+      app.ctx.prisma.deviceToken.deleteMany({ where: { userId: user.id } }),
       app.ctx.prisma.user.update({
         where: { id: user.id },
-        data: { status: "DELETED", email: null, passwordHash: null, displayName: null },
+        data: { status: "DELETED", email: null, passwordHash: null, displayName: null, phone: null },
       }),
     ]);
+    return { ok: true };
+  });
+
+  app.post("/v1/devices", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const body = RegisterDeviceRequestSchema.parse(request.body ?? {});
+    await app.ctx.push.register(user.id, body.token, body.platform);
+    return { ok: true };
+  });
+
+  app.delete("/v1/devices", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const body = UnregisterDeviceRequestSchema.parse(request.body ?? {});
+    await app.ctx.push.unregister(user.id, body.token);
     return { ok: true };
   });
 

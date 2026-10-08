@@ -39,6 +39,7 @@ import type {
   ModelPoolView,
   Page,
   QuotaSnapshot,
+  RegisterDeviceRequest,
   RegisterRequest,
   SendMessageRequest,
   SimulateDrawRequest,
@@ -53,6 +54,7 @@ import type {
   UpdateCopyRequest,
   UpdateFeatureFlagRequest,
   UpdateLimitsRequest,
+  UnregisterDeviceRequest,
   UpdateMeRequest,
   UpdateModelPoolRequest,
   UpsertAnnouncementRequest,
@@ -138,6 +140,14 @@ export class SpringClient {
 
   deleteMe(): Promise<{ ok: true }> {
     return this.request("/v1/me", { method: "DELETE" });
+  }
+
+  registerDevice(body: RegisterDeviceRequest): Promise<{ ok: true }> {
+    return this.request("/v1/devices", { method: "POST", body: JSON.stringify(body) });
+  }
+
+  unregisterDevice(body: UnregisterDeviceRequest): Promise<{ ok: true }> {
+    return this.request("/v1/devices", { method: "DELETE", body: JSON.stringify(body) });
   }
 
   flags(): Promise<PublicFlagsResponse> {
