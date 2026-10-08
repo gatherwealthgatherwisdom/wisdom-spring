@@ -146,8 +146,6 @@ export async function runGeneration(
   });
 
   const controller = new AbortController();
-  const onClientAbort = (): void => controller.abort();
-  sink.signal.addEventListener("abort", onClientAbort);
   deps.aborts.register(input.assistantMessageId, controller);
 
   let deny: "deny" | "allow" = "deny";
@@ -415,7 +413,6 @@ export async function runGeneration(
       }
     }
   } finally {
-    sink.signal.removeEventListener("abort", onClientAbort);
     deps.aborts.clear(input.assistantMessageId);
   }
 }

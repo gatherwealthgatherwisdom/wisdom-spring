@@ -15,18 +15,26 @@ export function openSse(reply: FastifyReply): SseSink {
   reply.header("Connection", "keep-alive");
   reply.header("X-Accel-Buffering", "no");
   reply.send(stream);
+  let ended = false;
   reply.raw.on("close", () => abort.abort());
-  let closed = false;
   return {
     signal: abort.signal,
     send(event, data) {
-      if (closed) return;
-      stream.push(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      if (ended || abort.signal.aborted) return;
+      try {
+        stream.push(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      } catch {
+        abort.abort();
+      }
     },
     close() {
-      if (closed) return;
-      closed = true;
-      stream.push(null);
+      if (ended) return;
+      ended = true;
+      try {
+        stream.push(null);
+      } catch {
+        // The client already dropped the stream.
+      }
     },
   };
 }
