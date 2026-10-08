@@ -241,6 +241,7 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "memo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(true);
+    expect(SPRING_TOOLS.find((item) => item.id === "voice")?.live).toBe(false);
     expect(SPRING_TOOLS.find((item) => item.id === "search")?.icon).toBe("search-outline");
     expect(SPRING_TOOLS.every((item) => item.page === 0 || item.page === 1 || item.page === 2)).toBe(true);
   });

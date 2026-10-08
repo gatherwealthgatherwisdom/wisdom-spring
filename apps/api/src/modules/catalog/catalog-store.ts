@@ -542,4 +542,23 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
     ...SPRING_DISCOVER_CARDS.map((item, index) => toData(discoverFromConstant(item, index))),
   ];
   await prisma.catalogEntry.createMany({ data, skipDuplicates: true });
+  for (const item of SPRING_TOOLS) {
+    await prisma.catalogEntry.updateMany({
+      where: { kind: "TOOL", id: item.id },
+      data: { live: item.live },
+    });
+  }
+  for (const item of SPRING_DISCOVER_CARDS) {
+    await prisma.catalogEntry.updateMany({
+      where: { kind: "DISCOVER", id: item.id },
+      data: {
+        zh: item.zh,
+        en: item.en,
+        blurbZh: item.blurbZh,
+        blurbEn: item.blurbEn,
+        art: item.art,
+        templateId: item.toolId ?? null,
+      },
+    });
+  }
 }
