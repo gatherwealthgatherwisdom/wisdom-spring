@@ -19,7 +19,7 @@ import {
   normalizeMobile,
 } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
-import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolGroup, toolInstruction, toolsByGroup, usesWebSearch } from "../src/constants/catalog";
+import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolGroup, toolInstruction, toolPlaceholder, toolRequiresDraft, toolsByGroup, usesWebSearch } from "../src/constants/catalog";
 import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
@@ -260,6 +260,12 @@ describe("tool catalog", () => {
     expect(toolGroup({ id: "translate", mode: "translate" })).toBe("translate");
     expect(toolGroup({ id: "interpret", mode: "translate" })).toBe("translate");
     expect(toolsByGroup(live).map((section) => section.group)).toEqual(["write", "chat", "file", "translate"]);
+    expect(toolPlaceholder("rewrite", "zh-HK")).toMatch(/改寫/);
+    expect(toolRequiresDraft("rewrite")).toBe(true);
+    expect(toolRequiresDraft("photo")).toBe(false);
+    expect(toolRequiresDraft("pdf")).toBe(false);
+    expect(SPRING_TOOLS.every((item) => (toolPlaceholder(item.id, "zh-HK")?.length ?? 0) > 0)).toBe(true);
+    expect(SPRING_TOOLS.every((item) => (toolPlaceholder(item.id, "en")?.length ?? 0) > 0)).toBe(true);
   });
 
   it("exposes aide instructions without claiming web results", () => {

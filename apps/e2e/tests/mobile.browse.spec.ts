@@ -48,11 +48,14 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await expectComposerControls(page);
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
-  await expect(composerBox(page, "問智泉")).toBeVisible();
+  await expect(page.getByPlaceholder("貼你想改寫嘅句子").filter({ visible: true })).toBeVisible();
+  await expect(visibleText(page, "保留原意，句子更清楚。")).toBeVisible();
   await clickText(page, "開始");
-  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
-  await expect(visibleText(page, "保留原意，句子更清楚。")).toHaveCount(0);
-  await expect(composerBox(page, "問智泉")).toBeVisible();
+  await expect(visibleText(page, "開始")).toBeVisible();
+  await expect(visibleText(page, "共飲智慧之泉")).toHaveCount(0);
+  await page.getByPlaceholder("貼你想改寫嘅句子").fill("請改寫呢句。");
+  await clickText(page, "開始");
+  await expect(visibleText(page, "登入").first()).toBeVisible();
 });
 
 test("all tools groups jobs and shows each blurb", async ({ page }) => {
@@ -71,11 +74,14 @@ test("all tools groups jobs and shows each blurb", async ({ page }) => {
   await expect(visibleText(page, "口語對譯，自然短句。")).toBeVisible();
 });
 
-test("discover tools open chat without sending the catalog blurb", async ({ page }) => {
+test("discover tools open an input card without sending the catalog blurb", async ({ page }) => {
   await waitForApp(page);
   await clickText(page, "發現");
   await clickText(page, "解答");
-  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
-  await expect(visibleText(page, "把問題拆開，逐步講清楚。")).toHaveCount(0);
-  await expect(composerBox(page, "問智泉")).toBeVisible();
+  await expect(visibleText(page, "開始")).toBeVisible();
+  await expect(page.getByPlaceholder("寫低你想解答嘅問題").filter({ visible: true })).toBeVisible();
+  await expect(visibleText(page, "把問題拆開，逐步講清楚。")).toBeVisible();
+  await clickText(page, "開始");
+  await expect(visibleText(page, "開始")).toBeVisible();
+  await expect(visibleText(page, "共飲智慧之泉")).toHaveCount(0);
 });

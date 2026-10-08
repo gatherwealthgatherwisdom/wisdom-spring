@@ -96,6 +96,39 @@ export const SPRING_AIDES: readonly SpringAide[] = [
   },
 ];
 
+export const TOOL_PLACEHOLDERS: Record<string, { zh: string; en: string }> = {
+  rewrite: { zh: "貼你想改寫嘅句子", en: "Paste the sentences to rewrite" },
+  solve: { zh: "寫低你想解答嘅問題", en: "Write the problem to solve" },
+  search: { zh: "你想搜尋咩？", en: "What should I search for?" },
+  memo: { zh: "備忘要記低咩？", en: "What should this memo say?" },
+  voice: { zh: "你想講咩？", en: "What do you want to say?" },
+  pdf: { zh: "可加一句問題（可留空）", en: "Optional question about the PDF" },
+  artifacts: { zh: "你想寫啲咩？", en: "What should I write?" },
+  plain: { zh: "貼你想改淺白嘅文字", en: "Paste the text to simplify" },
+  mind: { zh: "貼你想整理成大綱嘅內容", en: "Paste the notes to outline" },
+  bot: { zh: "你想問助手咩？", en: "What should the aide help with?" },
+  photo: { zh: "可加一句問題（可留空）", en: "Optional question about the photo" },
+  interpret: { zh: "貼你想口譯嘅句子", en: "Paste the lines to interpret" },
+  detect: { zh: "貼你想檢查嘅文字", en: "Paste the text to check" },
+  summary: { zh: "貼你想收短嘅長文", en: "Paste the long text to shorten" },
+  webchat: { zh: "貼網址，或寫你想問嘅頁面", en: "Paste a URL or name the page" },
+  email: { zh: "呢封電郵想講咩？", en: "What should this email say?" },
+  more: { zh: "貼原文，再寫長啲", en: "Paste the original to expand" },
+  cantonese: { zh: "貼你想改成廣東話嘅文字", en: "Paste the text to put into Cantonese" },
+  translate: { zh: "貼你想翻譯嘅文字", en: "Paste the text to translate" },
+  formal: { zh: "貼你想改成書面語嘅文字", en: "Paste the text to make formal" },
+};
+
+export function toolPlaceholder(id: string, locale: "zh-HK" | "en"): string | undefined {
+  const item = TOOL_PLACEHOLDERS[id];
+  if (!item) return undefined;
+  return locale === "en" ? item.en : item.zh;
+}
+
+export function toolRequiresDraft(id: string): boolean {
+  return id !== "photo" && id !== "pdf";
+}
+
 export function springTool(id: string | null | undefined): SpringTool | undefined {
   return SPRING_TOOLS.find((item) => item.id === id);
 }

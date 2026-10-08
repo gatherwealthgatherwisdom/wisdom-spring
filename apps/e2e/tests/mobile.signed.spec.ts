@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import {
   clickLargestLabel,
   clickText,
-  composerBox,
   expectLightboxSave,
   expectNoVendorModels,
   TEST_USER_PHONE,
@@ -29,10 +28,11 @@ test("write opens from the home rewrite tool", async ({ page }) => {
   await expect(visibleText(page, "熱門智能體")).toBeVisible();
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
+  await expect(page.getByPlaceholder("貼你想改寫嘅句子").filter({ visible: true })).toBeVisible();
+  await expect(visibleText(page, "保留原意，句子更清楚。")).toBeVisible();
   await clickText(page, "開始");
-  await expect(visibleText(page, "共飲智慧之泉")).toBeVisible();
-  await expect(visibleText(page, "保留原意，句子更清楚。")).toHaveCount(0);
-  await expect(composerBox(page, "問智泉")).toBeVisible();
+  await expect(visibleText(page, "開始")).toBeVisible();
+  await expect(visibleText(page, "共飲智慧之泉")).toHaveCount(0);
 });
 
 test("aides open from the all-tools catalog", async ({ page }) => {

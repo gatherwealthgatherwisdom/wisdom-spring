@@ -100,7 +100,7 @@ export function openCatalogTool(
     return;
   }
   const params = paramsForLiveTool(toolId);
-  if (params) {
+  if (params?.attach) {
     navigation.navigate("Chat", params);
     return;
   }
