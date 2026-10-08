@@ -23,6 +23,7 @@ const TEMPLATE_ICON: Record<string, IconName> = {
   plain: "chatbox-outline",
   cantonese: "chatbubbles-outline",
   memo: "bookmark-outline",
+  more: "copy-outline",
 };
 
 const FEATURED = ["email", "rewrite", "cantonese"];

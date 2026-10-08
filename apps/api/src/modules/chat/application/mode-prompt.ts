@@ -25,7 +25,11 @@ export function systemPromptFor(
   if (conversation.mode === "translate") {
     const source = conversation.sourceLang ?? "auto";
     const target = conversation.targetLang ?? "zh-HK";
-    return `${identity}\n你而家只負責翻譯。來源語言：${source}。目標語言：${target}。只輸出譯文，唔好加解釋。`;
+    const spoken =
+      conversation.templateId === "interpret"
+        ? "用口語短句自然對譯，保留語氣。"
+        : "只輸出譯文，唔好加解釋。";
+    return `${identity}\n你而家只負責翻譯。來源語言：${source}。目標語言：${target}。${spoken}`;
   }
   if (conversation.mode === "image") {
     const hint = extraHint || imageStyle(conversation.imageStyle)?.hint;

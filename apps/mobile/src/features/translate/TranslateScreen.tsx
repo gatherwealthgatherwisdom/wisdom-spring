@@ -16,7 +16,7 @@ import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 type Props = NativeStackScreenProps<AppStackParamList, "Translate">;
 
-export function TranslateScreen({ navigation }: Props) {
+export function TranslateScreen({ navigation, route }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -92,7 +92,13 @@ export function TranslateScreen({ navigation }: Props) {
       <Pressable
         onPress={() => {
           if (!body.trim()) return;
-          navigation.navigate("Chat", { mode: "translate", sourceLang: source, targetLang: target, seed: body.trim() });
+          navigation.navigate("Chat", {
+            mode: "translate",
+            sourceLang: source,
+            targetLang: target,
+            seed: body.trim(),
+            ...(route.params?.templateId ? { templateId: route.params.templateId } : {}),
+          });
           setBody("");
         }}
         style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}

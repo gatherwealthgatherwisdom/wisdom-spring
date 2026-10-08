@@ -46,6 +46,16 @@ test("aides open from the all-tools catalog", async ({ page }) => {
   await expect(visibleText(page, "寫作導師")).toBeVisible();
 });
 
+test("口譯 opens the translator", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "對話");
+  await clickText(page, "查看全部", "first");
+  await visibleText(page, "口譯").scrollIntoViewIfNeeded();
+  await clickText(page, "口譯");
+  await expect(page.getByPlaceholder("原文")).toBeVisible();
+  await expect(visibleText(page, "開始")).toBeVisible();
+});
+
 test("translate opens from the all-tools catalog", async ({ page }) => {
   await waitForApp(page);
   await clickText(page, "對話");

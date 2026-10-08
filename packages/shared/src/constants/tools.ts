@@ -67,6 +67,14 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     blurbEn: "Date or occasion, points, next step",
     instruction: "幫用戶寫一則短備忘：日期或場合、要點、下一步。短句、清楚，唔好誇張。",
   },
+  {
+    id: "more",
+    zh: "使其更多",
+    en: "Make more",
+    blurbZh: "同一風格，寫長啲、例子多啲",
+    blurbEn: "Same style, longer, with more examples",
+    instruction: "用同一風格再寫一版：寫得更足、例子更多，唔好改語氣，唔好加唔存在嘅事實。",
+  },
 ];
 
 export interface ImageStyle {

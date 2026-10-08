@@ -545,7 +545,18 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
   for (const item of SPRING_TOOLS) {
     await prisma.catalogEntry.updateMany({
       where: { kind: "TOOL", id: item.id },
-      data: { live: item.live },
+      data: {
+        live: item.live,
+        icon: item.icon ?? null,
+        page: item.page ?? null,
+        mode: item.mode ?? null,
+        templateId: item.templateId ?? null,
+        instruction: item.instruction ?? null,
+        zh: item.zh,
+        en: item.en,
+        blurbZh: item.blurbZh,
+        blurbEn: item.blurbEn,
+      },
     });
   }
   for (const item of SPRING_DISCOVER_CARDS) {

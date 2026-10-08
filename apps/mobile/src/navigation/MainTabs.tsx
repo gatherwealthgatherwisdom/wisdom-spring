@@ -40,7 +40,7 @@ export type AppStackParamList = {
   AllTools: undefined;
   AllBots: undefined;
   Write: undefined;
-  Translate: undefined;
+  Translate: { templateId?: string } | undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -91,8 +91,12 @@ export function openCatalogTool(
     navigation.navigate("AllBots");
     return;
   }
-  if (toolId === "translate" || toolId === "interpret") {
+  if (toolId === "translate") {
     navigation.navigate("Translate");
+    return;
+  }
+  if (toolId === "interpret") {
+    navigation.navigate("Translate", { templateId: "interpret" });
     return;
   }
   const params = paramsForLiveTool(toolId);

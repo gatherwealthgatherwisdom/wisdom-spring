@@ -21,7 +21,7 @@ import {
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
 import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
 import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
-import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES } from "../src/constants/tools";
+import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
@@ -242,6 +242,10 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "voice")?.live).toBe(false);
+    expect(SPRING_TOOLS.find((item) => item.id === "more")?.templateId).toBe("more");
+    expect(SPRING_TOOLS.find((item) => item.id === "more")?.icon).toBe("copy-outline");
+    expect(SPRING_TOOLS.find((item) => item.id === "interpret")?.templateId).toBe("interpret");
+    expect(writeTemplate("more")?.instruction).toMatch(/同一風格/);
     expect(SPRING_TOOLS.find((item) => item.id === "search")?.icon).toBe("search-outline");
     expect(SPRING_TOOLS.every((item) => item.page === 0 || item.page === 1 || item.page === 2)).toBe(true);
   });
