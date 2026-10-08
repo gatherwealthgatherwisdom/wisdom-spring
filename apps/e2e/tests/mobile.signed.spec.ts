@@ -62,7 +62,7 @@ test("translate opens from the all-tools catalog", async ({ page }) => {
   await expect(visibleText(page, "熱門智能體")).toBeVisible();
   await clickText(page, "查看全部", "first");
   await expect(visibleText(page, "即時語音")).toHaveCount(0);
-  await visibleText(page, "翻譯").scrollIntoViewIfNeeded();
+  await visibleText(page, "翻譯").last().scrollIntoViewIfNeeded();
   await clickText(page, "翻譯");
   await expect(visibleText(page, "翻譯").first()).toBeVisible();
   await expect(visibleText(page, "由")).toBeVisible();

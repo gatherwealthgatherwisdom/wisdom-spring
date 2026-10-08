@@ -19,7 +19,7 @@ import {
   normalizeMobile,
 } from "../src/lib/phone";
 import { decimalToScaled, microsToUsd, usdPerTokenToMicrosPerMillion, usdToMicros } from "../src/lib/money";
-import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolInstruction, usesWebSearch } from "../src/constants/catalog";
+import { CATALOG_KINDS, SPRING_AIDES, SPRING_TOOLS, toolGroup, toolInstruction, toolsByGroup, usesWebSearch } from "../src/constants/catalog";
 import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSection } from "../src/constants/discover";
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { isImageMime, isPdfMime, isUploadMime } from "../src/constants/uploads";
@@ -247,7 +247,19 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "interpret")?.templateId).toBe("interpret");
     expect(writeTemplate("more")?.instruction).toMatch(/同一風格/);
     expect(SPRING_TOOLS.find((item) => item.id === "search")?.icon).toBe("search-outline");
+    expect(SPRING_TOOLS.find((item) => item.id === "formal")?.icon).toBe("newspaper-outline");
+    expect(SPRING_TOOLS.find((item) => item.id === "detect")?.icon).toBe("scan-outline");
+    expect(SPRING_TOOLS.find((item) => item.id === "mind")?.icon).toBe("list-outline");
     expect(SPRING_TOOLS.every((item) => item.page === 0 || item.page === 1 || item.page === 2)).toBe(true);
+    const live = SPRING_TOOLS.filter((item) => item.live);
+    expect(new Set(live.map((item) => item.icon)).size).toBe(live.length);
+    expect(toolGroup({ id: "rewrite", mode: "write" })).toBe("write");
+    expect(toolGroup({ id: "solve", mode: "chat" })).toBe("chat");
+    expect(toolGroup({ id: "photo", mode: "chat" })).toBe("file");
+    expect(toolGroup({ id: "pdf", mode: "chat" })).toBe("file");
+    expect(toolGroup({ id: "translate", mode: "translate" })).toBe("translate");
+    expect(toolGroup({ id: "interpret", mode: "translate" })).toBe("translate");
+    expect(toolsByGroup(live).map((section) => section.group)).toEqual(["write", "chat", "file", "translate"]);
   });
 
   it("exposes aide instructions without claiming web results", () => {

@@ -55,6 +55,22 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await expect(composerBox(page, "問智泉")).toBeVisible();
 });
 
+test("all tools groups jobs and shows each blurb", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "發現");
+  await clickText(page, "查看全部");
+  await expect(visibleText(page, "工具").first()).toBeVisible();
+  await expect(visibleText(page, "即時語音")).toHaveCount(0);
+  await expect(visibleText(page, "寫作").first()).toBeVisible();
+  await expect(visibleText(page, "文件").first()).toBeVisible();
+  await expect(visibleText(page, "保留原意，句子更清楚。")).toBeVisible();
+  await visibleText(page, "助手").scrollIntoViewIfNeeded();
+  await expect(visibleText(page, "用固定語氣回覆。")).toBeVisible();
+  await visibleText(page, "翻譯").last().scrollIntoViewIfNeeded();
+  await expect(visibleText(page, "由一種語言譯去另一種。")).toBeVisible();
+  await expect(visibleText(page, "口語對譯，自然短句。")).toBeVisible();
+});
+
 test("discover tools open chat without sending the catalog blurb", async ({ page }) => {
   await waitForApp(page);
   await clickText(page, "發現");

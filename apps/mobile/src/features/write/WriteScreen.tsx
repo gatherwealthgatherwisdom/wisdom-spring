@@ -19,7 +19,7 @@ const TEMPLATE_ICON: Record<string, IconName> = {
   email: "mail-outline",
   report: "list-outline",
   rewrite: "refresh-outline",
-  formal: "document-text-outline",
+  formal: "newspaper-outline",
   plain: "chatbox-outline",
   cantonese: "chatbubbles-outline",
   memo: "bookmark-outline",

@@ -1,3 +1,4 @@
+import { toolsByGroup, type ToolGroup } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -19,16 +20,47 @@ export function AllToolsScreen({ navigation }: Props) {
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const catalog = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
-  const tools = toolsFromCatalog(catalog.data?.items);
+  const grouped = toolsByGroup(toolsFromCatalog(catalog.data?.items));
+  const titles: Record<ToolGroup, string> = {
+    write: text.toolsWrite,
+    chat: text.toolsChat,
+    file: text.toolsFile,
+    translate: text.toolsTranslate,
+  };
   return (
     <Screen>
       <ScreenHeader title={text.tools} onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={{ padding: 20, flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-        {tools.map((tool) => (
-          <Pressable key={tool.id} onPress={() => openCatalogTool(navigation, tool.id)} style={{ width: "21%", alignItems: "center", gap: 8 }}>
-            <Icon name={tool.icon} color={colors.accent} size={26} />
-            <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
-          </Pressable>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}>
+        {grouped.map((section) => (
+          <View key={section.group} style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.muted, marginBottom: 8 }}>{titles[section.group]}</Text>
+            <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, overflow: "hidden" }}>
+              {section.tools.map((tool, index) => (
+                <Pressable
+                  key={tool.id}
+                  onPress={() => openCatalogTool(navigation, tool.id)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingHorizontal: 14,
+                    paddingVertical: 14,
+                    borderBottomWidth: index === section.tools.length - 1 ? 0 : 1,
+                    borderBottomColor: colors.line,
+                  }}
+                >
+                  <Icon name={tool.icon} color={colors.accent} size={22} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? tool.en : tool.zh}</Text>
+                    <Text style={{ color: colors.muted, marginTop: 2, fontSize: 13 }} numberOfLines={2}>
+                      {locale === "en" ? tool.blurbEn : tool.blurbZh}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-forward" color={colors.line} size={18} />
+                </Pressable>
+              ))}
+            </View>
+          </View>
         ))}
       </ScrollView>
     </Screen>
