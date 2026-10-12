@@ -112,6 +112,12 @@ export function ChatScreen({ navigation, route }: Props) {
     void refreshAccount().catch(() => undefined);
   }
 
+  function expireIfNeeded(error: unknown): boolean {
+    if (!(error instanceof ApiError) || error.code !== ErrorCode.AUTH_EXPIRED) return false;
+    navigation.navigate("Auth");
+    return true;
+  }
+
   async function attach(kind: AttachKind | "file") {
     if (!usePrefs.getState().accessToken) {
       navigation.navigate("Auth");
@@ -126,6 +132,7 @@ export function ChatScreen({ navigation, route }: Props) {
         setAction("file");
         setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
       } catch (error) {
+        if (expireIfNeeded(error)) return;
         const message = error instanceof ApiError ? error.message : error instanceof Error ? error.message : text.attachLater;
         setBanner(message);
       }
@@ -143,6 +150,7 @@ export function ChatScreen({ navigation, route }: Props) {
       setAction("look");
       setPending((current) => [...current, uploaded].slice(0, LIMITS.attachmentsMax));
     } catch (error) {
+      if (expireIfNeeded(error)) return;
       const message = error instanceof ApiError ? error.message : text.noVisionModel;
       setBanner(message);
     }
@@ -234,6 +242,10 @@ export function ChatScreen({ navigation, route }: Props) {
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      if (expireIfNeeded(error)) {
+        stream.fail(error instanceof ApiError ? error.message : text.placeholder);
+        return;
+      }
       if (isOfflineError(error)) {
         useHistoryStore.getState().markOffline();
         stream.fail(text.offlineSend);
@@ -284,6 +296,10 @@ export function ChatScreen({ navigation, route }: Props) {
       );
     } catch (error) {
       if (controller.signal.aborted) return;
+      if (expireIfNeeded(error)) {
+        stream.fail(error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。");
+        return;
+      }
       if (isOfflineError(error)) {
         useHistoryStore.getState().markOffline();
         stream.fail(text.offlineSend);

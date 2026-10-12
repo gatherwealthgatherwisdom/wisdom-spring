@@ -15,11 +15,10 @@ const queryClient = new QueryClient();
 function HistoryBridge() {
   const ready = usePrefs((state) => state.ready);
   const userId = usePrefs((state) => state.user?.id ?? null);
-  const token = usePrefs((state) => state.accessToken);
   useEffect(() => {
     if (!ready) return;
-    void useHistoryStore.getState().hydrate(token && userId ? userId : null);
-  }, [ready, userId, token]);
+    void useHistoryStore.getState().hydrate(userId);
+  }, [ready, userId]);
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "active") void useHistoryStore.getState().sync();

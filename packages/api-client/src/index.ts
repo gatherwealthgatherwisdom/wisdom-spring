@@ -90,7 +90,11 @@ export interface StreamHandlers {
 
 type PageOf<T> = Page<T>;
 
+const AUTH_EXPIRED_MESSAGE = "登入已過期，請再登入。";
+
 export class SpringClient {
+  private refreshLock: Promise<void> | null = null;
+
   constructor(
     private readonly baseUrl: string,
     private readonly readTokens: () => SessionTokens,
@@ -387,28 +391,57 @@ export class SpringClient {
     const access = this.readTokens().accessToken;
     if (access) headers.set("authorization", `Bearer ${access}`);
     const response = await fetch(`${this.baseUrl}${path}`, { ...init, headers });
-    if (response.status === 401 && retry && this.readTokens().refreshToken) {
+    if (response.status === 401 && retry) {
       await this.refresh();
       return this.request(path, init, false);
     }
     return parseBody<T>(response);
   }
 
-  private async refresh(): Promise<void> {
+  private dropSession(): void {
+    this.writeTokens({ accessToken: null, refreshToken: null });
+  }
+
+  private refresh(): Promise<void> {
+    if (!this.refreshLock) {
+      this.refreshLock = this.refreshNow().finally(() => {
+        this.refreshLock = null;
+      });
+    }
+    return this.refreshLock;
+  }
+
+  private async refreshNow(): Promise<void> {
     const refreshToken = this.readTokens().refreshToken;
-    if (!refreshToken) throw new ApiError("AUTH_EXPIRED", "登入已過期，請再登入。", 401);
+    if (!refreshToken) {
+      this.dropSession();
+      throw new ApiError("AUTH_EXPIRED", AUTH_EXPIRED_MESSAGE, 401);
+    }
     const response = await fetch(`${this.baseUrl}/v1/auth/refresh`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ refreshToken }),
     });
-    const session = await parseBody<AuthResponse>(response);
-    this.writeTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
+    try {
+      const session = await parseBody<AuthResponse>(response);
+      this.writeTokens({ accessToken: session.accessToken, refreshToken: session.refreshToken });
+    } catch (error) {
+      if (error instanceof ApiError && (error.code === "AUTH_EXPIRED" || error.code === "AUTH_INVALID")) {
+        this.dropSession();
+      }
+      throw error;
+    }
   }
 
-  private async stream(path: string, body: unknown, handlers: StreamHandlers, signal?: AbortSignal): Promise<void> {
+  private async stream(
+    path: string,
+    body: unknown,
+    handlers: StreamHandlers,
+    signal?: AbortSignal,
+    retried = false,
+  ): Promise<void> {
     if (this.transport === "xhr") {
-      await this.streamXhr(path, body, handlers, signal);
+      await this.streamXhr(path, body, handlers, signal, retried);
       return;
     }
     const headers = new Headers({ "content-type": "application/json" });
@@ -420,6 +453,10 @@ export class SpringClient {
       body: JSON.stringify(body),
       signal,
     });
+    if (response.status === 401 && !retried) {
+      await this.refresh();
+      return this.stream(path, body, handlers, signal, true);
+    }
     if (!response.ok) {
       await parseBody(response);
       return;
@@ -431,7 +468,13 @@ export class SpringClient {
     dispatchSse(await response.text(), handlers);
   }
 
-  private streamXhr(path: string, body: unknown, handlers: StreamHandlers, signal?: AbortSignal): Promise<void> {
+  private streamXhr(
+    path: string,
+    body: unknown,
+    handlers: StreamHandlers,
+    signal: AbortSignal | undefined,
+    retried: boolean,
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       let cursor = 0;
@@ -446,6 +489,12 @@ export class SpringClient {
         parser.push(chunk);
       };
       xhr.onload = () => {
+        if (xhr.status === 401 && !retried) {
+          this.refresh()
+            .then(() => this.streamXhr(path, body, handlers, signal, true))
+            .then(resolve, reject);
+          return;
+        }
         parser.push(xhr.responseText.slice(cursor));
         parser.end();
         if (xhr.status >= 400) {
