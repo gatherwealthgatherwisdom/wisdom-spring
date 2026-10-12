@@ -110,6 +110,7 @@ export function MessageList({
           <AssistantBubble
             content={item.content}
             imageUrl={imageUrl}
+            generationKind={"generationKind" in item ? item.generationKind : null}
             thinking={"thinking" in item ? item.thinking : null}
             thinkingLabel={text.thinking}
             thinkingNowLabel={text.thinkingNow}

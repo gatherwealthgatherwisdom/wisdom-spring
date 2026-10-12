@@ -88,6 +88,7 @@ export function AssistantBubble({
   thumbsDownLabel,
   onFeedback,
   highlighted,
+  generationKind,
 }: {
   content: string;
   imageUrl?: string | null;
@@ -107,6 +108,7 @@ export function AssistantBubble({
   thumbsDownLabel?: string;
   onFeedback?: (rating: "up" | "down") => void;
   highlighted?: boolean;
+  generationKind?: string | null;
 }) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
@@ -143,6 +145,7 @@ export function AssistantBubble({
           <Icon name="water-outline" color={colors.accent} size={16} />
         </View>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
+        {generationKind ? <Text style={{ color: colors.accent, fontSize: 12 }}>· {generationKind}</Text> : null}
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
       <ThinkingBlock
