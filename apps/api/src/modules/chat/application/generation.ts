@@ -7,6 +7,7 @@ import {
   ModelCapability,
   OPENROUTER,
   assetIdsOf,
+  conversationTitleFrom,
   generationKind,
   isImageMime,
   isPdfMime,
@@ -118,6 +119,11 @@ export async function runGeneration(
   const hasVision = visionIds.length > 0;
   const hasPdf = pdfIds.length > 0;
   const kind = generationKind({ mode: modeFields.mode, hasVision, hasPdf });
+  const userTurns = history.filter((row) => row.role === "USER").length;
+  const derivedTitle =
+    conversation && !conversation.title && userTurns <= 1
+      ? conversationTitleFrom(lastUser?.content ?? "", { hasImage: hasVision, hasPdf })
+      : "";
   const [{ webOn }, extraInstruction, webLive, extraHint] = await Promise.all([
     assertCapabilityFlags(deps.prisma, {
       mode: modeFields.mode,
@@ -310,6 +316,7 @@ export async function runGeneration(
             data: {
               lastMessageAt: deps.now(),
               ...(imageUrl ? { lastImageUrl: imageUrl } : {}),
+              ...(derivedTitle ? { title: derivedTitle } : {}),
             },
           }),
         ]);
@@ -323,12 +330,11 @@ export async function runGeneration(
           costUsdMicros: cost.toString(),
           ...(imageUrl ? { imageUrl } : {}),
         });
-        const userTurns = history.filter((row) => row.role === "USER").length;
-        const conversation = await deps.prisma.conversation.findUnique({
+        const titled = await deps.prisma.conversation.findUnique({
           where: { id: input.conversationId },
           select: { title: true },
         });
-        if (conversation && !conversation.title && userTurns <= 1) {
+        if (titled && !titled.title && userTurns <= 1) {
           try {
             await deps.titles.enqueue(input.conversationId, served);
           } catch {

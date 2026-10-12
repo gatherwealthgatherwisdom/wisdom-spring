@@ -1,3 +1,4 @@
+import { conversationLabel } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -189,7 +190,7 @@ export function InboxScreen({ navigation }: Props) {
           {last ? (
             <Pressable onPress={() => openChat(navigation, { conversationId: last.id, mode: last.mode })} style={chip(colors)}>
               <Icon name="time-outline" color={colors.ink} size={16} />
-              <Text style={{ color: colors.ink }} numberOfLines={1}>{last.title || text.lastChat}</Text>
+              <Text style={{ color: colors.ink }} numberOfLines={1}>{conversationLabel(last, text.lastChat)}</Text>
             </Pressable>
           ) : null}
           <Pressable onPress={() => setPoolOpen(true)} style={chip(colors)}>

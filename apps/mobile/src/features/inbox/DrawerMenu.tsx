@@ -1,5 +1,4 @@
-import type { ConversationView } from "@spring/shared";
-import { ConversationStatus } from "@spring/shared";
+import { ConversationStatus, conversationLabel, type ConversationView } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useMemo, useState } from "react";
@@ -547,7 +546,7 @@ function ChatGroup({
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
                 <Text style={{ flex: 1, color: colors.ink, fontSize: 16 }} numberOfLines={1}>
-                  {item.title || text.newChat}
+                  {conversationLabel(item, text.newChat)}
                 </Text>
                 <Text style={{ color: colors.muted, fontSize: 12 }}>
                   {formatWhen(item.status === ConversationStatus.DELETED ? item.updatedAt || item.lastMessageAt : item.lastMessageAt, locale)}

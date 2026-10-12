@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, generationKind, isImageMime, isPdfMime, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, conversationLabel, generationKind, isImageMime, isPdfMime, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -66,7 +66,7 @@ export function ChatScreen({ navigation, route }: Props) {
   const suggestions = copyQuery.data?.emptyHero ?? [...SUGGESTED_PROMPTS_ZH];
   const flagOn = (key: FeatureFlagKey, fallback = true) =>
     flags.data?.items.find((item) => item.key === key)?.enabled ?? fallback;
-  const chatTitle = thread.conversation?.title || text.app;
+  const chatTitle = conversationLabel(thread.conversation, text.app);
 
   const searching = searchOpen && trimmedSearch.length > 0;
   const streamHere =
