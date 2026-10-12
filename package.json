@@ -18,7 +18,7 @@
     "db:generate": "pnpm --filter @spring/api exec prisma generate",
     "db:migrate": "pnpm --filter @spring/api exec prisma migrate dev",
     "db:deploy": "pnpm --filter @spring/api exec prisma migrate deploy",
-    "postinstall": "pnpm --filter @spring/api exec prisma generate"
+    "postinstall": "pnpm --filter @spring/api exec prisma generate && node scripts/fix-expo-jsi-xcode26.mjs"
   },
   "devDependencies": {
     "@prisma/client": "6.19.3",
