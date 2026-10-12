@@ -28,7 +28,7 @@ const PLACEHOLDER: Record<DialCode, string> = {
   "86": "138 0013 8000",
 };
 
-export function AuthScreen({ navigation }: Props) {
+export function AuthScreen({ navigation, route }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
@@ -48,6 +48,15 @@ export function AuthScreen({ navigation }: Props) {
   const phoneReady = Boolean(normalizeMobile(digits, dial));
   const codeReady = code.length === 6;
   const canSubmit = !busy && (step === "phone" ? phoneReady : codeReady);
+  const resume = route.params?.resume;
+
+  function dismiss() {
+    if (resume) {
+      navigation.navigate("Main");
+      return;
+    }
+    if (navigation.canGoBack()) navigation.goBack();
+  }
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -93,6 +102,10 @@ export function AuthScreen({ navigation }: Props) {
     try {
       const session = await spring.verifyPhone({ phone, code: nextCode });
       setSession(session);
+      if (resume) {
+        navigation.replace("Chat", resume);
+        return;
+      }
       if (navigation.canGoBack()) navigation.goBack();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : text.loginWrong);
@@ -105,7 +118,7 @@ export function AuthScreen({ navigation }: Props) {
   return (
     <Screen>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
-        <ScreenHeader title={text.login} onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined} accessibilityBack={text.back} />
+        <ScreenHeader title={text.login} onBack={resume || navigation.canGoBack() ? dismiss : undefined} accessibilityBack={text.back} />
 
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 28, marginBottom: 6 }}>{text.app}</Text>

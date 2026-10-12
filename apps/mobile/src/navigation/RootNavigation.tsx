@@ -16,7 +16,7 @@ import { MainTabs, type AppStackParamList } from "./MainTabs";
 import { navigationRef } from "./ref";
 import { openPendingPushChat } from "../shared/lib/push";
 
-export type { AppStackParamList, ChatParams } from "./MainTabs";
+export type { AppStackParamList, AuthParams, ChatParams } from "./MainTabs";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const OPENING_MS = 700;

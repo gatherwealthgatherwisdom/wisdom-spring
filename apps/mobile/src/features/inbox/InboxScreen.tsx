@@ -62,13 +62,18 @@ export function InboxScreen({ navigation }: Props) {
     }
     const seed = draft.trim();
     const mode = turnModeFor(action, "chat");
-    setDraft("");
-    setHint(null);
-    openChat(navigation, {
+    const params = {
       mode,
       ...(seed ? { seed } : {}),
       ...(mode === "image" ? { imageStyle: "ink" } : {}),
-    });
+    };
+    setDraft("");
+    setHint(null);
+    if (!signedIn) {
+      openAuth(navigation, params);
+      return;
+    }
+    openChat(navigation, params);
   }
 
   return (
@@ -212,6 +217,10 @@ export function InboxScreen({ navigation }: Props) {
           }}
           onAttach={(kind) => {
             setHint(null);
+            if (!signedIn) {
+              openAuth(navigation, { mode: "chat", attach: kind });
+              return;
+            }
             openChat(navigation, { mode: "chat", attach: kind });
           }}
         />

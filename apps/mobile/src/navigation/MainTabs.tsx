@@ -31,8 +31,12 @@ export type ChatParams = {
   focusMessageId?: string;
 };
 
+export type AuthParams = {
+  resume?: ChatParams;
+};
+
 export type AppStackParamList = {
-  Auth: undefined;
+  Auth: AuthParams | undefined;
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Chat: ChatParams | undefined;
   Register: undefined;
@@ -55,9 +59,21 @@ export function openRegister(navigation: NavigationProp<MainTabParamList>): void
   parent?.navigate("Register");
 }
 
-export function openAuth(navigation: NavigationProp<MainTabParamList>): void {
+export function openAuth(navigation: NavigationProp<MainTabParamList>, resume?: ChatParams): void {
   const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
-  parent?.navigate("Auth");
+  parent?.navigate("Auth", resume ? { resume } : undefined);
+}
+
+/** Empty chat is replaced so Auth back lands on Main tabs instead of a tab-less thread. */
+export function requireAuth(
+  navigation: Pick<NativeStackNavigationProp<AppStackParamList>, "navigate" | "replace">,
+  resume?: ChatParams,
+): void {
+  if (resume?.conversationId) {
+    navigation.navigate("Auth");
+    return;
+  }
+  navigation.replace("Auth", { resume: resume ?? {} });
 }
 
 type LiveToolSpec = Pick<SpringTool, "id"> & {

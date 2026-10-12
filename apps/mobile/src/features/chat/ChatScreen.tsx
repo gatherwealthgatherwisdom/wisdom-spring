@@ -18,7 +18,7 @@ import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen } from "../../shared/ui/Screen";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
-import type { AppStackParamList } from "../../navigation/RootNavigation";
+import { requireAuth, type AppStackParamList } from "../../navigation/MainTabs";
 import { Composer } from "./Composer";
 import { actionFromRoute, placeholderFor, turnModeFor, type ComposerAction } from "./composer-action";
 import { MessageList } from "./MessageList";
@@ -114,13 +114,13 @@ export function ChatScreen({ navigation, route }: Props) {
 
   function expireIfNeeded(error: unknown): boolean {
     if (!(error instanceof ApiError) || error.code !== ErrorCode.AUTH_EXPIRED) return false;
-    navigation.navigate("Auth");
+    requireAuth(navigation, route.params);
     return true;
   }
 
   async function attach(kind: AttachKind | "file") {
     if (!usePrefs.getState().accessToken) {
-      navigation.navigate("Auth");
+      requireAuth(navigation, { ...route.params, attach: kind });
       return;
     }
     if (pending.length >= LIMITS.attachmentsMax) return;
@@ -174,7 +174,10 @@ export function ChatScreen({ navigation, route }: Props) {
     const trimmed = content.trim();
     if (deleted || (!trimmed && pending.length === 0) || stream.status === "streaming") return;
     if (!usePrefs.getState().accessToken) {
-      navigation.navigate("Auth");
+      requireAuth(navigation, {
+        ...route.params,
+        ...(trimmed ? { seed: trimmed } : {}),
+      });
       return;
     }
     if (action === "look" && !pending.some((item) => isImageMime(item.mime))) {
@@ -262,7 +265,7 @@ export function ChatScreen({ navigation, route }: Props) {
   async function regenerate(messageId: string) {
     if (deleted || stream.status === "streaming") return;
     if (!usePrefs.getState().accessToken) {
-      navigation.navigate("Auth");
+      requireAuth(navigation, route.params);
       return;
     }
     const controller = new AbortController();
@@ -319,7 +322,7 @@ export function ChatScreen({ navigation, route }: Props) {
     if (!token) {
       if (!askedToSignIn.current) {
         askedToSignIn.current = true;
-        navigation.navigate("Auth");
+        requireAuth(navigation, route.params);
       }
       return;
     }
@@ -341,7 +344,7 @@ export function ChatScreen({ navigation, route }: Props) {
     if (!token) {
       if (!askedToSignIn.current) {
         askedToSignIn.current = true;
-        navigation.navigate("Auth");
+        requireAuth(navigation, route.params);
       }
       return;
     }

@@ -6,7 +6,7 @@ import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { KeyboardDock } from "../../shared/ui/KeyboardDock";
 import { Screen } from "../../shared/ui/Screen";
 import { cardsFromDiscover, HERO_ART, STYLE_ART } from "../discover/catalog";
-import { openChat, type MainTabParamList } from "../../navigation/MainTabs";
+import { openAuth, openChat, type MainTabParamList } from "../../navigation/MainTabs";
 import { mediaUrl, spring } from "../../shared/lib/api";
 import { useHistory } from "../../shared/lib/history";
 import { copy } from "../../shared/lib/i18n";
@@ -48,7 +48,9 @@ export function ImageScreen({ navigation }: Props) {
     if (!content) return;
     if (style || action === "draw") {
       if (blocked) return;
-      openChat(navigation, { mode: "image", imageStyle: style ?? selected, seed: content });
+      const params = { mode: "image" as const, imageStyle: style ?? selected, seed: content };
+      if (!signedIn) openAuth(navigation, params);
+      else openChat(navigation, params);
       setPrompt("");
       setHint(null);
       return;
@@ -61,7 +63,9 @@ export function ImageScreen({ navigation }: Props) {
       setHint(text.needFile);
       return;
     }
-    openChat(navigation, { mode: "chat", seed: content });
+    const params = { mode: "chat" as const, seed: content };
+    if (!signedIn) openAuth(navigation, params);
+    else openChat(navigation, params);
     setPrompt("");
     setHint(null);
   }
@@ -164,6 +168,10 @@ export function ImageScreen({ navigation }: Props) {
           }}
           onAttach={(kind) => {
             setHint(null);
+            if (!signedIn) {
+              openAuth(navigation, { mode: "chat", attach: kind });
+              return;
+            }
             openChat(navigation, { mode: "chat", attach: kind });
           }}
         />
