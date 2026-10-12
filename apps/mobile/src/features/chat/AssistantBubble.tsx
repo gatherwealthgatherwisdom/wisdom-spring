@@ -7,6 +7,7 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { saveMedia } from "../../shared/lib/save-media";
 import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
+import { MarkdownBody } from "./MarkdownBody";
 import { MediaLightbox } from "./MediaLightbox";
 import { StreamingCursor } from "./StreamingCursor";
 
@@ -54,10 +55,10 @@ export function ThinkingBlock({
         <Text style={{ color: colors.muted, fontSize: 12 }}>{title}</Text>
       </Pressable>
       {open ? (
-        <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 20 }}>
-          {thinking}
+        <View>
+          <MarkdownBody source={thinking} color={colors.muted} size={13} lineHeight={20} />
           {streaming && !hasAnswer ? <StreamingCursor /> : null}
-        </Text>
+        </View>
       ) : null}
     </View>
   );
@@ -157,10 +158,10 @@ export function AssistantBubble({
         </Pressable>
       ) : null}
       {image.text ? (
-        <Text style={{ color: colors.ink, fontSize: 16, lineHeight: 26 }}>
-          {image.text}
+        <View>
+          <MarkdownBody source={image.text} color={colors.ink} />
           {streaming ? <StreamingCursor /> : null}
-        </Text>
+        </View>
       ) : streaming && !thinking ? (
         <StreamingCursor />
       ) : null}

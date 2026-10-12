@@ -40,3 +40,4 @@ export * from "./lib/hk-time";
 export * from "./lib/search";
 export * from "./lib/conversation-export";
 export * from "./lib/generation-kind";
+export * from "./lib/assistant-markdown";

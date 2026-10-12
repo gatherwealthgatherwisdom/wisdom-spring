@@ -7,6 +7,8 @@ import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
 import { AssistantBubble, ThinkingBlock } from "./AssistantBubble";
 import { EmptyHero } from "./EmptyHero";
+import { MarkdownBody } from "./MarkdownBody";
+import { StreamingCursor } from "./StreamingCursor";
 import { UserBubble } from "./UserBubble";
 
 export function MessageList({
@@ -170,7 +172,8 @@ function TranslatePair({
       <View style={{ height: 1, backgroundColor: colors.line }} />
       <View style={{ padding: 12 }}>
         <Text style={{ color: colors.muted, marginBottom: 4 }}>{translatedLabel}</Text>
-        <Text style={{ color: colors.ink, lineHeight: 22 }}>{translation}{streaming ? " ▍" : ""}</Text>
+        <MarkdownBody source={translation} color={colors.ink} size={16} lineHeight={22} />
+        {streaming ? <StreamingCursor /> : null}
       </View>
     </View>
   );
