@@ -1,4 +1,4 @@
-import { Locale, microsToUsd, type MeResponse } from "@spring/shared";
+import { formatE164, Locale, microsToUsd, type MeResponse } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -92,7 +92,7 @@ export function SettingsScreen() {
         </View>
         <Text style={{ color: colors.ink, fontSize: 20, fontFamily: "Palatino" }}>{signedIn ? display : text.app}</Text>
         <Pressable onPress={() => { if (user?.phone) void Clipboard.setStringAsync(user.phone); }}>
-          <Text style={{ color: colors.muted, marginTop: 4 }}>{signedIn ? user?.phone ?? text.account : text.signedOut}</Text>
+          <Text style={{ color: colors.muted, marginTop: 4 }}>{signedIn ? (user?.phone ? formatE164(user.phone) : text.account) : text.signedOut}</Text>
         </Pressable>
         {signedIn ? (
           <View style={{ marginTop: 8, borderWidth: 1, borderColor: colors.accent, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
@@ -110,10 +110,7 @@ export function SettingsScreen() {
           </>
         ) : (
           <>
-            {user?.phone ? <Text style={{ color: colors.ink, fontSize: 18 }}>{user.phone}</Text> : <Text style={{ color: colors.ink, fontSize: 18 }}>{text.account}</Text>}
-            <Text style={{ color: colors.muted, marginTop: 4, marginBottom: 8 }}>
-              {text.usedOf(used, limit)}
-            </Text>
+            <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 8 }}>{text.usedOf(used, limit)}</Text>
             <UsageBar used={used} limit={limit} colors={colors} />
             {usage.data ? (
               <Text style={{ color: colors.muted, marginBottom: 4 }}>

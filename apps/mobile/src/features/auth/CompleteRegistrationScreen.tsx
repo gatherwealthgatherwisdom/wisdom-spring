@@ -1,4 +1,5 @@
 import { ApiError } from "@spring/api-client";
+import { formatE164 } from "@spring/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
@@ -47,7 +48,7 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.registerHint}</Text>
           <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 }}>
-            {phone ? <Text style={{ color: colors.ink, marginBottom: 12 }}>{phone}</Text> : null}
+            {phone ? <Text style={{ color: colors.ink, marginBottom: 12 }}>{formatE164(phone)}</Text> : null}
             <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 8 }}>{text.displayName}</Text>
             <TextInput
               value={name}
