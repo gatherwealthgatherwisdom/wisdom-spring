@@ -389,7 +389,7 @@ export function ChatScreen({ navigation, route }: Props) {
         <ScreenHeader
           title={chatTitle}
           onBack={() => navigation.goBack()}
-          accessibilityBack={text.inbox}
+          accessibilityBack={text.back}
           trailing={
             <View style={{ flexDirection: "row" }}>
               <Pressable

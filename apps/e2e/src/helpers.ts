@@ -287,6 +287,11 @@ export async function leaveChat(page: Page): Promise<void> {
   if (await page.getByPlaceholder("搜尋對話").filter({ visible: true }).isVisible().catch(() => false)) {
     await clickLabel(page, "返回");
   }
+  const chatBack = page.getByRole("button", { name: "返回" }).filter({ visible: true });
+  if ((await chatBack.count()) > 0) {
+    await chatBack.first().click();
+    return;
+  }
   await clickLabel(page, "對話");
 }
 

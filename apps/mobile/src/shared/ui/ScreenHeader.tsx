@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
+import { copy } from "../lib/i18n";
+import { usePrefs } from "../lib/prefs";
 import { useColors } from "../theme";
 import { Icon } from "./Icon";
 
@@ -15,10 +17,12 @@ export function ScreenHeader({
   accessibilityBack?: string;
 }) {
   const colors = useColors();
+  const locale = usePrefs((state) => state.locale);
+  const backLabel = accessibilityBack ?? copy[locale].back;
   if (onBack) {
     return (
       <View style={{ flexDirection: "row", alignItems: "center", minHeight: 40, paddingHorizontal: 8 }}>
-        <Pressable accessibilityLabel={accessibilityBack} onPress={onBack} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={backLabel} onPress={onBack} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Icon name="chevron-back" color={colors.ink} />
         </Pressable>
         <Text style={{ flex: 1, textAlign: "center", color: colors.ink, fontFamily: "Palatino", fontSize: 22 }} numberOfLines={1}>
