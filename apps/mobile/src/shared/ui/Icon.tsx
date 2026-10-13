@@ -4,5 +4,14 @@ import type { ComponentProps } from "react";
 export type IconName = ComponentProps<typeof Ionicons>["name"];
 
 export function Icon({ name, color, size = 22 }: { name: IconName; color: string; size?: number }) {
-  return <Ionicons name={name} color={color} size={size} />;
+  return (
+    <Ionicons
+      name={name}
+      color={color}
+      size={size}
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no"
+    />
+  );
 }

@@ -83,7 +83,12 @@ export function ImageScreen({ navigation }: Props) {
           <Text style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 12 }}>{text.noImageModel}</Text>
         ) : null}
         <Cover source={HERO_ART.drawHero} style={{ borderRadius: 16, minHeight: 118, marginBottom: 12 }} dim={0.4}>
-          <Pressable onPress={() => send(text.drawHero, "ink")} style={{ minHeight: 118, padding: 14, justifyContent: "space-between" }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={text.start}
+            onPress={() => send(text.drawHero, "ink")}
+            style={{ minHeight: 118, padding: 14, justifyContent: "space-between" }}
+          >
             <Text style={{ color: colors.bg, fontSize: 20 }}>{text.drawHero}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
               <Text style={{ color: colors.ink }}>{text.start}</Text>

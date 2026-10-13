@@ -137,7 +137,13 @@ export function InboxScreen({ navigation }: Props) {
           </View>
           <View style={{ flexDirection: "row" }}>
             {homeTools.map((tool) => (
-              <Pressable key={tool.id} onPress={() => stack?.navigate("Tool", { id: tool.id })} style={{ flex: 1, alignItems: "center", gap: 8 }}>
+              <Pressable
+                key={tool.id}
+                accessibilityRole="button"
+                accessibilityLabel={locale === "en" ? tool.en : tool.zh}
+                onPress={() => stack?.navigate("Tool", { id: tool.id })}
+                style={{ flex: 1, alignItems: "center", gap: 8 }}
+              >
                 <Icon name={tool.icon} color={colors.accent} size={26} />
                 <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
               </Pressable>

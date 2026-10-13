@@ -146,10 +146,10 @@ export function MainTabs() {
         tabBarLabelStyle: { fontSize: 12, marginTop: -2 },
       }}
     >
-      <Tab.Screen name="Inbox" component={InboxScreen} options={{ title: text.inbox, tabBarIcon: tabIcon("chatbubble-outline", "chatbubble") }} />
-      <Tab.Screen name="Image" component={ImageScreen} options={{ title: text.image, tabBarIcon: tabIcon("image-outline", "image") }} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ title: text.discover, tabBarIcon: tabIcon("compass-outline", "compass") }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: text.mine, tabBarIcon: tabIcon("person-outline", "person") }} />
+      <Tab.Screen name="Inbox" component={InboxScreen} options={{ title: text.inbox, tabBarAccessibilityLabel: text.inbox, tabBarIcon: tabIcon("chatbubble-outline", "chatbubble") }} />
+      <Tab.Screen name="Image" component={ImageScreen} options={{ title: text.image, tabBarAccessibilityLabel: text.image, tabBarIcon: tabIcon("image-outline", "image") }} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ title: text.discover, tabBarAccessibilityLabel: text.discover, tabBarIcon: tabIcon("compass-outline", "compass") }} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: text.mine, tabBarAccessibilityLabel: text.mine, tabBarIcon: tabIcon("person-outline", "person") }} />
     </Tab.Navigator>
   );
 }

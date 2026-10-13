@@ -90,6 +90,8 @@ export function TranslateScreen({ navigation, route }: Props) {
         <RecentRow key={item.id} item={item} modeLabel={text.translate} locale={locale} onPress={() => navigation.navigate("Chat", { conversationId: item.id, mode: "translate" })} />
       ))}
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={text.start}
         onPress={() => {
           if (!body.trim()) return;
           navigation.navigate("Chat", {

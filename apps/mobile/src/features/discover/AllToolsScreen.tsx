@@ -38,6 +38,8 @@ export function AllToolsScreen({ navigation }: Props) {
               {section.tools.map((tool, index) => (
                 <Pressable
                   key={tool.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={locale === "en" ? tool.en : tool.zh}
                   onPress={() => openCatalogTool(navigation, tool.id)}
                   style={{
                     flexDirection: "row",

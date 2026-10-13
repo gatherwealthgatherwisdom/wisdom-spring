@@ -70,7 +70,13 @@ export function DiscoverScreen({ navigation }: Props) {
             {pages.map((index) => (
               <View key={index} style={{ width: PAGE_W, flexDirection: "row", flexWrap: "wrap" }}>
                 {tools.filter((tool) => tool.page === index).map((tool) => (
-                  <Pressable key={tool.id} onPress={() => openTool(tool.id)} style={{ width: "25%", alignItems: "center", marginBottom: 18, gap: 8 }}>
+                  <Pressable
+                    key={tool.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={locale === "en" ? tool.en : tool.zh}
+                    onPress={() => openTool(tool.id)}
+                    style={{ width: "25%", alignItems: "center", marginBottom: 18, gap: 8 }}
+                  >
                     <Icon name={tool.icon} color={colors.accent} size={28} />
                     <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
                   </Pressable>

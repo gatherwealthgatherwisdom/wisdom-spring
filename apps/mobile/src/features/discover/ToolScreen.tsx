@@ -55,6 +55,8 @@ export function ToolScreen({ navigation, route }: Props) {
       />
       <Pressable
         disabled={!ready}
+        accessibilityRole="button"
+        accessibilityLabel={text.start}
         accessibilityState={{ disabled: !ready }}
         onPress={() => {
           const live = paramsForLiveTool({ ...tool, live: true });
