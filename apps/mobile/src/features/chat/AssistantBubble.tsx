@@ -165,6 +165,11 @@ export function AssistantBubble({
           <MarkdownBody source={image.text} color={colors.ink} />
           {streaming ? <StreamingCursor /> : null}
         </View>
+      ) : streaming && generationKind === "text-to-image" && !uri ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text style={{ color: colors.muted }}>{labels.drawingNow}</Text>
+          <StreamingCursor />
+        </View>
       ) : streaming && !thinking ? (
         <StreamingCursor />
       ) : null}
