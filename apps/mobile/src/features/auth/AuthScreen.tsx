@@ -8,7 +8,7 @@ import {
   type DialCode,
 } from "@spring/shared";
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { useHostInsets } from "../../shared/ui/hostInsets";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
@@ -51,6 +51,7 @@ export function AuthScreen({ navigation, route }: Props) {
   const resume = route.params?.resume;
 
   function dismiss() {
+    Keyboard.dismiss();
     if (resume) {
       navigation.navigate("Main");
       return;
@@ -70,6 +71,8 @@ export function AuthScreen({ navigation, route }: Props) {
       return () => clearTimeout(timer);
     }
   }, [step]);
+
+  useEffect(() => () => Keyboard.dismiss(), []);
 
   async function requestCode() {
     setError("");
@@ -101,6 +104,11 @@ export function AuthScreen({ navigation, route }: Props) {
     setBusy(true);
     try {
       const session = await spring.verifyPhone({ phone, code: nextCode });
+      Keyboard.dismiss();
+      codeField.current?.blur();
+      if (Platform.OS === "android") {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
       setSession(session);
       if (resume) {
         navigation.replace("Chat", resume);
