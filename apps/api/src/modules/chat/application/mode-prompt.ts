@@ -17,19 +17,20 @@ export function systemPromptFor(
 ): string {
   const identity = `${systemPrompt}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時先可以提及。`;
   const extra = extraInstruction || toolInstruction(conversation.templateId);
-  if (extra) return `${identity}\n${extra}`;
-  if (conversation.mode === "write") {
-    const template = writeTemplate(conversation.templateId);
-    return `${identity}\n${template?.instruction ?? "幫用戶寫作，語氣穩重、清楚。"}`;
-  }
   if (conversation.mode === "translate") {
     const source = conversation.sourceLang ?? "auto";
     const target = conversation.targetLang ?? "zh-HK";
     const spoken =
       conversation.templateId === "interpret"
         ? "用口語短句自然對譯，保留語氣。"
-        : "只輸出譯文，唔好加解釋。";
-    return `${identity}\n你而家只負責翻譯。來源語言：${source}。目標語言：${target}。${spoken}`;
+        : "只輸出譯文，唔好加解釋、標題、引號或前後對白。";
+    const task = `你而家只負責翻譯。來源語言：${source}。目標語言：${target}。${spoken}`;
+    return extra ? `${task}\n${extra}\n${identity}` : `${task}\n${identity}`;
+  }
+  if (extra) return `${identity}\n${extra}`;
+  if (conversation.mode === "write") {
+    const template = writeTemplate(conversation.templateId);
+    return `${identity}\n${template?.instruction ?? "幫用戶寫作，語氣穩重、清楚。"}`;
   }
   if (conversation.mode === "image") {
     const hint = extraHint || imageStyle(conversation.imageStyle)?.hint;
