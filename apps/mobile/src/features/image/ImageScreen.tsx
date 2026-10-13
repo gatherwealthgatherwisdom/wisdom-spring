@@ -78,19 +78,19 @@ export function ImageScreen({ navigation }: Props) {
           <Icon name="time-outline" color={colors.ink} />
         </Pressable>
       </View>
-      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 24 }}>
+      <ScrollView ref={scroll} style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 28 }}>
         {caps.data && !caps.data.image ? (
           <Text style={{ color: colors.ink, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 12 }}>{text.noImageModel}</Text>
         ) : null}
-        <Cover source={HERO_ART.drawHero} style={{ borderRadius: 16, minHeight: 140, marginBottom: 14 }} dim={0.4}>
-          <Pressable onPress={() => send(text.drawHero, "ink")} style={{ minHeight: 140, padding: 16, justifyContent: "space-between" }}>
+        <Cover source={HERO_ART.drawHero} style={{ borderRadius: 16, minHeight: 118, marginBottom: 12 }} dim={0.4}>
+          <Pressable onPress={() => send(text.drawHero, "ink")} style={{ minHeight: 118, padding: 14, justifyContent: "space-between" }}>
             <Text style={{ color: colors.bg, fontSize: 20 }}>{text.drawHero}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
               <Text style={{ color: colors.ink }}>{text.start}</Text>
             </View>
           </Pressable>
         </Cover>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
           <UseCard title={text.imageCreate} art={HERO_ART.drawCreate} onPress={() => { setStyleId("ink"); setPrompt(text.imageCreate); }} />
           {draws.map((card) => (
             <UseCard
@@ -104,16 +104,16 @@ export function ImageScreen({ navigation }: Props) {
             />
           ))}
         </View>
-        <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 10 }}>{text.styles}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 8 }}>
+        <Text style={{ color: colors.ink, fontSize: 18, marginBottom: 8 }}>{text.styles}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 4 }}>
           {styles.map((style) => (
             <Pressable
               key={style.id}
               onPress={() => setStyleId(style.id)}
-              style={{ width: 140, minHeight: 120, borderRadius: 16, overflow: "hidden", borderWidth: selected === style.id ? 2 : 1, borderColor: selected === style.id ? colors.accent : colors.line }}
+              style={{ width: 140, minHeight: 108, borderRadius: 16, overflow: "hidden", borderWidth: selected === style.id ? 2 : 1, borderColor: selected === style.id ? colors.accent : colors.line }}
             >
-              <Cover source={STYLE_ART[style.id] ?? HERO_ART.drawHero} style={{ flex: 1, minHeight: 116 }} dim={0.35}>
-                <View style={{ flex: 1, minHeight: 116, padding: 12, justifyContent: "flex-end" }}>
+              <Cover source={STYLE_ART[style.id] ?? HERO_ART.drawHero} style={{ flex: 1, minHeight: 104 }} dim={0.35}>
+                <View style={{ flex: 1, minHeight: 104, padding: 12, justifyContent: "flex-end" }}>
                   <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? style.en : style.zh}</Text>
                   <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{locale === "en" ? style.blurbEn : style.blurbZh}</Text>
                 </View>
@@ -183,8 +183,8 @@ export function ImageScreen({ navigation }: Props) {
 
 function UseCard({ title, art, onPress }: { title: string; art: import("react-native").ImageSourcePropType; onPress: () => void }) {
   return (
-    <Cover source={art} style={{ width: "47%", minHeight: 150, borderRadius: 16 }} dim={0.3}>
-      <Pressable onPress={onPress} style={{ minHeight: 150, padding: 12, justifyContent: "flex-end" }}>
+    <Cover source={art} style={{ width: "47%", minHeight: 128, borderRadius: 16 }} dim={0.3}>
+      <Pressable onPress={onPress} style={{ minHeight: 128, padding: 12, justifyContent: "flex-end" }}>
         <View style={{ alignSelf: "flex-end", backgroundColor: "#1F6B4A", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
           <Text style={{ color: "#F7F6F3", fontSize: 11 }}>New</Text>
         </View>
