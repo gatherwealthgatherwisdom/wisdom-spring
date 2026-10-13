@@ -1,8 +1,8 @@
 # 智泉 Native UI QA
 
-**日期：** 2026-10-12（紀錄）／2026-10-13（第二輪修復；第三輪補洞；第四輪 F03／F04 至 F42）  
-**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；第四輪見第 12 節；原生 Debug `com.gwgwgroup.spring`）  
-**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。第四輪由 F03／F04 開始，跟住 F15、F16、F22、F31、F11／F12、F36、F38、F42，每項一個 commit push 去 `origin/main`。
+**日期：** 2026-10-12（紀錄）／2026-10-13（第二輪修復；第三輪補洞；第四輪 F03／F04 至 F42；第五輪 F01／F14 至 F05）  
+**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；第四輪見第 12 節；第五輪見第 13 節；原生 Debug `com.gwgwgroup.spring`）  
+**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。第四輪由 F03／F04 開始，跟住 F15、F16、F22、F31、F11／F12、F36、F38、F42，每項一個 commit push 去 `origin/main`。第五輪由 F01／F14 開始，跟住 F23、F43、F05，每項一個 commit push 去 `origin/main`。
 
 以真實用戶路徑，喺 **iPhone 16 Pro（iOS 18.6 Simulator）** 同 **Pixel 9 Pro XL（Android API 36 Emulator）** 用同一組案例行過每個主要畫面。生成全部打真實本機 API（`:3000`）同 OpenRouter，無 mock 回覆。
 
@@ -12,13 +12,12 @@
 
 清墨外觀（紙底、墨字、松綠）兩邊都立得住，未登入可以四個 tab 亂睇，發送先逼登入，香港手機 OTP、串流對話、水墨出圖、翻譯頁同工具清單，開心路徑都通。
 
-開心路徑（登入、對話、出圖、翻譯、改寫、發現、我的）兩邊都通。第一至第三輪修咗鍵盤抬、Markdown、生成種類、歷史標題、第一屏裁切。第四輪剩餘摩擦多數係拋光同 Debug 裝：
+開心路徑（登入、對話、出圖、翻譯、改寫、發現、我的）兩邊都通。第一至第五輪修咗鍵盤抬、Markdown、生成種類、歷史標題、第一屏裁切、Debug LogBox、登入／空 Chat 空白、氣泡動作文字、返回名、畫圖區塊名。剩餘摩擦多數係實機未覆核同系統提示：
 
-1. **Debug LogBox** 仍然蓋住 Android 底欄同發送（F01）。商店包不應出現。  
-2. **登入卡同底部 CTA 之間空白過多**（F14）。  
-3. **氣泡動作得圓形圖示**（F23）；頂欄返回 VoiceOver 讀「對話」（F43）。  
-4. **區塊標題「圖像」同 tab 撞名**（F05）。  
-5. iOS 打字收 tab（F31）同思考人設清洗（F36）碼已落地；呢輪未喺軟件鍵盤／思考氣泡實機見到。
+1. iOS 打字收 tab（F31）同思考人設清洗（F36）碼已落地；未喺軟件鍵盤／思考氣泡實機見到。  
+2. 長回覆 stickToEnd（F22）碼已落地；未做長回覆實機。  
+3. 深色再揀「跟隨系統」會閃啟動頁（F18）。  
+4. iOS 鍵盤聽寫系統提示（F32）。
 
 ---
 
@@ -54,16 +53,16 @@
 
 | 組 | 案例 | 空 | 開心 | 錯 | 中斷 | 邊界 | 平台 | 清墨 |
 |---|---|---|---|---|---|---|---|---|
-| A | 冷啟動、tab、圖示 | ✓ | ✓ | | △ LogBox | | ✓ | ✓ 松綠滴水圖示 |
+| A | 冷啟動、tab、圖示 | ✓ | ✓ | | ✓ 無 LogBox | | ✓ | ✓ 松綠滴水圖示 |
 | B | 四 tab 未登入亂睇 | ✓ | ✓ | | | | ✓ | ✓ |
 | B | 未登入發送 → 登入頁 | ✓ | ✓ | | iOS 鍵盤擋發送 | | ✓ | ✓ |
-| C | +852 八位、取得驗證碼 | | ✓ | And 兩位仍禁用 | 鍵盤擋 CTA | ✓ 八位先亮松綠 | F14 大空白 | ✓ |
+| C | +852 八位、取得驗證碼 | | ✓ | And 兩位仍禁用 | 鍵盤擋 CTA | ✓ 八位先亮松綠 | F14 CTA 貼卡 | ✓ |
 | C | 錯 OTP `000000` | | | iOS「登入資料不正確。」 | | ✓ 自動提交 | | ✓ |
 | C | 正確 OTP → 測試用戶 | | ✓ | | And F15 鍵盤已收 | | ✓ | ✓ |
 | C | 訪客 5 次／+853／+86 | And ✓ | And ✓ 訪客 1／5；+853／+86 OTP | | And F15 鍵盤已收 | 未用盡 5 次 | iOS 本輪未再登訪客 | ✓ 試用徽章 |
-| D | 首頁工具、智能體、composer | ✓ | ✓ | | F01 LogBox | | F08 已修（And 三個完整；iOS 商務助手+家庭行程） | ✓ |
+| D | 首頁工具、智能體、composer | ✓ | ✓ | | ✓ 無 LogBox | | F08 已修（And 三個完整；iOS 商務助手+家庭行程）；F05 區塊「畫圖」 | ✓ |
 | E | 真實串流 + 停止 | | ✓ 兩邊 | | 思考中可停止 | | iOS 短回覆清爽 | F20 思考亦有 `**` |
-| E | 長文、讚、複製、朗讀 | | And 讚變松綠 | | 文末藏喺 composer 底 | | | F20 表格難讀 |
+| E | 長文、讚、複製、朗讀 | | And 讚變松綠；F23 儲存／有用／唔好有字 | | 文末藏喺 composer 底 | | iOS 未登入未實機氣泡動作 | F20 表格難讀 |
 | F | 相機 | | And 系統相機 | | | | iOS 本輪未開 | |
 | F | 相簿／PDF 全文 | | And ✓ 相簿+PDF | | | | iOS 本輪跳過 | ✓ |
 | G | 工作室、風格、開始 | ✓ 畫面 | And／iOS 真出圖 | 空白發送無反應 | F30 畫緊兩邊 | | iOS 等到完成；「開始」Button content-desc 已修 | ✓ 無廠商 slug |
@@ -89,28 +88,28 @@
 | F24 | 中 | 兩邊 | 歷史 | 抽屉同「今日」多數行都叫「新對話」。測試用戶本機已存 28–30 段，掃描標題等於無用。 |
 | F31 | 中 | iOS | 首頁 | 打字時鍵盤蓋住成條 tab。用戶打緊嘢就轉唔到圖像／發現／我的。發送鍵要對準鍵盤上方松綠圓，好易撳空。 **碼已修**（iOS `tabBarHideOnKeyboard`；KeyboardDock 減 tab 50px）。Sim 硬件鍵盤令 software keyboard 唔出，呢輪未見到 tab 收起。 |
 | F33 | 中 | iOS（邏輯兩邊） | 未登入發送 | 首頁發送會開 Chat 再彈登入。撳「返回」落到**無 tab 嘅空 Chat**。要再撳頂欄返回先返到對話首頁。未登入用戶以為 app 無底欄。 |
-| F01 | 中（Debug） | 兩邊，And 更重 | 外殼 | Metro LogBox「Open debugger to view warnings」蓋住 tab。Android 再疊一條 `expo-notifications: Custom sound 'default' not found`，連發送都擋住。商店包不應有；Debug 裝幾乎測唔到底欄。 |
+| F01 | 中（Debug） | 兩邊，And 更重 | 外殼 | Metro LogBox「Open debugger to view warnings」蓋住 tab。Android 再疊一條 `expo-notifications: Custom sound 'default' not found`，連發送都擋住。商店包不應有；Debug 裝幾乎測唔到底欄。 **已修**（channel 唔再傳 `sound`；`openChat` 抽出 `navigation/open.ts`，打破 MainTabs require cycle。F17 同一根因一齊清）。 |
 | F25 | 中 | Android（iOS 圖像近期列被 composer 擋住） | 圖像 | 「最近圖像」出現空白白卡，而唔係「未有圖像」。有 `lastImageUrl` 嘅對話先出圖；無圖嘅圖像對話仍佔一格。出圖後其中一格有淡山水，另一格仲空白。 **已修**（只列出有圖嘅格）。 |
 | F30 | 中 | Android（iOS 本輪未等到完成） | 圖像 | 用水墨畫一幅之後約 30–43 秒得閃爍光標，無「畫緊」文案。用戶會以為死機。完成後山水質素好、無 qwen 字樣。 **已修**（串流顯示「畫緊」）。 |
 | F16 | 中 | 兩邊 | 我的 | 頭像下同配額卡都印裸 `+85291118888`。OTP 頁用過有空格嘅 `+852 9111 8888`，同一支電話兩種樣。 **已修**（頭像下 `formatE164` 一次；配額卡「已用 n／N」）。 |
 | F13 | 中 | 兩邊 | 我的 | 未登入第一屏：語言「繁中」被 tab 切走，外觀要滾。已登入：「立即同步」被 tab 切走。Android 更高，通知／外觀更容易匿喺底。 **已修**。 |
 | F08 | 中 | 兩邊 | 首頁 | iOS 熱門智能體只完整見到「商務助手」。Android 見到三個但「寫作導師」介紹被 composer 切行。下面仲有人，無足夠提示要掃。 **已修**。 |
-| F14 | 中 | 兩邊 | 登入／工具／空 Chat | 登入卡同底部 CTA 之間一大片空白。Android 空 Chat 建議同輸入框之間同樣空洞。iOS 空 Chat 反而較緊。改寫工具頁（And）開始掣下面成屏黑。 |
+| F14 | 中 | 兩邊 | 登入／工具／空 Chat | 登入卡同底部 CTA 之間一大片空白。Android 空 Chat 建議同輸入框之間同樣空洞。iOS 空 Chat 反而較緊。改寫工具頁（And）開始掣下面成屏黑。 **登入／空 Chat 已修**（CTA 貼卡底；EmptyHero spacer 把建議推去 composer 上面）。改寫頁空洞見 F42。 |
 | F11 | 中 | 兩邊 | 發現 | 英雄圖第二行寫「查看全部」，同工具區連結撞文案，唔係探索／說明。 **已修**（`hero.blurbZh`／`blurbEn`；工具列仍係「查看全部」）。 |
 | F03 | 中 | 兩邊，And 更差 | 發送 | 發送 `accessibilityLabel` 寫死英文 `"send"`。Android TalkBack／自動化搵唔到；iOS VoiceOver 會讀英文。畫面上得向上箭咀。 **已修**（`text.send`＝發送／Send）。 |
 | F04 | 中 | 兩邊 | 圖示 | `Icon` 直接用 Ionicons，無障礙名變成 `, 改寫`、tab `, 對話`。iOS Maestro 因而搵唔到「改寫」「開始」。 **已修**（圖示包 View 隱藏；工具／tab／開始用中文名）。 |
-| F23 | 中 | 兩邊 | 氣泡動作 | 複製／朗讀／再生成／讚／踩得圓形圖示。有 a11y 字但畫面零文字。長文動作列要滾到最底先見到（F22）。 |
+| F23 | 中 | 兩邊 | 氣泡動作 | 複製／朗讀／再生成／讚／踩得圓形圖示。有 a11y 字但畫面零文字。長文動作列要滾到最底先見到（F22）。 **已修**（ActionChip 圖示＋複製／朗讀／再生成／有用／唔好／儲存）。Android 圖像氣泡實機見到儲存／有用／唔好。iOS 呢輪未登入，未喺回覆氣泡實機。 |
 | F15 | 中 | Android | 登入 | OTP 成功回到我的之後，數字鍵盤仍然開住，蓋住配額同捷徑。 **已修**（verify 後 `Keyboard.dismiss`、blur、Android 等 80ms）。 |
 | F35 | 中 | iOS（And 鍵盤時更差） | 圖像 | 風格列「水墨／紙本／夜色」被底部 composer 切去下半。用戶以為得兩種風格。 **已修**。 |
 | F36 | 中 | iOS（思考開住時） | 聊天 | 「思考中」流出系統角色碎片：「我的角色：『智泉』(中盈紫達集…」。用戶不應見到內部人設。 **碼已修**（`sanitizeThinking` + kernel.test）。呢輪未做思考氣泡實機。 |
 | F38 | 小 | Android（碼兩邊） | 翻譯 | 「開始」空文都係實心松綠。撳下去程式直接 return，畫面零提示。 **已修**（空文禁用、opacity 0.45、「請先貼一段文字。」）。 |
 | F42 | 小 | Android | 改寫工具 | 首頁「改寫」打開單工具頁（貼句子 + 開始），下面大片空，唔係寫作模板總覽。 **已修**（試試呢句、例子晶片、空文提示、最近寫作）。 |
-| F43 | 小 | 兩邊 | 聊天頂欄 | 返回chevron 嘅無障礙名係「對話」，畫面無「返回」二字。VoiceOver 用戶會以為去緊對話 tab。 |
-| F05 | 小 | 兩邊 | 首頁 | 區塊標題「圖像」同 tab「圖像」撞名，自動化同掃描都會撳錯。 |
+| F43 | 小 | 兩邊 | 聊天頂欄 | 返回chevron 嘅無障礙名係「對話」，畫面無「返回」二字。VoiceOver 用戶會以為去緊對話 tab。 **已修**（ScreenHeader 預設 `copy.back`＝返回；Chat 用 `text.back`）。 |
+| F05 | 小 | 兩邊 | 首頁 | 區塊標題「圖像」同 tab「圖像」撞名，自動化同掃描都會撳錯。 **已修**（`homeImage`＝畫圖／Draw；tab 仍係圖像）。 |
 | F12 | 小 | 兩邊 | 發現 | 「備忘」推薦圖有一支麥克風。產品已冇錄音掣，圖同功能唔一致。 **已修**（茶、信、筆、硯；無咪）。 |
 | F22 | 小 | Android | 聊天 | 長回覆最後幾行同動作列坐喺 composer 下面，要人手上滑。 **碼已修**（stickToEnd／streamLen／paddingBottom 20）。呢輪未做長回覆實機。 |
 | F18 | 小 | Android | 我的 | 深色再揀「跟隨系統」會閃一次啟動頁。 |
-| F17 | 小 | Android Debug | 通知 | 自訂音效 `default` 唔存在，彈紅 LogBox。 |
+| F17 | 小 | Android Debug | 通知 | 自訂音效 `default` 唔存在，彈紅 LogBox。 **已修**（F01 同一 commit 唔再傳 `sound`）。 |
 | F32 | 小 | iOS | 鍵盤 | 系統「要啟用聽寫嗎？」蓋住首頁。產品無咪高，係 iOS 鍵盤聽寫。 |
 | F06 | 小 | Android | 首頁 | 寫作導師一行被 composer 裁。 |
 | F10 | — | 兩邊 | 登入 | 佔位 `9123 4567` 啱香港格式，無數字計數器。保持。 |
@@ -128,7 +127,7 @@
 
 首頁英雄「在所有設備上使用智泉／立即探索」、工具四格（改寫、解答、搜尋、備忘）、圖像兩張 New 卡、熱門智能體，清墨質感好。Android 未登入頭像係空圈；登入後變成「測」。
 
-**摩擦：** 第一屏智能體列表被輸入框同底欄食掉（F08）。用戶會以為得一個商務助手。Debug 裝再加 LogBox，底欄標籤幾乎讀唔到（F01）。
+**摩擦：** 第一屏智能體列表被輸入框同底欄食掉（F08，已修）。用戶會以為得一個商務助手。Debug 裝再加 LogBox，底欄標籤幾乎讀唔到（F01，第五輪已修）。
 
 未登入喺「問智泉」打「你好」再發送，會去登入頁——產品規則啱。iOS 當鍵盤開住時，發送圓形好易撳中鍵盤，第一次發送失敗；收起鍵盤之後先入到登入。
 
@@ -138,7 +137,7 @@
 
 OTP 頁電話排版 `+852 9111 8888`，有改號碼、60 秒重發。六位會自動提交。iOS 用 `000000` 即時紅字「登入資料不正確。」，之後 `123456` 入到「測試用戶／免費」。
 
-**摩擦：** 卡片同 CTA 中間空白過多，錯碼紅字離輸入框好遠，要掃到最底先見到（F14）。F15 第四輪已修：Android OTP 成功之後鍵盤收起，落到我的「測試用戶」。
+**摩擦：** 卡片同 CTA 中間空白過多，錯碼紅字離輸入框好遠，要掃到最底先見到（F14，第五輪已修：CTA 貼卡底）。F15 第四輪已修：Android OTP 成功之後鍵盤收起，落到我的「測試用戶」。
 
 第三輪 Android：訪客 `+85291116666` 登入後「試用／已用 0／5」，發「hi」之後「試用剩餘 4 次」、我的「已用 1／5」。澳門 `+85361112222`、內地 `+8613800138000` 用 OTP `123456` 入到試用 0／5。未用盡 5 次，未開完成註冊頁。iOS 第三輪仍係測試用戶，無再登訪客。
 
@@ -146,7 +145,7 @@ OTP 頁電話排版 `+852 9111 8888`，有改號碼、60 秒重發。六位會�
 
 已登入出現「上次對話」晶片同頭像「測」。Composer 貼住 tab，iOS 呢點比舊版慳位。加號打開問／畫圖／睇圖／文件。Android 開過系統相機（虛擬場景），權限同系統 UI 正常。
 
-**摩擦：** 加號面板有時被 LogBox 擋住。發送無中文名。區塊「圖像」同 tab 撞名。
+**摩擦：** 加號面板有時被 LogBox 擋住（F01 已修）。發送無中文名（F03 已修）。區塊「圖像」同 tab 撞名（F05 第五輪已修：區塊「畫圖」）。
 
 ### E 聊天
 
@@ -156,7 +155,7 @@ OTP 頁電話排版 `+852 9111 8888`，有改號碼、60 秒重發。六位會�
 
 思考開住時 iOS 見過系統人設碎片（F36，第四輪碼已清；呢輪未再打思考氣泡）。完成後思考可摺。標題有 `智泉 · generationKind`（F21）。
 
-未登入發送→登入→返回，落到空 Chat「共飲智慧之泉」四張卡（寫電郵、翻譯、畫一幅、繼續上次）加建議句。iOS 呢屏好睇；Android 建議同輸入框之間空一大截。空 Chat **無底 tab**，返回標係「對話」。
+未登入發送→登入→返回，落到空 Chat「共飲智慧之泉」四張卡（寫電郵、翻譯、畫一幅、繼續上次）加建議句。iOS 呢屏好睇；Android 建議同輸入框之間空一大截（F14 第五輪已修：建議貼 composer 上面）。空 Chat **無底 tab**，返回標由「對話」改做「返回」（F43）。
 
 ### F 相機／檔
 
@@ -209,7 +208,7 @@ Android 抽屉：新對話、搜尋對話、模式晶片、更早列表、最近
 - iOS 短回覆聊天頁係依家最接近「清墨信箋」嘅一屏。  
 - Android 深色圖像結果（山水 + 大留白）都立得住，得動作圖示偏淡、易睇漏。
 
-值得加強嘅視覺，唔係換色，而係**密度同層次**：首頁智能體要完整見到兩個以上；登入／工具頁唔好把 CTA 推去螢幕最底再留空洞；圖像風格列要完整露喺 composer 上面。
+值得加強嘅視覺，唔係換色，而係**密度同層次**：首頁智能體要完整見到兩個以上；登入 CTA 同空 Chat 建議要貼住內容（F14 第五輪已修）；圖像風格列要完整露喺 composer 上面。
 
 ---
 
@@ -231,24 +230,21 @@ Android 抽屉：新對話、搜尋對話、模式晶片、更早列表、最近
 
 ## 8. 建議修復優先（等你點名先改碼）
 
-第一至第四輪已修 F19、F20、F21、F24、F33、F13、F08、F35、F03、F04、F30、F25、F15、F16、F22（碼）、F31（碼）、F11、F12、F36（碼）、F38、F42。下一輪可以按呢個次序：
+第一至第五輪已修 F19、F20、F21、F24、F33、F13、F08、F35、F03、F04、F30、F25、F15、F16、F22（碼）、F31（碼）、F11、F12、F36（碼）、F38、F42、F01、F17、F14、F23、F43、F05。下一輪可以按呢個次序：
 
-1. **Debug LogBox**（F01／F17）——開發裝蓋住 tab 同發送。  
-2. **登入／空 Chat 大空白**（F14）。  
-3. **氣泡動作文字或更大熱區**（F23）、**返回 chevron 無障礙名**（F43）。  
-4. **區塊「圖像」同 tab 撞名**（F05）。  
-5. **F22 長回覆實機、F31 軟件鍵盤實機、F36 思考氣泡實機**。  
-6. 寫作 prompt 順序、遠程推送、EAS／真機——另開一輪。
-
-Debug LogBox（F01）屬開發裝，修 require cycle 或非 CI Metro 即可；唔好同產品 UX 捆綁。
+1. **F22 長回覆實機、F31 軟件鍵盤實機、F36 思考氣泡實機**。  
+2. **深色再揀跟隨系統閃啟動頁**（F18）。  
+3. **iOS 鍵盤聽寫系統提示**（F32）。  
+4. 寫作 prompt 順序、遠程推送、EAS／真機——另開一輪。  
+5. iOS 相機／相簿／PDF、訪客用盡 5 次、抽屉搜尋。
 
 ---
 
 ## 9. 結論
 
-同一組用戶路徑喺 iOS 同 Android 都跑過。登入、未登入瀏覽、真實對話、真實出圖、翻譯、改寫、清墨品牌，作為可用原型已經成立。第一至第四輪已修鍵盤抬、Markdown、生成種類、歷史標題、第一屏裁切、發送／工具中文名、登入後鍵盤、電話格式、發現文案同備忘圖、空翻譯、改寫工具頁。
+同一組用戶路徑喺 iOS 同 Android 都跑過。登入、未登入瀏覽、真實對話、真實出圖、翻譯、改寫、清墨品牌，作為可用原型已經成立。第一至第五輪已修鍵盤抬、Markdown、生成種類、歷史標題、第一屏裁切、發送／工具中文名、登入後鍵盤、電話格式、發現文案同備忘圖、空翻譯、改寫工具頁、Debug LogBox、登入／空 Chat 空白、氣泡動作文字、返回名、畫圖區塊名。
 
-2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。第四輪 F03／F04 至 F42 見第 12 節。剩餘係 F01 Debug LogBox、F14 空白、F23／F43 無障礙、F05 撞名、F22／F31／F36 實機、寫作 prompt 順序、遠程推送、EAS／真機。
+2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。第四輪 F03／F04 至 F42 見第 12 節。第五輪 F01／F14 至 F05 見第 13 節。剩餘係 F22／F31／F36 實機、F18 深色閃啟動頁、F32 iOS 聽寫、寫作 prompt 順序、遠程推送、EAS／真機。
 
 ---
 
@@ -266,7 +262,7 @@ Debug LogBox（F01）屬開發裝，修 require cycle 或非 CI Metro 即可；�
 
 F21／F24 呢輪跟住出圖路徑複測通過。F20 表格 Markdown 未再打一次健康作息清單。
 
-第四輪已跟住修 F15、F16、F22、F31、F11／F12、F36、F38、F42，見第 12 節。訪客／+853／+86、相簿／PDF、iOS 出圖、真改寫／翻譯見第 11 節。F03／F04 見第 12 節。仍未做：寫作 prompt 順序、遠程推送、EAS／真機、F01 LogBox、F14、F23、F43、F05。
+第四輪已跟住修 F15、F16、F22、F31、F11／F12、F36、F38、F42，見第 12 節。訪客／+853／+86、相簿／PDF、iOS 出圖、真改寫／翻譯見第 11 節。F03／F04 見第 12 節。第五輪 F01／F14／F23／F43／F05 見第 13 節。仍未做：寫作 prompt 順序、遠程推送、EAS／真機。
 
 ---
 
@@ -284,7 +280,7 @@ F21／F24 呢輪跟住出圖路徑複測通過。F20 表格 Markdown 未再打�
 | C +853 OTP | And ✓ | DialSheet 澳門 `+853`、本地 `61112222`、OTP `123456` → 試用 0／5。 |
 | C +86 OTP | And ✓ | DialSheet 中國 `+86`、本地 `13800138000`、OTP `123456` → 試用 0／5。 |
 
-**環境（唔入產品 commit）：** `/tmp` MySQL datadir 缺 `DeviceToken.ibd`（1812），訪客 `chargeGuest` 更新 User 時被 FK 拖死，畫面「智泉暫時回應唔到」。按遷移 SQL 重建 `DeviceToken` 之後訪客發送先過。`_prisma_migrations.ibd` 同樣缺，唔影響執行時。F01 LogBox `expo-notifications: Custom sound 'default' not found` Android 仍然彈。
+**環境（唔入產品 commit）：** `/tmp` MySQL datadir 缺 `DeviceToken.ibd`（1812），訪客 `chargeGuest` 更新 User 時被 FK 拖死，畫面「智泉暫時回應唔到」。按遷移 SQL 重建 `DeviceToken` 之後訪客發送先過。`_prisma_migrations.ibd` 同樣缺，唔影響執行時。當時 F01 LogBox `expo-notifications: Custom sound 'default' not found` Android 仍然彈；第五輪已修，見第 13 節。
 
 **本輪刻意唔改：** F03／F04 至 F42 見第 12 節。遠程推送、EAS／真機、寫作 prompt 順序仍未做。
 
@@ -310,7 +306,27 @@ F21／F24 呢輪跟住出圖路徑複測通過。F20 表格 Markdown 未再打�
 
 Ionicons 單設 `importantForAccessibility="no"` 唔夠：glyph 仍係 TextView 子層。要包一層 View，`no-hide-descendants`。Cover 入面 Image／遮罩 `accessible={false}`，英雄 Pressable 先出得 `開始`。
 
-F01 LogBox（`expo-notifications: Custom sound 'default' not found` 同 Open debugger）Android 仍然蓋住底欄，測 tab 前要 Dismiss。ScreenHeader 返回 chevron 未傳 `accessibilityBack`，Android 翻譯頁 XML 空 desc（F43，呢輪唔改）。
+F01 LogBox（`expo-notifications: Custom sound 'default' not found` 同 Open debugger）Android 當時仍然蓋住底欄，測 tab 前要 Dismiss。ScreenHeader 返回 chevron 未傳 `accessibilityBack`，Android 翻譯頁 XML 空 desc（F43）。第五輪已修，見第 13 節。
 
-仍未做：F01 Debug LogBox、F14 登入／空 Chat 大空白、F23 氣泡動作得圖示、F43 返回無障礙名、F05 圖像撞名、F18 深色閃啟動頁、F17 自訂音效、F32 iOS 聽寫提示、F22 長回覆實機、F31 iOS 軟件鍵盤實機、F36 思考氣泡實機、寫作 prompt 順序、遠程推送、EAS／真機、iOS 相機／相簿／PDF、訪客用盡 5 次。
+仍未做（當時）：F01 Debug LogBox、F14 登入／空 Chat 大空白、F23 氣泡動作得圖示、F43 返回無障礙名、F05 圖像撞名、F18 深色閃啟動頁、F17 自訂音效、F32 iOS 聽寫提示、F22 長回覆實機、F31 iOS 軟件鍵盤實機、F36 思考氣泡實機、寫作 prompt 順序、遠程推送、EAS／真機、iOS 相機／相簿／PDF、訪客用盡 5 次。
+
+---
+
+## 13. 第五輪修復（2026-10-13）
+
+每項一個 commit，做完即 push `origin/main`。裝置：iPhone 16 Pro（iOS 18.6，`CF2F74AC-E154-42E3-84CE-257A91F25101`）、Pixel 9 Pro XL（`emulator-5554`）。測試用戶 `+85291118888`。唔用擁有人 `+85292578982`。Reload：`am force-stop` 同 `simctl terminate/launch`。API／Metro／MySQL 健康。
+
+| ID | commit | 核對 |
+|---|---|---|
+| F01 | `6d4f1c0` Stop debug LogBox covering the tab bar. | 兩邊 relaunch 後無 LogBox 蓋 tab／發送。And dump：Open debugger 0、Custom sound 0、Dismiss 0。F17 同一根因一齊清：channel 唔再傳 `sound`；`openChat` 抽出 `navigation/open.ts`，屏幕唔再由 MainTabs 引入 helper（re-export 會再造成 cycle）。 |
+| F14 | `33a93cd` Sit login and empty-chat actions next to their content. | And 登入「取得驗證碼」貼卡底 `y≈1006`，「中盈紫達集團」`y≈1160`；鍵盤自動 focus 電話（預期）。空 Chat EmptyHero 喺頂，五粒建議貼 composer 上面。iOS Maestro assert `取得驗證碼`、`共飲智慧之泉`、`寫一封電郵`。iOS 登入無獨立 png（stdin Maestro 路徑失敗，`ios-auth.png` 唔可靠）；靠 Maestro 字串通過。 |
+| F23 | `dc272c7` Show copy, listen, and feedback labels on assistant bubbles. | And 圖像氣泡見到晶片「儲存／有用／唔好」。iOS 呢輪未登入，未喺回覆氣泡實機；同一套 ActionChip JS。 |
+| F43 | `0edb6fe` Name the back chevron 返回 instead of 對話. | And dump `desc='返回'` `[72,159]`，唔再係「對話」。iOS Maestro 由 Auth 同空 Chat 撳「返回」成功。e2e `leaveChat` 先搵「返回」，再 fallback「對話」。 |
+| F05 | `cfcdd8d` Call the home draw section 畫圖 so it is not the Image tab. | 兩邊區塊「畫圖」、tab「圖像」。And 畫圖 `[48,1080]`；圖像只喺 tab `[336,2789]`。iOS Maestro `assertVisible` 畫圖同圖像都通過。`homeImage` 唔含「圖像」二字，避免 substring 打中。 |
+
+Android 核對後還原測試用戶「免費／已用 9／20」。iOS 留未登入「我的」。
+
+唔用 `LogBox.ignoreLogs` 匿產品問題。唔把 helper 由 MainTabs re-export。`homeImage` 用「畫圖」而唔係「圖像創作」，避免 Maestro `tapOn: 圖像` 再打中標題。
+
+仍未做：F22 長回覆實機、F31 iOS 軟件鍵盤實機、F36 思考氣泡實機、F18 深色閃啟動頁、F32 iOS 聽寫提示、寫作 prompt 順序、遠程推送、EAS／真機、iOS 相機／相簿／PDF、訪客用盡 5 次、抽屉搜尋。
 
