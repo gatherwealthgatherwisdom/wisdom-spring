@@ -26,7 +26,8 @@ export function KeyboardDock({
     };
   }, []);
 
-  const reserved = tabBar ? 50 + Math.max(insets.bottom, 8) : Math.max(insets.bottom, 0);
+  const tabCovered = Platform.OS === "ios" && keyboard > 0;
+  const reserved = tabBar && !tabCovered ? 50 + Math.max(insets.bottom, 8) : Math.max(insets.bottom, 0);
   const lift = Platform.OS === "ios" && keyboard > 0 ? Math.max(0, keyboard - reserved) : 0;
   return <View style={{ marginBottom: lift }}>{children}</View>;
 }

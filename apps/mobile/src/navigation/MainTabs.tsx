@@ -6,6 +6,7 @@ import { DiscoverScreen } from "../features/discover/DiscoverScreen";
 import { ImageScreen } from "../features/image/ImageScreen";
 import { InboxScreen } from "../features/inbox/InboxScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
@@ -134,6 +135,7 @@ export function MainTabs() {
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: Platform.OS === "ios",
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
