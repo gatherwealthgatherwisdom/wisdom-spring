@@ -12,11 +12,12 @@ import { WriteScreen } from "../features/write/WriteScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { usePalette } from "../shared/theme";
 import { LoadingScreen } from "./LoadingScreen";
-import { MainTabs, type AppStackParamList } from "./MainTabs";
+import { MainTabs } from "./MainTabs";
 import { navigationRef } from "./ref";
 import { openPendingPushChat } from "../shared/lib/push";
+import type { AppStackParamList } from "./types";
 
-export type { AppStackParamList, AuthParams, ChatParams } from "./MainTabs";
+export type { AppStackParamList, AuthParams, ChatParams } from "./types";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const OPENING_MS = 700;

@@ -36,7 +36,6 @@ async function ensureChannel(): Promise<void> {
     name: "智泉",
     importance: Notifications.AndroidImportance.DEFAULT,
     lightColor: PINE,
-    sound: "default",
   });
 }
 
@@ -86,7 +85,7 @@ export async function notifyGenerationDoneLocal(conversationId: string): Promise
         title: copy.generationDoneTitle,
         body: copy.generationDoneBody,
         data: { kind: "generation_done", conversationId },
-        sound: "default",
+        sound: true,
         ...(Platform.OS === "android" ? { channelId: CHANNEL } : {}),
       },
       trigger: null,

@@ -10,7 +10,7 @@ import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen } from "../../shared/ui/Screen";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
-import { openCatalogTool } from "../../navigation/MainTabs";
+import { openCatalogTool } from "../../navigation/open";
 import { toolsFromCatalog } from "./catalog";
 
 type Props = NativeStackScreenProps<AppStackParamList, "AllTools">;

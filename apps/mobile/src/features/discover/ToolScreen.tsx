@@ -12,7 +12,7 @@ import { useColors } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
 import { RecentRow } from "../../shared/ui/RecentRow";
 import { Screen } from "../../shared/ui/Screen";
-import { paramsForLiveTool } from "../../navigation/MainTabs";
+import { paramsForLiveTool } from "../../navigation/open";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 import { toolsFromCatalog } from "./catalog";
 
