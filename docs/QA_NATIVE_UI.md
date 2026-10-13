@@ -1,8 +1,8 @@
 # 智泉 Native UI QA
 
-**日期：** 2026-10-12（紀錄）／2026-10-13（第二輪修復；第三輪補洞）  
-**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；原生 Debug `com.gwgwgroup.spring`）  
-**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。
+**日期：** 2026-10-12（紀錄）／2026-10-13（第二輪修復；第三輪補洞；第四輪 F03／F04）  
+**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；第四輪見第 12 節；原生 Debug `com.gwgwgroup.spring`）  
+**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。第四輪修發送同工具中文無障礙名（F03、F04）。
 
 以真實用戶路徑，喺 **iPhone 16 Pro（iOS 18.6 Simulator）** 同 **Pixel 9 Pro XL（Android API 36 Emulator）** 用同一組案例行過每個主要畫面。生成全部打真實本機 API（`:3000`）同 OpenRouter，無 mock 回覆。
 
@@ -68,8 +68,8 @@ Debug 裝還有 Metro LogBox 蓋住 tab 同發送，會干擾測試同開發裝�
 | E | 長文、讚、複製、朗讀 | | And 讚變松綠 | | 文末藏喺 composer 底 | | | F20 表格難讀 |
 | F | 相機 | | And 系統相機 | | | | iOS 本輪未開 | |
 | F | 相簿／PDF 全文 | | And ✓ 相簿+PDF | | | | iOS 本輪跳過 | ✓ |
-| G | 工作室、風格、開始 | ✓ 畫面 | And／iOS 真出圖 | 空白發送無反應 | F30 畫緊兩邊 | | iOS 等到完成；「開始」VoiceOver 仍弱 | ✓ 無廠商 slug |
-| H | 改寫工具頁 | And 大片空 F42 | And ✓ 真改寫；iOS UI ✓（3b 傾偈） | 開始可撳但空文無反應 | | 0 字 | iOS 改寫 a11y 帶圖示碼 | △ 工具頁好疏 |
+| G | 工作室、風格、開始 | ✓ 畫面 | And／iOS 真出圖 | 空白發送無反應 | F30 畫緊兩邊 | | iOS 等到完成；「開始」Button content-desc 已修 | ✓ 無廠商 slug |
+| H | 改寫工具頁 | And 大片空 F42 | And ✓ 真改寫；iOS UI ✓（3b 傾偈） | 開始可撳但空文無反應 | | 0 字 | F04 改寫／開始可撳 | △ 工具頁好疏 |
 | H | 翻譯語言對 | And ✓ | ✓ 兩邊真譯（`9b54750` 之後） | 開始樣係可撳 F38 | | 0 字 | iOS 譯文卡 | ✓ |
 | I | 發現、全部工具 | ✓ | ✓ 打開清單 | | | | ✓ | F11／F12 |
 | J | 抽屉、分組、最近刪除 | And ✓ | △ 搜尋本輪失敗 | | | 標題「新對話」 | iOS 未深測抽屉 | ✓ |
@@ -99,8 +99,8 @@ Debug 裝還有 Metro LogBox 蓋住 tab 同發送，會干擾測試同開發裝�
 | F08 | 中 | 兩邊 | 首頁 | iOS 熱門智能體只完整見到「商務助手」。Android 見到三個但「寫作導師」介紹被 composer 切行。下面仲有人，無足夠提示要掃。 **已修**。 |
 | F14 | 中 | 兩邊 | 登入／工具／空 Chat | 登入卡同底部 CTA 之間一大片空白。Android 空 Chat 建議同輸入框之間同樣空洞。iOS 空 Chat 反而較緊。改寫工具頁（And）開始掣下面成屏黑。 |
 | F11 | 中 | 兩邊 | 發現 | 英雄圖第二行寫「查看全部」，同工具區連結撞文案，唔係探索／說明。 |
-| F03 | 中 | 兩邊，And 更差 | 發送 | 發送 `accessibilityLabel` 寫死英文 `"send"`。Android TalkBack／自動化搵唔到；iOS VoiceOver 會讀英文。畫面上得向上箭咀。 |
-| F04 | 中 | 兩邊 | 圖示 | `Icon` 直接用 Ionicons，無障礙名變成 `, 改寫`、tab `, 對話`。iOS Maestro 因而搵唔到「改寫」「開始」。 |
+| F03 | 中 | 兩邊，And 更差 | 發送 | 發送 `accessibilityLabel` 寫死英文 `"send"`。Android TalkBack／自動化搵唔到；iOS VoiceOver 會讀英文。畫面上得向上箭咀。 **已修**（`text.send`＝發送／Send）。 |
+| F04 | 中 | 兩邊 | 圖示 | `Icon` 直接用 Ionicons，無障礙名變成 `, 改寫`、tab `, 對話`。iOS Maestro 因而搵唔到「改寫」「開始」。 **已修**（圖示包 View 隱藏；工具／tab／開始用中文名）。 |
 | F23 | 中 | 兩邊 | 氣泡動作 | 複製／朗讀／再生成／讚／踩得圓形圖示。有 a11y 字但畫面零文字。長文動作列要滾到最底先見到（F22）。 |
 | F15 | 中 | Android | 登入 | OTP 成功回到我的之後，數字鍵盤仍然開住，蓋住配額同捷徑。 |
 | F35 | 中 | iOS（And 鍵盤時更差） | 圖像 | 風格列「水墨／紙本／夜色」被底部 composer 切去下半。用戶以為得兩種風格。 **已修**。 |
@@ -252,7 +252,7 @@ Debug LogBox（F01）屬開發裝，修 require cycle 或非 CI Metro 即可；�
 
 同一組用戶路徑喺 iOS 同 Android 都跑過。登入、未登入瀏覽、真實對話、Android 真實出圖、清墨品牌，作為可用原型已經成立。要當日常用嘅香港手機 app，而家最阻手嘅係 **Android 鍵盤、Markdown 裸印、冇生成種類、歷史全叫新對話、同第一屏被底欄食內容**。
 
-2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。
+2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。第四輪 F03／F04 見第 12 節。
 
 ---
 
@@ -270,7 +270,7 @@ Debug LogBox（F01）屬開發裝，修 require cycle 或非 CI Metro 即可；�
 
 F21／F24 呢輪跟住出圖路徑複測通過。F20 表格 Markdown 未再打一次健康作息清單。
 
-仍未做：F03／F04 無障礙名、F15 登入後鍵盤、F16 電話印兩次、F22 長文被 composer 遮、F31 iOS 鍵盤蓋 tab、F11／F12 發現文案、F36 思考人設、F38 空翻譯、F42 改寫工具頁疏、寫作 prompt 順序、遠程推送、EAS／真機。訪客／+853／+86、相簿／PDF、iOS 出圖、真改寫／翻譯見第 11 節。
+仍未做：F15 登入後鍵盤、F16 電話印兩次、F22 長文被 composer 遮、F31 iOS 鍵盤蓋 tab、F11／F12 發現文案、F36 思考人設、F38 空翻譯、F42 改寫工具頁疏、寫作 prompt 順序、遠程推送、EAS／真機。訪客／+853／+86、相簿／PDF、iOS 出圖、真改寫／翻譯見第 11 節。F03／F04 見第 12 節。
 
 ---
 
@@ -290,5 +290,22 @@ F21／F24 呢輪跟住出圖路徑複測通過。F20 表格 Markdown 未再打�
 
 **環境（唔入產品 commit）：** `/tmp` MySQL datadir 缺 `DeviceToken.ibd`（1812），訪客 `chargeGuest` 更新 User 時被 FK 拖死，畫面「智泉暫時回應唔到」。按遷移 SQL 重建 `DeviceToken` 之後訪客發送先過。`_prisma_migrations.ibd` 同樣缺，唔影響執行時。F01 LogBox `expo-notifications: Custom sound 'default' not found` Android 仍然彈。
 
-**本輪刻意唔改：** F03／F04、F15、F16、F22、F31、F11／F12、F36、F38、F42、遠程推送、EAS／真機、寫作 prompt 順序。
+**本輪刻意唔改：** F03／F04（第四輪已修）、F15、F16、F22、F31、F11／F12、F36、F38、F42、遠程推送、EAS／真機、寫作 prompt 順序。
+
+---
+
+## 12. 第四輪修復（2026-10-13）
+
+每項一個 commit，做完即 push `origin/main`。裝置：iPhone 16 Pro、Pixel 9 Pro XL。測試用戶 `+85291118888`。唔用擁有人 `+85292578982`。
+
+| ID | commit | 核對 |
+|---|---|---|
+| F03 | `1a631d5` Give the send control a Chinese accessibility name. | And uiautomator Button content-desc `發送`（Inbox／圖像 composer）。e2e `clickLabel(page, "發送")`。畫面仍然得向上箭咀。 |
+| F04 | `c19aa0e` Hide decorative icons from VoiceOver and name tools in Chinese. 跟 `feed56c` Keep Ionicons out of the accessibility tree. | And Button `改寫`／`解答`／`搜尋`／`備忘`，tab `對話`／`圖像`／`發現`／`我的`，無 PUA 前綴。iOS Maestro `tapOn: 改寫` → `開始` 通過。圖像英雄 `開始`：And XML Button；iOS Maestro 底欄 37%,94% 再 assert `開始`／`發送` 通過。Maestro `tapOn: 圖像` 會打中 Inbox 區塊標題，要用 tab 座標。 |
+
+Ionicons 單設 `importantForAccessibility="no"` 唔夠：glyph 仍係 TextView 子層。要包一層 View，`no-hide-descendants`。Cover 入面 Image／遮罩 `accessible={false}`，英雄 Pressable 先出得 `開始`。
+
+F01 LogBox（`expo-notifications: Custom sound 'default' not found` 同 Open debugger）Android 仍然蓋住底欄，測 tab 前要 Dismiss。
+
+仍未做：F15、F16、F22、F31、F11／F12、F36、F38、F42、寫作 prompt 順序、遠程推送、EAS／真機。
 
