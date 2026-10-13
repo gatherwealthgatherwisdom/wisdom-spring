@@ -45,7 +45,7 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
         <ScreenHeader title={text.completeRegistration} onBack={() => navigation.goBack()} accessibilityBack={text.back} />
 
-        <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.registerHint}</Text>
           <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16 }}>
             {phone ? <Text style={{ color: colors.ink, marginBottom: 12 }}>{formatE164(phone)}</Text> : null}
@@ -68,18 +68,22 @@ export function CompleteRegistrationScreen({ navigation }: Props) {
               }}
             />
           </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, paddingBottom: 16, gap: 10 }}>
-          {error ? <Text style={{ color: colors.danger, textAlign: "center" }}>{error}</Text> : null}
+          {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
           <Pressable
             disabled={busy}
             onPress={() => void confirm()}
-            style={{ backgroundColor: colors.accent, borderRadius: 16, paddingVertical: 16, alignItems: "center", opacity: busy ? 0.7 : 1 }}
+            style={{
+              backgroundColor: colors.accent,
+              borderRadius: 16,
+              paddingVertical: 16,
+              alignItems: "center",
+              marginTop: 16,
+              opacity: busy ? 0.7 : 1,
+            }}
           >
             <Text style={{ color: colors.onAccent, fontSize: 16 }}>{text.confirm}</Text>
           </Pressable>
-          <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12 }}>{text.company}</Text>
+          <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12, marginTop: 12 }}>{text.company}</Text>
         </View>
       </KeyboardAvoidingView>
     </Screen>

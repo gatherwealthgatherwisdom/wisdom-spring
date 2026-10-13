@@ -128,7 +128,7 @@ export function AuthScreen({ navigation, route }: Props) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
         <ScreenHeader title={text.login} onBack={resume || navigation.canGoBack() ? dismiss : undefined} accessibilityBack={text.back} />
 
-        <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 12 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
           <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 28, marginBottom: 6 }}>{text.app}</Text>
           {step === "phone" ? (
             <Text style={{ color: colors.muted, lineHeight: 22, marginBottom: 20 }}>{text.phoneHint}</Text>
@@ -234,10 +234,7 @@ export function AuthScreen({ navigation, route }: Props) {
               </>
             )}
           </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, paddingBottom: 16, gap: 10 }}>
-          {error ? <Text style={{ color: colors.danger, textAlign: "center" }}>{error}</Text> : null}
+          {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
           <Pressable
             disabled={!canSubmit}
             onPress={() => void (step === "phone" ? requestCode() : verify())}
@@ -246,12 +243,13 @@ export function AuthScreen({ navigation, route }: Props) {
               borderRadius: 16,
               paddingVertical: 16,
               alignItems: "center",
+              marginTop: 16,
               opacity: canSubmit ? 1 : 0.4,
             }}
           >
             <Text style={{ color: colors.onAccent, fontSize: 16 }}>{step === "phone" ? text.getCode : text.login}</Text>
           </Pressable>
-          <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12 }}>{text.company}</Text>
+          <Text style={{ color: colors.muted, textAlign: "center", fontSize: 12, marginTop: 12 }}>{text.company}</Text>
         </View>
       </KeyboardAvoidingView>
       <DialSheet

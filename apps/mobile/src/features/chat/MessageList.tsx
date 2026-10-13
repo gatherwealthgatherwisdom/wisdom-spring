@@ -79,7 +79,11 @@ export function MessageList({
 
   if (data.length === 0) {
     if (emptyLabel) return <Text style={{ color: colors.muted, paddingVertical: 24, textAlign: "center" }}>{emptyLabel}</Text>;
-    return <EmptyHero text={text} onCard={onCard} suggestions={suggestions} onSuggest={onSuggest} />;
+    return (
+      <View style={{ flex: 1 }}>
+        <EmptyHero text={text} onCard={onCard} suggestions={suggestions} onSuggest={onSuggest} />
+      </View>
+    );
   }
   return (
     <FlatList

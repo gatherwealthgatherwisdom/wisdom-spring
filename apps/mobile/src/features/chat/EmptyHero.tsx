@@ -22,7 +22,7 @@ export function EmptyHero({
     ["resume", text.cards.resume, "chatbubble-outline"],
   ] as const;
   return (
-    <View style={{ paddingVertical: 24 }}>
+    <View style={{ flex: 1, paddingTop: 24, paddingBottom: 8 }}>
       <Text style={{ fontSize: 28, color: colors.ink, fontFamily: "Palatino" }}>智泉</Text>
       <Text style={{ color: colors.muted, marginBottom: 16 }}>{text.splash}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
@@ -33,8 +33,9 @@ export function EmptyHero({
           </Pressable>
         ))}
       </View>
+      <View style={{ flex: 1, minHeight: 12 }} />
       {suggestions && suggestions.length > 0 ? (
-        <View style={{ marginTop: 16, gap: 8 }}>
+        <View style={{ gap: 8 }}>
           {suggestions.map((sentence) => (
             <Pressable
               key={sentence}
