@@ -89,21 +89,25 @@ export function TranslateScreen({ navigation, route }: Props) {
       {recent.length === 0 ? <RecentRow modeLabel={text.translate} locale={locale} empty={text.emptyTranslate} /> : recent.map((item) => (
         <RecentRow key={item.id} item={item} modeLabel={text.translate} locale={locale} onPress={() => navigation.navigate("Chat", { conversationId: item.id, mode: "translate" })} />
       ))}
+      {body.trim() ? null : <Text style={{ color: colors.muted, marginTop: 8 }}>{text.needDraft}</Text>}
       <Pressable
+        disabled={!body.trim()}
         accessibilityRole="button"
         accessibilityLabel={text.start}
+        accessibilityState={{ disabled: !body.trim() }}
         onPress={() => {
-          if (!body.trim()) return;
+          const typed = body.trim();
+          if (!typed) return;
           navigation.navigate("Chat", {
             mode: "translate",
             sourceLang: source,
             targetLang: target,
-            seed: body.trim(),
+            seed: typed,
             ...(route.params?.templateId ? { templateId: route.params.templateId } : {}),
           });
           setBody("");
         }}
-        style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center" }}
+        style={{ marginTop: 14, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: body.trim() ? 1 : 0.45 }}
       >
         <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
