@@ -56,7 +56,7 @@ export function DiscoverScreen({ navigation }: Props) {
                 style={{ flex: 1, justifyContent: "flex-end", padding: 14 }}
               >
                 <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{locale === "en" ? hero.en : hero.zh}</Text>
-                <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{text.viewAll}</Text>
+                <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{locale === "en" ? hero.blurbEn : hero.blurbZh}</Text>
               </Pressable>
             </Cover>
           ))}
