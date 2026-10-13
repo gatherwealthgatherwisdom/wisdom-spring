@@ -98,7 +98,7 @@ export function InboxScreen({ navigation }: Props) {
         </Pressable>
       </View>
       <View style={{ flex: 1 }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 28 }}>
         {banner ? (
           <View style={{ flexDirection: "row", alignItems: "stretch", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
             <View style={{ width: 4, backgroundColor: colors.accent }} />
@@ -115,13 +115,13 @@ export function InboxScreen({ navigation }: Props) {
           </View>
         ) : null}
         {inboxHero ? (
-        <Cover source={inboxHero.art} style={{ borderRadius: 16, minHeight: 124, marginBottom: 14 }} dim={0.42}>
+        <Cover source={inboxHero.art} style={{ borderRadius: 16, minHeight: 108, marginBottom: 12 }} dim={0.42}>
           <Pressable
             onPress={() => {
               if (inboxHero.toolId) stack?.navigate("Tool", { id: inboxHero.toolId });
               else navigation.navigate("Discover");
             }}
-            style={{ minHeight: 124, padding: 16, justifyContent: "space-between" }}
+            style={{ minHeight: 108, padding: 14, justifyContent: "space-between" }}
           >
             <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? inboxHero.en : inboxHero.zh}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 }}>
@@ -130,8 +130,8 @@ export function InboxScreen({ navigation }: Props) {
           </Pressable>
         </Cover>
         ) : null}
-        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 14 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 14, marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.tools}</Text>
             <Pressable onPress={() => stack?.navigate("AllTools")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
@@ -144,15 +144,15 @@ export function InboxScreen({ navigation }: Props) {
             ))}
           </View>
         </View>
-        <View style={{ marginBottom: 14 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+        <View style={{ marginBottom: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.image}</Text>
             <Pressable onPress={() => navigation.navigate("Image")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
             {draws.map((card) => (
-              <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 132, borderRadius: 16 }} dim={0.18}>
-                <Pressable onPress={() => openChat(navigation, { mode: card.mode ?? "image", imageStyle: card.imageStyle ?? "ink" })} style={{ minHeight: 132, padding: 12, justifyContent: "flex-end" }}>
+              <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 118, borderRadius: 16 }} dim={0.18}>
+                <Pressable onPress={() => openChat(navigation, { mode: card.mode ?? "image", imageStyle: card.imageStyle ?? "ink" })} style={{ minHeight: 118, padding: 12, justifyContent: "flex-end" }}>
                   <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
                     <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
                   </View>
@@ -162,8 +162,8 @@ export function InboxScreen({ navigation }: Props) {
             ))}
           </View>
         </View>
-        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 4 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 14, marginBottom: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
             <Text style={{ color: colors.ink, fontSize: 18 }}>{text.bots}</Text>
             <Pressable onPress={() => stack?.navigate("AllBots")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
@@ -176,7 +176,7 @@ export function InboxScreen({ navigation }: Props) {
                   templateId: bot.id,
                 })
               }
-              style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12 }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 }}
             >
               <Cover source={bot.art} style={{ width: 48, height: 48, borderRadius: 24 }} dim={0} />
               <View style={{ flex: 1 }}>
