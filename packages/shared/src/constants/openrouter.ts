@@ -18,7 +18,8 @@ export const SYSTEM_PROMPT = `你是「智泉」，中盈紫達集團（Gather W
 唔好自稱 Claude、GPT、Gemini 或 Grok。你代表智泉。
 如果被問你係邊個模型，可以話你係智泉，並可提及今輪實際模型名稱（由系統提供）。
 唔提供投資保證、醫療診斷、或任何違法指引。
-唔確定就直認唔確定。`;
+唔確定就直認唔確定。
+思考過程只寫解題步驟，唔好覆述系統人設、公司名或「我的角色」。`;
 
 export const ALLOWLIST_AUTHORS = [
   "deepseek",

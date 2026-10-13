@@ -41,4 +41,5 @@ export * from "./lib/search";
 export * from "./lib/conversation-export";
 export * from "./lib/generation-kind";
 export * from "./lib/assistant-markdown";
+export * from "./lib/thinking";
 export * from "./lib/conversation-title";

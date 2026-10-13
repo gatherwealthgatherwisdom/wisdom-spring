@@ -1,3 +1,4 @@
+import { sanitizeThinking } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
@@ -39,7 +40,8 @@ export function ThinkingBlock({
 }) {
   const colors = useColors();
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
-  if (!thinking) return null;
+  const cleaned = sanitizeThinking(thinking ?? "");
+  if (!cleaned) return null;
   const autoOpen = Boolean(streaming) && !hasAnswer;
   const open = userOpen ?? autoOpen;
   const title = autoOpen ? nowLabel : label;
@@ -56,7 +58,7 @@ export function ThinkingBlock({
       </Pressable>
       {open ? (
         <View>
-          <MarkdownBody source={thinking} color={colors.muted} size={13} lineHeight={20} />
+          <MarkdownBody source={cleaned} color={colors.muted} size={13} lineHeight={20} />
           {streaming && !hasAnswer ? <StreamingCursor /> : null}
         </View>
       ) : null}

@@ -14,6 +14,7 @@ import {
   createId,
   estimateCostMicros,
   messageFor,
+  sanitizeThinking,
   usdPerTokenToMicrosPerMillion,
   usdToMicros,
   type PlanTier,
@@ -287,7 +288,10 @@ export async function runGeneration(
             data: {
               status: "COMPLETED",
               content: text,
-              thinking: thinking.length > 0 ? thinking : null,
+              thinking: (() => {
+                const cleaned = sanitizeThinking(thinking);
+                return cleaned.length > 0 ? cleaned : null;
+              })(),
               imageUrl,
               requestedModel: pick.primary,
               servedModel: served,

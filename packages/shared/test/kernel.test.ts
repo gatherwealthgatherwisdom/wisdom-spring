@@ -29,6 +29,7 @@ import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
 import { conversationMarkdown, EXPORT_ASSISTANT, EXPORT_UNTITLED, EXPORT_USER } from "../src/lib/conversation-export";
+import { sanitizeThinking } from "../src/lib/thinking";
 import { ratingOf } from "../src/constants/feedback";
 import { MessageRole } from "../src/enums/message-role";
 
@@ -418,5 +419,15 @@ describe("Macau and mainland mobile numbers", () => {
     expect(formatE164("+85291234567")).toBe("+852 9123 4567");
     expect(formatE164("+85366123456")).toBe("+853 6612 3456");
     expect(formatE164("+8613800138000")).toBe("+86 138 0013 8000");
+  });
+});
+
+describe("sanitizeThinking", () => {
+  it("drops identity restatement and keeps the rest", () => {
+    expect(
+      sanitizeThinking("先拆題。我的角色：『智泉』(中盈紫達集團)嘅助手。然後逐步計。"),
+    ).toBe("先拆題。然後逐步計。");
+    expect(sanitizeThinking("Gather Wealth Gather Wisdom Group identity.")).toBe("");
+    expect(sanitizeThinking("比較兩個方案。")).toBe("比較兩個方案。");
   });
 });
