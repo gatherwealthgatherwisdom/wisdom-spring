@@ -1,6 +1,6 @@
 import type { MessageView } from "@spring/shared";
 import { useEffect, useRef } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { formatWhen } from "../../shared/lib/time";
@@ -45,12 +45,15 @@ export function MessageList({
   const locale = usePrefs((state) => state.locale);
   const colors = useColors();
   const listRef = useRef<FlatList<MessageView>>(null);
+  const stickToEnd = useRef(true);
   const data = draft
     ? [...messages, { ...draft, id: "draft", role: "ASSISTANT" as const, status: "STREAMING" as const } as MessageView]
     : messages;
+  const streamLen = draft ? draft.content.length + (draft.thinking?.length ?? 0) : 0;
 
   useEffect(() => {
     if (!highlightedId || messages.length === 0) return;
+    stickToEnd.current = false;
     const index = messages.findIndex((item) => item.id === highlightedId);
     if (index < 0) return;
     const timer = setTimeout(() => {
@@ -58,6 +61,21 @@ export function MessageList({
     }, 50);
     return () => clearTimeout(timer);
   }, [highlightedId, messages]);
+
+  useEffect(() => {
+    if (highlightedId) return;
+    stickToEnd.current = true;
+  }, [data.length, highlightedId]);
+
+  function followEnd() {
+    if (highlightedId || !stickToEnd.current) return;
+    listRef.current?.scrollToEnd({ animated: false });
+  }
+
+  function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    stickToEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 72;
+  }
 
   if (data.length === 0) {
     if (emptyLabel) return <Text style={{ color: colors.muted, paddingVertical: 24, textAlign: "center" }}>{emptyLabel}</Text>;
@@ -68,6 +86,11 @@ export function MessageList({
       ref={listRef}
       data={data}
       keyExtractor={(item) => item.id}
+      contentContainerStyle={{ paddingBottom: 20 }}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      onContentSizeChange={() => followEnd()}
+      extraData={streamLen}
       onScrollToIndexFailed={({ index, averageItemLength }) => {
         listRef.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * index), animated: false });
         setTimeout(() => {
