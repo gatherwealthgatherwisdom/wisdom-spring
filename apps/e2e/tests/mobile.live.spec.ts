@@ -34,7 +34,7 @@ test("a short signed-in chat streams a 智泉 reply and counts against quota", a
   if (before.used >= before.limit) test.skip(true, "quota exhausted");
   await openNewChat(page);
   await composerBox(page, "問智泉").fill(TEXT_PROMPT);
-  await clickLabel(page, "send");
+  await clickLabel(page, "發送");
   const result = await waitForLiveTurn(page, { prompt: TEXT_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, TEXT_PROMPT).first()).toBeVisible();
@@ -63,7 +63,7 @@ test("the image tab generates a picture when the pool has an image model", async
     test.skip(true, "暫時未有可用圖像模型。");
   }
   await composerBox(page, "描述你想畫嘅圖").fill(IMAGE_PROMPT);
-  await clickLabel(page, "send");
+  await clickLabel(page, "發送");
   const result = await waitForLiveTurn(page, { image: true });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, IMAGE_PROMPT).first()).toBeVisible();
@@ -85,7 +85,7 @@ test("a photo attach asks a vision model when the pool can look at pictures", as
   const attached = await attachPhotoFixture(page, LOOK_PNG);
   if (attached !== "ok") test.skip(true, attached);
   await composerBox(page, "問呢張圖").fill(VISION_PROMPT);
-  await clickLabel(page, "send");
+  await clickLabel(page, "發送");
   const result = await waitForLiveTurn(page, { prompt: VISION_PROMPT });
   if (result !== "ok") test.skip(true, result);
   await expect(visibleText(page, VISION_PROMPT).first()).toBeVisible();
@@ -105,7 +105,7 @@ test("the same chat can ask then draw without a second 智泉 draft", async ({ p
   if (before.used + 1 >= before.limit) test.skip(true, "quota exhausted");
   await openNewChat(page);
   await composerBox(page, "問智泉").fill(TEXT_PROMPT);
-  await clickLabel(page, "send");
+  await clickLabel(page, "發送");
   const asked = await waitForLiveTurn(page, { prompt: TEXT_PROMPT });
   if (asked !== "ok") test.skip(true, asked);
   await expectSingleCompletedReply(page);
@@ -113,7 +113,7 @@ test("the same chat can ask then draw without a second 智泉 draft", async ({ p
   await clickLabel(page, "畫圖");
   await expect(composerBox(page, "描述你想畫嘅圖")).toBeVisible();
   await composerBox(page, "描述你想畫嘅圖").fill(IMAGE_PROMPT);
-  await clickLabel(page, "send");
+  await clickLabel(page, "發送");
   const drawn = await waitForLiveTurn(page, { image: true });
   if (drawn !== "ok") test.skip(true, drawn);
   await expect(visibleText(page, TEXT_PROMPT).first()).toBeVisible();

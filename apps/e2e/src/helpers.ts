@@ -155,7 +155,7 @@ export async function expectNoVendorModels(page: Page): Promise<void> {
 
 export async function expectComposerControls(page: Page): Promise<void> {
   await expect(page.locator('[aria-label="+"]').filter({ visible: true }).last()).toBeVisible();
-  await expect(page.locator('[aria-label="send"]').filter({ visible: true }).last()).toBeVisible();
+  await expect(page.locator('[aria-label="發送"]').filter({ visible: true }).last()).toBeVisible();
   const extras = await page.evaluate(() => {
     const input = Array.from(document.querySelectorAll("textarea, input")).find((node) => {
       const placeholder = (node as HTMLInputElement | HTMLTextAreaElement).placeholder;
@@ -173,7 +173,7 @@ export async function expectComposerControls(page: Page): Promise<void> {
       call: html.includes("call-outline") || /aria-label="call"/i.test(html),
     };
   });
-  expect(extras.labels).toEqual(["+", "send"]);
+  expect(extras.labels).toEqual(["+", "發送"]);
   expect(extras.mic).toBe(false);
   expect(extras.call).toBe(false);
 }

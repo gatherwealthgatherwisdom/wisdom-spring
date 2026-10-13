@@ -105,7 +105,7 @@ export function Composer({
             <Icon name="stop" color={colors.bg} size={14} />
           </Pressable>
         ) : (
-          <Pressable onPress={onSend} accessibilityLabel="send" style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={onSend} accessibilityRole="button" accessibilityLabel={text.send} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, alignItems: "center", justifyContent: "center" }}>
             <Icon name="arrow-up" color={colors.onAccent} size={18} />
           </Pressable>
         )}
