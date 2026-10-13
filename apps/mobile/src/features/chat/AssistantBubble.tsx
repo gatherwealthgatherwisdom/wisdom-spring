@@ -7,22 +7,45 @@ import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { saveMedia } from "../../shared/lib/save-media";
 import { useColors } from "../../shared/theme";
-import { Icon } from "../../shared/ui/Icon";
+import { Icon, type IconName } from "../../shared/ui/Icon";
 import { MarkdownBody } from "./MarkdownBody";
 import { MediaLightbox } from "./MediaLightbox";
 import { StreamingCursor } from "./StreamingCursor";
 
-function action(colors: { card: string; line: string }) {
-  return {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.card,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  };
+function ActionChip({
+  label,
+  icon,
+  color,
+  colors,
+  onPress,
+}: {
+  label: string;
+  icon: IconName;
+  color: string;
+  colors: { card: string; line: string };
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.line,
+        backgroundColor: colors.card,
+      }}
+    >
+      <Icon name={icon} color={color} size={16} />
+      <Text style={{ color, fontSize: 12 }}>{label}</Text>
+    </Pressable>
+  );
 }
 
 export function ThinkingBlock({
@@ -176,36 +199,36 @@ export function AssistantBubble({
         <StreamingCursor />
       ) : null}
       {!streaming && (image.text || uri) ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 }}>
           {uri ? (
-            <Pressable accessibilityLabel={labels.saveAs} onPress={() => void save()} style={action(colors)}>
-              <Icon name="download-outline" color={colors.muted} size={18} />
-            </Pressable>
+            <ActionChip label={labels.saveAs} icon="download-outline" color={colors.muted} colors={colors} onPress={() => void save()} />
           ) : null}
           {image.text ? (
-            <Pressable accessibilityLabel={copyLabel} onPress={() => void Clipboard.setStringAsync(image.text)} style={action(colors)}>
-              <Icon name="copy-outline" color={colors.muted} size={18} />
-            </Pressable>
+            <ActionChip label={copyLabel ?? labels.copy} icon="copy-outline" color={colors.muted} colors={colors} onPress={() => void Clipboard.setStringAsync(image.text)} />
           ) : null}
           {onListen && image.text ? (
-            <Pressable accessibilityLabel={listenLabel} onPress={onListen} style={action(colors)}>
-              <Icon name="volume-medium-outline" color={colors.muted} size={18} />
-            </Pressable>
+            <ActionChip label={listenLabel ?? labels.listen} icon="volume-medium-outline" color={colors.muted} colors={colors} onPress={onListen} />
           ) : null}
           {onRegenerate ? (
-            <Pressable accessibilityLabel={regenerateLabel} onPress={onRegenerate} style={action(colors)}>
-              <Icon name="refresh-outline" color={colors.muted} size={18} />
-            </Pressable>
+            <ActionChip label={regenerateLabel} icon="refresh-outline" color={colors.muted} colors={colors} onPress={onRegenerate} />
           ) : null}
           {onFeedback ? (
-            <Pressable accessibilityLabel={thumbsUpLabel} onPress={() => onFeedback("up")} style={action(colors)}>
-              <Icon name={feedback === "up" ? "thumbs-up" : "thumbs-up-outline"} color={feedback === "up" ? colors.accent : colors.muted} size={18} />
-            </Pressable>
+            <ActionChip
+              label={thumbsUpLabel ?? labels.thumbsUp}
+              icon={feedback === "up" ? "thumbs-up" : "thumbs-up-outline"}
+              color={feedback === "up" ? colors.accent : colors.muted}
+              colors={colors}
+              onPress={() => onFeedback("up")}
+            />
           ) : null}
           {onFeedback ? (
-            <Pressable accessibilityLabel={thumbsDownLabel} onPress={() => onFeedback("down")} style={action(colors)}>
-              <Icon name={feedback === "down" ? "thumbs-down" : "thumbs-down-outline"} color={feedback === "down" ? colors.accent : colors.muted} size={18} />
-            </Pressable>
+            <ActionChip
+              label={thumbsDownLabel ?? labels.thumbsDown}
+              icon={feedback === "down" ? "thumbs-down" : "thumbs-down-outline"}
+              color={feedback === "down" ? colors.accent : colors.muted}
+              colors={colors}
+              onPress={() => onFeedback("down")}
+            />
           ) : null}
         </View>
       ) : null}
