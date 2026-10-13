@@ -153,7 +153,7 @@ export function InboxScreen({ navigation }: Props) {
         </View>
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-            <Text style={{ color: colors.ink, fontSize: 18 }}>{text.image}</Text>
+            <Text accessibilityRole="header" accessibilityLabel={text.homeImage} style={{ color: colors.ink, fontSize: 18 }}>{text.homeImage}</Text>
             <Pressable onPress={() => navigation.navigate("Image")}><Text style={{ color: colors.muted }}>{text.viewAll}</Text></Pressable>
           </View>
           <View style={{ flexDirection: "row", gap: 10 }}>
