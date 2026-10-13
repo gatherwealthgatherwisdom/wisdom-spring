@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
+import { useHostInsets } from "../../shared/ui/hostInsets";
 import { openAuth, openChat, openRegister, type MainTabParamList } from "../../navigation/MainTabs";
 import { spring } from "../../shared/lib/api";
 import { useHistory, useHistoryStore } from "../../shared/lib/history";
@@ -19,6 +20,7 @@ import { ScreenHeader } from "../../shared/ui/ScreenHeader";
 
 export function SettingsScreen() {
   const colors = useColors();
+  const insets = useHostInsets();
   const locale = usePrefs((state) => state.locale);
   const text = copy[locale];
   const appearance = usePrefs((state) => state.appearance);
@@ -82,11 +84,11 @@ export function SettingsScreen() {
 
   return (
     <Screen edges={["top"]}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 + insets.bottom + 16 }}>
       <ScreenHeader title={text.mine} />
-      <View style={{ alignItems: "center", marginBottom: 18 }}>
-        <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
-          <Icon name="person-outline" color={colors.ink} size={36} />
+      <View style={{ alignItems: "center", marginBottom: 14 }}>
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+          <Icon name="person-outline" color={colors.ink} size={32} />
         </View>
         <Text style={{ color: colors.ink, fontSize: 20, fontFamily: "Palatino" }}>{signedIn ? display : text.app}</Text>
         <Pressable onPress={() => { if (user?.phone) void Clipboard.setStringAsync(user.phone); }}>
@@ -98,7 +100,7 @@ export function SettingsScreen() {
           </View>
         ) : null}
       </View>
-      <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, marginBottom: 18 }}>
+      <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 16, marginBottom: 14 }}>
         {!signedIn ? (
           <>
             <Text style={{ color: colors.ink, marginBottom: 12 }}>{text.signInHint}</Text>
