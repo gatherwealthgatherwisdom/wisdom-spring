@@ -39,7 +39,7 @@ export function ImageScreen({ navigation }: Props) {
     () => (styles.some((style) => style.id === styleId) ? styleId : (styles[0]?.id ?? "ink")),
     [styles, styleId],
   );
-  const recent = chats.items.slice(0, 8);
+  const recent = chats.items.filter((item) => item.lastImageUrl).slice(0, 8);
   const scroll = useRef<ScrollView>(null);
   const blocked = caps.data?.image === false;
 
