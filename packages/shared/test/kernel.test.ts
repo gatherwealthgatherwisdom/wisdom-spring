@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
+import { Locale, isAppLocale, parseAppLocale } from "../src/enums/locale";
+import { labelFor, toSimplified } from "../src/lib/zh-hans";
 import { messageFor } from "../src/constants/messages";
 import { APP_SETTING_DEFAULTS, LIMITS, limitsFor } from "../src/constants/limits";
 import { SUGGESTED_PROMPTS_ZH } from "../src/constants/brand";
@@ -264,11 +266,13 @@ describe("tool catalog", () => {
     expect(toolGroup({ id: "interpret", mode: "translate" })).toBe("translate");
     expect(toolsByGroup(live).map((section) => section.group)).toEqual(["write", "chat", "file", "translate"]);
     expect(toolPlaceholder("rewrite", "zh-HK")).toMatch(/改寫/);
+    expect(toolPlaceholder("rewrite", "zh-CN")).toBe(toSimplified(toolPlaceholder("rewrite", "zh-HK") ?? ""));
     expect(toolRequiresDraft("rewrite")).toBe(true);
     expect(toolRequiresDraft("photo")).toBe(false);
     expect(toolRequiresDraft("pdf")).toBe(false);
     expect(SPRING_TOOLS.every((item) => (toolPlaceholder(item.id, "zh-HK")?.length ?? 0) > 0)).toBe(true);
     expect(SPRING_TOOLS.every((item) => (toolPlaceholder(item.id, "en")?.length ?? 0) > 0)).toBe(true);
+    expect(SPRING_TOOLS.every((item) => (toolPlaceholder(item.id, "zh-CN")?.length ?? 0) > 0)).toBe(true);
   });
 
   it("exposes aide instructions without claiming web results", () => {
@@ -387,6 +391,7 @@ describe("push copy and device schemas", () => {
     expect(RegisterDeviceRequestSchema.safeParse({ token: "fcm:abc", platform: "ios" }).success).toBe(false);
     expect(UpdateMeRequestSchema.parse({ notifyQuotaLow: false }).notifyQuotaLow).toBe(false);
     expect(UpdateMeRequestSchema.parse({ notifyGenerationDone: true }).notifyGenerationDone).toBe(true);
+    expect(UpdateMeRequestSchema.parse({ locale: Locale.ZH_CN }).locale).toBe("zh-CN");
     expect(UpdateMeRequestSchema.safeParse({}).success).toBe(false);
   });
 });
@@ -432,5 +437,27 @@ describe("sanitizeThinking", () => {
     expect(
       sanitizeThinking("1. 分析。\n    *   **你係「智泉」**，跟住系統人設行。\n2. 答一句。"),
     ).toBe("1. 分析。\n\n2. 答一句。");
+  });
+});
+
+describe("app locales", () => {
+  it("parses Traditional, Simplified, and English", () => {
+    expect(parseAppLocale("zh-HK")).toBe(Locale.ZH_HK);
+    expect(parseAppLocale("zh-CN")).toBe(Locale.ZH_CN);
+    expect(parseAppLocale("en")).toBe(Locale.EN);
+    expect(parseAppLocale("fr")).toBe(Locale.ZH_HK);
+    expect(isAppLocale("zh-CN")).toBe(true);
+    expect(isAppLocale("ja")).toBe(false);
+  });
+
+  it("converts glyphs without rewriting Hong Kong vocabulary", () => {
+    expect(toSimplified("網絡軟件裏的資訊電郵相簿")).toBe("网络软件里的资讯电邮相簿");
+    expect(toSimplified("軟件")).toBe("软件");
+    expect(toSimplified("資訊")).toBe("资讯");
+    expect(toSimplified("資訊")).not.toContain("信息");
+    expect(labelFor({ zh: "軟件", en: "Software" }, "en")).toBe("Software");
+    expect(labelFor({ zh: "軟件", en: "Software" }, "zh-HK")).toBe("軟件");
+    expect(labelFor({ zh: "軟件", en: "Software" }, "zh-CN")).toBe("软件");
+    expect(messageFor(ErrorCode.AUTH_EXPIRED, Locale.ZH_CN)).toBe(toSimplified(messageFor(ErrorCode.AUTH_EXPIRED)));
   });
 });

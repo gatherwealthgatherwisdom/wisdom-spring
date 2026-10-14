@@ -1,4 +1,4 @@
-import { ConversationStatus, conversationLabel, type ConversationView } from "@spring/shared";
+import { ConversationStatus, conversationLabel, type AppLocale, type ConversationView } from "@spring/shared";
 import type { NavigationProp } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useMemo, useState } from "react";
@@ -480,7 +480,7 @@ function ChatGroup({
   title: string;
   items: ConversationView[];
   colors: Palette;
-  locale: "zh-HK" | "en";
+  locale: AppLocale;
   text: Copy;
   hits: Map<string, HistoryHit>;
   selecting: boolean;

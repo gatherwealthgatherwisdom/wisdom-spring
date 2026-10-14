@@ -1,4 +1,6 @@
-export function formatWhen(iso: string, locale: "zh-HK" | "en"): string {
+import type { AppLocale } from "@spring/shared";
+
+export function formatWhen(iso: string, locale: AppLocale): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   const diff = Date.now() - date.getTime();

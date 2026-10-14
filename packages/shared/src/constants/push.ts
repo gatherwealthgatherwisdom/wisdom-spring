@@ -1,3 +1,6 @@
+import { parseAppLocale } from "../enums/locale";
+import { toSimplified } from "../lib/zh-hans";
+
 export const PUSH_KINDS = ["generation_done", "quota_low"] as const;
 export type PushKind = (typeof PUSH_KINDS)[number];
 
@@ -24,5 +27,13 @@ export type PushCopy = {
 };
 
 export function pushCopy(locale: string): PushCopy {
-  return locale === "en" ? PUSH_COPY.en : PUSH_COPY["zh-HK"];
+  if (parseAppLocale(locale) === "en") return PUSH_COPY.en;
+  const base = PUSH_COPY["zh-HK"];
+  if (parseAppLocale(locale) !== "zh-CN") return base;
+  return {
+    generationDoneTitle: toSimplified(base.generationDoneTitle),
+    generationDoneBody: toSimplified(base.generationDoneBody),
+    quotaLowTitle: toSimplified(base.quotaLowTitle),
+    quotaLowBody: (remaining: number) => toSimplified(base.quotaLowBody(remaining)),
+  };
 }

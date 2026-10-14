@@ -1,8 +1,8 @@
 import { ErrorCode } from "../enums/error-code";
-import { Locale } from "../enums/locale";
+import { Locale, parseAppLocale } from "../enums/locale";
+import { toSimplified } from "../lib/zh-hans";
 
-export const ERROR_MESSAGES: Record<Locale, Record<ErrorCode, string>> = {
-  [Locale.ZH_HK]: {
+const ZH_HK_MESSAGES: Record<ErrorCode, string> = {
     [ErrorCode.AUTH_INVALID]: "登入資料不正確。",
     [ErrorCode.AUTH_EXPIRED]: "登入已過期，請再登入。",
     [ErrorCode.USER_SUSPENDED]: "呢個帳戶已暫停。",
@@ -19,7 +19,17 @@ export const ERROR_MESSAGES: Record<Locale, Record<ErrorCode, string>> = {
     [ErrorCode.NOT_FOUND]: "找不到相關內容。",
     [ErrorCode.CONFLICT]: "請勿重複提交。",
     [ErrorCode.INTERNAL]: "智泉暫時回應唔到，請稍後再試。",
-  },
+};
+
+function hansMessages(source: Record<ErrorCode, string>): Record<ErrorCode, string> {
+  return Object.fromEntries(
+    Object.entries(source).map(([code, text]) => [code, toSimplified(text)]),
+  ) as Record<ErrorCode, string>;
+}
+
+export const ERROR_MESSAGES: Record<Locale, Record<ErrorCode, string>> = {
+  [Locale.ZH_HK]: ZH_HK_MESSAGES,
+  [Locale.ZH_CN]: hansMessages(ZH_HK_MESSAGES),
   [Locale.EN]: {
     [ErrorCode.AUTH_INVALID]: "Those sign-in details are not valid.",
     [ErrorCode.AUTH_EXPIRED]: "Your session has expired. Please sign in again.",
@@ -40,6 +50,6 @@ export const ERROR_MESSAGES: Record<Locale, Record<ErrorCode, string>> = {
   },
 };
 
-export function messageFor(code: ErrorCode, locale: Locale = Locale.ZH_HK): string {
-  return ERROR_MESSAGES[locale][code];
+export function messageFor(code: ErrorCode, locale: string = Locale.ZH_HK): string {
+  return ERROR_MESSAGES[parseAppLocale(locale)][code];
 }

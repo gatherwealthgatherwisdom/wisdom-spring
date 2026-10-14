@@ -1,4 +1,4 @@
-import { formatE164, Locale, microsToUsd, type MeResponse } from "@spring/shared";
+import { formatE164, Locale, microsToUsd, type AppLocale, type MeResponse } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -47,10 +47,10 @@ export function SettingsScreen() {
   const trialRemaining = user && user.registered === false ? Math.max(0, user.guestLimit - user.guestUses) : null;
   const guest = trialRemaining !== null;
 
-  async function chooseLocale(next: "zh-HK" | "en") {
+  async function chooseLocale(next: AppLocale) {
     setLocale(next);
     if (!usePrefs.getState().accessToken) return;
-    const updated = await spring.updateMe({ locale: next === "en" ? Locale.EN : Locale.ZH_HK });
+    const updated = await spring.updateMe({ locale: next as Locale });
     usePrefs.getState().setUser(updated.user);
   }
 
@@ -206,7 +206,8 @@ export function SettingsScreen() {
         />
       </Group>
       <Group title={text.language} colors={colors}>
-        <SettingLine icon="language-outline" label="繁中" selected={locale === "zh-HK"} colors={colors} onPress={() => void chooseLocale("zh-HK")} />
+        <SettingLine icon="language-outline" label="繁體中文" selected={locale === "zh-HK"} colors={colors} onPress={() => void chooseLocale("zh-HK")} />
+        <SettingLine icon="language-outline" label="简体中文" selected={locale === "zh-CN"} colors={colors} onPress={() => void chooseLocale("zh-CN")} />
         <SettingLine icon="language-outline" label="English" selected={locale === "en"} colors={colors} onPress={() => void chooseLocale("en")} />
       </Group>
       <Group title={text.appearance} colors={colors}>

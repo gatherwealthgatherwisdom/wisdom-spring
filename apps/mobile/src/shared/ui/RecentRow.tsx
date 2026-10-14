@@ -1,4 +1,4 @@
-import { conversationLabel, type ConversationView } from "@spring/shared";
+import { conversationLabel, type AppLocale, type ConversationView } from "@spring/shared";
 import { Pressable, Text, View } from "react-native";
 import { formatWhen } from "../lib/time";
 import { useColors } from "../theme";
@@ -13,7 +13,7 @@ export function RecentRow({
 }: {
   item?: ConversationView;
   modeLabel: string;
-  locale: "zh-HK" | "en";
+  locale: AppLocale;
   empty?: string;
   onPress?: () => void;
 }) {

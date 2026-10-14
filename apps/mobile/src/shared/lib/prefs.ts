@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { AuthResponse, UserPublic } from "@spring/shared";
+import { parseAppLocale, type AppLocale, type AuthResponse, type UserPublic } from "@spring/shared";
 import { create } from "zustand";
 
 const KEY = "spring.mobile.session";
@@ -11,7 +11,7 @@ interface Persisted {
   refreshToken: string | null;
   user: UserPublic | null;
   appearance: Appearance;
-  locale: "zh-HK" | "en";
+  locale: AppLocale;
   speakNotify: boolean;
   dismissedAnnouncementId: string | null;
   pushToken: string | null;
@@ -24,7 +24,7 @@ interface Prefs extends Persisted {
   applyTokens: (tokens: { accessToken: string | null; refreshToken: string | null }) => void;
   setUser: (user: UserPublic) => void;
   setAppearance: (appearance: Appearance) => void;
-  setLocale: (locale: "zh-HK" | "en") => void;
+  setLocale: (locale: AppLocale) => void;
   setSpeakNotify: (speakNotify: boolean) => void;
   setDismissedAnnouncementId: (id: string | null) => void;
   setPushToken: (pushToken: string | null) => void;
@@ -52,8 +52,10 @@ export const usePrefs = create<Prefs>((set, get) => ({
   async hydrate() {
     try {
       const raw = await AsyncStorage.getItem(KEY);
-      if (raw) set({ ...empty, ...(JSON.parse(raw) as Persisted), ready: true });
-      else set({ ready: true });
+      if (raw) {
+        const parsed = JSON.parse(raw) as Persisted;
+        set({ ...empty, ...parsed, locale: parseAppLocale(parsed.locale), ready: true });
+      } else set({ ready: true });
     } catch {
       set({ ready: true });
     }
@@ -72,7 +74,7 @@ export const usePrefs = create<Prefs>((set, get) => ({
     void save({ ...get(), ...tokens });
   },
   setUser(user) {
-    set({ user, locale: user.locale === "en" ? "en" : "zh-HK" });
+    set({ user, locale: parseAppLocale(user.locale) });
     void save(get());
   },
   setAppearance(appearance) {
@@ -80,7 +82,7 @@ export const usePrefs = create<Prefs>((set, get) => ({
     void save(get());
   },
   setLocale(locale) {
-    set({ locale });
+    set({ locale: parseAppLocale(locale) });
     void save(get());
   },
   setSpeakNotify(speakNotify) {

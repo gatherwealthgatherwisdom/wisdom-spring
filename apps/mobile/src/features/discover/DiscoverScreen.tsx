@@ -1,3 +1,4 @@
+import type { AppLocale } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
@@ -105,7 +106,7 @@ export function DiscoverScreen({ navigation }: Props) {
   );
 }
 
-function RecoCard({ card, locale, tall, onPress }: { card: CardItem; locale: "zh-HK" | "en"; tall?: boolean; onPress: () => void }) {
+function RecoCard({ card, locale, tall, onPress }: { card: CardItem; locale: AppLocale; tall?: boolean; onPress: () => void }) {
   return (
     <Cover source={card.art} style={{ width: "47%", minHeight: tall ? 188 : 148, borderRadius: 16 }} dim={0.45}>
       <Pressable onPress={onPress} style={{ flex: 1, minHeight: tall ? 188 : 148, justifyContent: "flex-end", padding: 14 }}>

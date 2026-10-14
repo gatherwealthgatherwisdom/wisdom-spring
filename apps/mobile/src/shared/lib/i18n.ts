@@ -1,5 +1,24 @@
-export const copy = {
-  "zh-HK": {
+import { toSimplified } from "@spring/shared";
+
+function hansDeep<T>(value: T): T {
+  if (typeof value === "function") {
+    return ((...args: never[]) => {
+      const result = (value as (...a: never[]) => unknown)(...args);
+      return typeof result === "string" ? toSimplified(result) : result;
+    }) as T;
+  }
+  if (typeof value === "string") return toSimplified(value) as T;
+  if (value && typeof value === "object") {
+    const out = {} as T;
+    for (const key of Object.keys(value) as Array<keyof T>) {
+      out[key] = hansDeep(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+const zhHK = {
     app: "智泉",
     splash: "共飲智慧之泉",
     hello: "你好",
@@ -175,8 +194,9 @@ export const copy = {
       image: "畫一幅",
       resume: "繼續上次",
     },
-  },
-  en: {
+} as const;
+
+const en = {
     app: "Wisdom Spring",
     splash: "Drink from the spring of wisdom",
     hello: "Hello",
@@ -352,8 +372,13 @@ export const copy = {
       image: "Draw a picture",
       resume: "Continue the last chat",
     },
-  },
 } as const;
+
+export const copy = {
+  "zh-HK": zhHK,
+  "zh-CN": hansDeep(zhHK),
+  en,
+};
 
 export type LocaleKey = keyof typeof copy;
 export type Copy = (typeof copy)[LocaleKey];

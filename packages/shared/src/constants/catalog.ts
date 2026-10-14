@@ -1,3 +1,4 @@
+import { labelFor } from "../lib/zh-hans";
 import type { ConversationMode } from "./tools";
 
 export const CATALOG_KINDS = ["tool", "aide", "write", "image", "translate", "discover"] as const;
@@ -119,10 +120,10 @@ export const TOOL_PLACEHOLDERS: Record<string, { zh: string; en: string }> = {
   formal: { zh: "貼你想改成書面語嘅文字", en: "Paste the text to make formal" },
 };
 
-export function toolPlaceholder(id: string, locale: "zh-HK" | "en"): string | undefined {
+export function toolPlaceholder(id: string, locale: string): string | undefined {
   const item = TOOL_PLACEHOLDERS[id];
   if (!item) return undefined;
-  return locale === "en" ? item.en : item.zh;
+  return labelFor(item, locale);
 }
 
 export function toolRequiresDraft(id: string): boolean {

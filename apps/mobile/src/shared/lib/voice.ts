@@ -1,3 +1,4 @@
+import type { AppLocale } from "@spring/shared";
 import * as Speech from "expo-speech";
 
 interface Recognition {
@@ -18,7 +19,7 @@ function recognitionCtor(): RecognitionCtor | null {
   return host.SpeechRecognition ?? host.webkitSpeechRecognition ?? null;
 }
 
-export function speak(text: string, locale: "zh-HK" | "en"): void {
+export function speak(text: string, locale: AppLocale): void {
   const spoken = text.replace(/!\[[^\]]*\]\([^)]+\)/g, "").trim();
   if (!spoken) return;
   Speech.stop();
@@ -26,7 +27,7 @@ export function speak(text: string, locale: "zh-HK" | "en"): void {
 }
 
 export function startDictation(
-  locale: "zh-HK" | "en",
+  locale: AppLocale,
   onText: (value: string) => void,
 ): { stop: () => void } | null {
   const Ctor = recognitionCtor();

@@ -43,3 +43,4 @@ export * from "./lib/generation-kind";
 export * from "./lib/assistant-markdown";
 export * from "./lib/thinking";
 export * from "./lib/conversation-title";
+export * from "./lib/zh-hans";
