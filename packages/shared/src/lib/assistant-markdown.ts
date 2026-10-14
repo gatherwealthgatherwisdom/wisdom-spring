@@ -13,8 +13,7 @@ export type BlockNode =
   | { type: "quote"; children: InlineNode[] };
 
 export function parseAssistantMarkdown(source: string): BlockNode[] {
-  const text = source.replace(/\r\n/g, "\n");
-  const lines = text.split("\n");
+  const lines = stitchBrokenTableRows(normalizeSource(source).split("\n"));
   const blocks: BlockNode[] = [];
   let i = 0;
   while (i < lines.length) {
@@ -36,13 +35,14 @@ export function parseAssistantMarkdown(source: string): BlockNode[] {
     }
     if (isTableStart(lines, i)) {
       const header = splitRow(lines[i]!);
-      i += 2;
+      i += 1;
+      if (i < lines.length && isSeparator(lines[i]!)) i += 1;
       const rows: string[][] = [];
-      while (i < lines.length && isTableRow(lines[i]!)) {
+      const width = header.length;
+      while (i < lines.length && isTableRow(lines[i]!) && splitRow(lines[i]!).length === width) {
         rows.push(splitRow(lines[i]!));
         i += 1;
       }
-      const width = header.length;
       blocks.push({
         type: "table",
         header: header.map(parseInline),
@@ -143,8 +143,32 @@ function opensInline(input: string, index: number): boolean {
   return false;
 }
 
+function normalizeSource(source: string): string {
+  return source.replace(/\r\n/g, "\n").replace(/<br\s*\/?>/gi, "\n");
+}
+
+function stitchBrokenTableRows(lines: string[]): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    const prev = out[out.length - 1];
+    if (
+      prev &&
+      prev.includes("|") &&
+      !isSeparator(prev) &&
+      !prev.trim().endsWith("|") &&
+      line.includes("|") &&
+      !line.trim().startsWith("|")
+    ) {
+      out[out.length - 1] = `${prev} ${line.trim()}`;
+      continue;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
 function isTableRow(line: string): boolean {
-  return line.includes("|") && line.trim() !== "" && !isSeparator(line);
+  return line.includes("|") && line.trim() !== "" && !isSeparator(line) && splitRow(line).length >= 2;
 }
 
 function isSeparator(line: string): boolean {
@@ -154,10 +178,11 @@ function isSeparator(line: string): boolean {
 
 function isTableStart(lines: string[], index: number): boolean {
   const row = lines[index];
-  const sep = lines[index + 1];
-  if (!row || !sep) return false;
-  if (!isTableRow(row) || !isSeparator(sep)) return false;
-  return splitRow(row).length === splitRow(sep).length;
+  const next = lines[index + 1];
+  if (!row || !next || !isTableRow(row)) return false;
+  const width = splitRow(row).length;
+  if (isSeparator(next) && splitRow(next).length === width) return true;
+  return isTableRow(next) && splitRow(next).length === width;
 }
 
 function splitRow(line: string): string[] {

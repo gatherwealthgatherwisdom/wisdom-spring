@@ -87,14 +87,19 @@ function Block({
       </View>
     );
   }
+  const compact = block.header.length <= 2;
+  const table = (
+    <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 10, overflow: "hidden" }}>
+      <TableRow cells={block.header} header compact={compact} color={color} size={size} colors={colors} />
+      {block.rows.map((row, index) => (
+        <TableRow key={index} cells={row} compact={compact} color={color} size={size} colors={colors} />
+      ))}
+    </View>
+  );
+  if (compact) return table;
   return (
     <ScrollView horizontal nestedScrollEnabled style={{ marginHorizontal: -4 }} contentContainerStyle={{ paddingHorizontal: 4 }}>
-      <View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 10, overflow: "hidden" }}>
-        <TableRow cells={block.header} header color={color} size={size} colors={colors} />
-        {block.rows.map((row, index) => (
-          <TableRow key={index} cells={row} color={color} size={size} colors={colors} />
-        ))}
-      </View>
+      {table}
     </ScrollView>
   );
 }
@@ -102,12 +107,14 @@ function Block({
 function TableRow({
   cells,
   header,
+  compact,
   color,
   size,
   colors,
 }: {
   cells: InlineNode[][];
   header?: boolean;
+  compact?: boolean;
   color: string;
   size: number;
   colors: Palette;
@@ -118,7 +125,7 @@ function TableRow({
         <View
           key={index}
           style={{
-            width: 112,
+            ...(compact ? { flex: 1 } : { width: 112 }),
             paddingHorizontal: 10,
             paddingVertical: 8,
             borderRightWidth: index === cells.length - 1 ? 0 : 1,
