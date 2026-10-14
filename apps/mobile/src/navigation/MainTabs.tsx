@@ -4,7 +4,8 @@ import { DiscoverScreen } from "../features/discover/DiscoverScreen";
 import { ImageScreen } from "../features/image/ImageScreen";
 import { InboxScreen } from "../features/inbox/InboxScreen";
 import { SettingsScreen } from "../features/settings/SettingsScreen";
-import { Platform } from "react-native";
+import { useEffect, useState } from "react";
+import { Keyboard, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePrefs } from "../shared/lib/prefs";
 import { copy } from "../shared/lib/i18n";
@@ -21,6 +22,16 @@ export function MainTabs() {
   const text = copy[locale];
   const insets = useSafeAreaInsets();
   const tabBottom = Math.max(insets.bottom, 8);
+  const [keyboardUp, setKeyboardUp] = useState(false);
+  useEffect(() => {
+    if (Platform.OS !== "ios") return;
+    const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardUp(true));
+    const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardUp(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   return (
     <Tab.Navigator
       safeAreaInsets={{ bottom: 0 }}
@@ -29,13 +40,15 @@ export function MainTabs() {
         tabBarHideOnKeyboard: Platform.OS === "ios",
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: {
-          backgroundColor: colors.bg,
-          borderTopColor: colors.line,
-          paddingTop: 6,
-          paddingBottom: tabBottom,
-          height: 50 + tabBottom,
-        },
+        tabBarStyle: keyboardUp
+          ? { height: 0, overflow: "hidden", borderTopWidth: 0, paddingTop: 0, paddingBottom: 0, display: "none", elevation: 0 }
+          : {
+              backgroundColor: colors.bg,
+              borderTopColor: colors.line,
+              paddingTop: 6,
+              paddingBottom: tabBottom,
+              height: 50 + tabBottom,
+            },
         tabBarLabelStyle: { fontSize: 12, marginTop: -2 },
       }}
     >

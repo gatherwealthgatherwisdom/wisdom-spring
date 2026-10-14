@@ -1,33 +1,37 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { Keyboard, Platform, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Dimensions, Keyboard, type KeyboardEvent, Platform, View } from "react-native";
 
 export function KeyboardDock({
   children,
-  tabBar = false,
+  tabBar: _tabBar = false,
 }: {
   children: ReactNode;
   tabBar?: boolean;
 }) {
-  const insets = useSafeAreaInsets();
   const [keyboard, setKeyboard] = useState(0);
 
   useEffect(() => {
+    function overlap(event: KeyboardEvent): number {
+      const screenH = Dimensions.get("screen").height;
+      const top = event.endCoordinates.screenY;
+      const fromScreen = Number.isFinite(top) ? Math.max(0, screenH - top) : 0;
+      return Math.max(fromScreen, event.endCoordinates.height, 0);
+    }
     const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
     const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const show = Keyboard.addListener(showEvent, (event) => {
-      setKeyboard(event.endCoordinates.height);
-    });
+    const show = Keyboard.addListener(showEvent, (event) => setKeyboard(overlap(event)));
+    const change = Platform.OS === "ios" ? Keyboard.addListener("keyboardWillChangeFrame", (event) => setKeyboard(overlap(event))) : null;
     const hide = Keyboard.addListener(hideEvent, () => setKeyboard(0));
     return () => {
       show.remove();
+      change?.remove();
       hide.remove();
     };
   }, []);
 
-  const tabCovered = Platform.OS === "ios" && keyboard > 0;
-  const reserved = tabBar && !tabCovered ? 50 + Math.max(insets.bottom, 8) : Math.max(insets.bottom, 0);
-  const lift = Platform.OS === "ios" && keyboard > 0 ? Math.max(0, keyboard - reserved) : 0;
+  // iOS tab bar hides while the keyboard is up, so lift the full overlap.
+  // Android pans the window (softwareKeyboardLayoutMode) and does not lift.
+  const lift = Platform.OS === "ios" ? keyboard : 0;
   return <View style={{ marginBottom: lift }}>{children}</View>;
 }
