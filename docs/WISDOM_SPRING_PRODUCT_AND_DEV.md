@@ -83,7 +83,7 @@ Forbidden:
 | Admin (GWGW staff) | Curate HK-safe model pool, weights, plans, bans, usage |
 | System jobs | Sync OpenRouter catalog, probe HK availability, roll up usage, generate titles |
 
-Locale default: `zh-HK`. Support `en` as well.
+Locale default: `zh-HK`. Support `zh-CN` and `en` as well. Both Chinese locales use Hong Kong written Chinese; `zh-CN` only changes glyphs.
 
 ---
 
@@ -109,7 +109,7 @@ Locale default: `zh-HK`. Support `en` as well.
 - Regenerate: new assistant message, previous one marked `SUPERSEDED`
 - Copy message
 - Auto title after the first completed turn (cheap small model, not the random pool star)
-- Empty state with 4–6 suggested prompts in 繁中
+- Empty state with 4–6 suggested prompts in Hong Kong written Chinese
 
 **Quota**
 
@@ -120,7 +120,7 @@ Locale default: `zh-HK`. Support `en` as well.
 
 **Settings**
 
-- Language `zh-HK` | `en`
+- Language `zh-HK` | `zh-CN` | `en`
 - Appearance light / dark / system
 - Quota remaining
 
@@ -368,7 +368,7 @@ export enum MessageStatus {
 export enum ModelRegionStatus { HK_SAFE = "HK_SAFE", HK_BLOCKED = "HK_BLOCKED", UNKNOWN = "UNKNOWN" }
 export enum ModelHealthStatus { HEALTHY = "HEALTHY", DEGRADED = "DEGRADED", DOWN = "DOWN" }
 export enum ModelCapability { TEXT = "TEXT", VISION = "VISION" }
-export enum Locale { ZH_HK = "zh-HK", EN = "en" }
+export enum Locale { ZH_HK = "zh-HK", ZH_CN = "zh-CN", EN = "en" }
 export enum ErrorCode {
   AUTH_INVALID = "AUTH_INVALID",
   AUTH_EXPIRED = "AUTH_EXPIRED",
@@ -806,12 +806,12 @@ Visual tone: calm, wealth-and-wisdom, not neon startup. Prefer deep ink, warm pa
 - Violet `#5B3A7A`
 - Gold `#C4A35A`
 
-Empty suggested prompts (zh-HK):
+Empty suggested prompts (Hong Kong written Chinese; Simplified at display for `zh-CN`):
 
-1. 用三點解釋集團「聚財富、聚智慧」可以點理解。
-2. 幫我寫一封禮貌嘅商務跟進電郵。
-3. 將呢段文言改成淺白繁中。
-4. 今日有咩國際新聞值得投資人留意？（一般知識，唔好假裝即時行情）
+1. 用三點解釋集團「聚財富、聚智慧」可以如何理解。
+2. 幫我寫一封禮貌的商務跟進電郵。
+3. 將這段文言改成淺白繁體中文。
+4. 今日有甚麼國際新聞值得投資人留意？（一般知識，不要假裝即時行情）
 5. 幫我列一個健康作息清單。
 
 Do not claim live market data in v1.
@@ -997,7 +997,9 @@ Definition of done for first internal demo:
 
 ---
 
-## 22. Copy deck (zh-HK)
+## 22. Copy deck (zh-HK written Chinese)
+
+`zh-CN` uses the same sentences in simplified glyphs. `en` is the English column in the app. The 廣東話 writing tool stays spoken Cantonese.
 
 | Place | Copy |
 |---|---|
@@ -1008,8 +1010,8 @@ Definition of done for first internal demo:
 | Stop | 停止 |
 | Regenerate | 再生成 |
 | Daily quota | 今日對話次數已用完。 |
-| Region fallback | 呢個模型暫時唔支援香港地區，已自動換過。 |
-| Generic fail | 智泉暫時回應唔到，請稍後再試。 |
+| Region fallback | 此模型暫時不支援香港地區，已自動更換。 |
+| Generic fail | 智泉暫時未能回應，請稍後再試。 |
 
 ---
 

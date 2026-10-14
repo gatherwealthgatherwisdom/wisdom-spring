@@ -48,12 +48,12 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await expectComposerControls(page);
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
-  await expect(page.getByPlaceholder("貼你想改寫嘅句子").filter({ visible: true })).toBeVisible();
+  await expect(page.getByPlaceholder("貼上你想改寫的句子").filter({ visible: true })).toBeVisible();
   await expect(visibleText(page, "保留原意，句子更清楚。")).toBeVisible();
   await clickText(page, "開始");
   await expect(visibleText(page, "開始")).toBeVisible();
   await expect(visibleText(page, "共飲智慧之泉")).toHaveCount(0);
-  await page.getByPlaceholder("貼你想改寫嘅句子").fill("請改寫呢句。");
+  await page.getByPlaceholder("貼上你想改寫的句子").fill("請改寫這句。");
   await clickText(page, "開始");
   await expect(visibleText(page, "登入").first()).toBeVisible();
 });
@@ -70,7 +70,7 @@ test("all tools groups jobs and shows each blurb", async ({ page }) => {
   await visibleText(page, "助手").scrollIntoViewIfNeeded();
   await expect(visibleText(page, "用固定語氣回覆。")).toBeVisible();
   await visibleText(page, "翻譯").last().scrollIntoViewIfNeeded();
-  await expect(visibleText(page, "由一種語言譯去另一種。")).toBeVisible();
+  await expect(visibleText(page, "由一種語言譯成另一種。")).toBeVisible();
   await expect(visibleText(page, "口語對譯，自然短句。")).toBeVisible();
 });
 
@@ -79,9 +79,34 @@ test("discover tools open an input card without sending the catalog blurb", asyn
   await clickText(page, "發現");
   await clickText(page, "解答");
   await expect(visibleText(page, "開始")).toBeVisible();
-  await expect(page.getByPlaceholder("寫低你想解答嘅問題").filter({ visible: true })).toBeVisible();
+  await expect(page.getByPlaceholder("寫下你想解答的問題").filter({ visible: true })).toBeVisible();
   await expect(visibleText(page, "把問題拆開，逐步講清楚。")).toBeVisible();
   await clickText(page, "開始");
   await expect(visibleText(page, "開始")).toBeVisible();
   await expect(visibleText(page, "共飲智慧之泉")).toHaveCount(0);
+});
+
+test("settings can switch Traditional, Simplified, and English", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "我的");
+  await clickText(page, "简体中文");
+  await expect(visibleText(page, "未登录")).toBeVisible();
+  await expect(visibleText(page, "登录")).toBeVisible();
+  await clickText(page, "发现");
+  await expect(visibleText(page, "推荐")).toBeVisible();
+  await clickText(page, "图像");
+  await expect(visibleText(page, "图像创作")).toBeVisible();
+  await clickText(page, "我的");
+  await clickText(page, "English");
+  await expect(visibleText(page, "Not signed in")).toBeVisible();
+  await expect(visibleText(page, "Sign in")).toBeVisible();
+  await clickText(page, "Discover");
+  await expect(visibleText(page, "Recommended")).toBeVisible();
+  await clickText(page, "Image");
+  await expect(visibleText(page, "Make an image")).toBeVisible();
+  await clickText(page, "Me");
+  await clickText(page, "繁體中文");
+  await expect(visibleText(page, "未登入")).toBeVisible();
+  await clickText(page, "對話");
+  await expect(visibleText(page, "熱門智能體")).toBeVisible();
 });

@@ -49,7 +49,7 @@ test("write opens from the home rewrite tool", async ({ page }) => {
   await expect(visibleText(page, "熱門智能體")).toBeVisible();
   await clickText(page, "改寫");
   await expect(visibleText(page, "開始")).toBeVisible();
-  await expect(page.getByPlaceholder("貼你想改寫嘅句子").filter({ visible: true })).toBeVisible();
+  await expect(page.getByPlaceholder("貼上你想改寫的句子").filter({ visible: true })).toBeVisible();
   await expect(visibleText(page, "保留原意，句子更清楚。")).toBeVisible();
   await clickText(page, "開始");
   await expect(visibleText(page, "開始")).toBeVisible();
@@ -106,6 +106,21 @@ test("a saved image chat opens full-screen and downloads", async ({ page }) => {
   await expect(page.locator('[aria-label="放大"]').filter({ visible: true })).toBeVisible();
   const name = await expectLightboxSave(page);
   expect(name).toMatch(/^智泉-.+\.(png|jpe?g|webp)$/i);
+});
+
+test("signed-in settings switch English then restore Traditional", async ({ page }) => {
+  await waitForApp(page);
+  await clickText(page, "我的");
+  await clickText(page, "English");
+  await expect(visibleText(page, "Sync now")).toBeVisible();
+  await clickText(page, "Chats");
+  await expect(composerBox(page, "Ask 智泉")).toBeVisible();
+  await expect(page.locator('[aria-label="Send"]').filter({ visible: true }).last()).toBeVisible();
+  await clickText(page, "Me");
+  await clickText(page, "繁體中文");
+  await expect(visibleText(page, "立即同步")).toBeVisible();
+  await clickText(page, "對話");
+  await expect(composerBox(page, "問智泉")).toBeVisible();
 });
 
 test("the pool sheet names 智泉 models and has no vendor picker", async ({ page }) => {

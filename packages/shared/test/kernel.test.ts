@@ -3,7 +3,7 @@ import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { Locale, isAppLocale, parseAppLocale } from "../src/enums/locale";
 import { blurbFor, labelFor, toSimplified } from "../src/lib/zh-hans";
-import { messageFor } from "../src/constants/messages";
+import { ERROR_MESSAGES, messageFor } from "../src/constants/messages";
 import { APP_SETTING_DEFAULTS, LIMITS, limitsFor } from "../src/constants/limits";
 import { SUGGESTED_PROMPTS_EN, SUGGESTED_PROMPTS_ZH, suggestionsFor } from "../src/constants/brand";
 import { SYSTEM_PROMPT } from "../src/constants/openrouter";
@@ -474,5 +474,9 @@ describe("app locales", () => {
     expect(mediaPromptFor("look", "zh-CN", LOOK_PROMPT)).toBe(toSimplified(LOOK_PROMPT));
     expect(mediaPromptFor("file", "en", FILE_PROMPT)).toMatch(/summarise/);
     expect(messageFor(ErrorCode.AUTH_EXPIRED, Locale.ZH_CN)).toBe(toSimplified(messageFor(ErrorCode.AUTH_EXPIRED)));
+    expect(Object.values(ERROR_MESSAGES[Locale.ZH_HK]).join("\n")).not.toMatch(/[嘅咗唔冇]/);
+    for (const tool of SPRING_TOOLS) {
+      expect(tool.blurbZh, tool.id).not.toMatch(/[嘅咗唔冇]/);
+    }
   });
 });
