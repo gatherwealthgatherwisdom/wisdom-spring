@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { copy } from "../../shared/lib/i18n";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
@@ -88,7 +88,7 @@ export function Composer({
           ) : null}
         </View>
       ) : null}
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 4, paddingLeft: 6, paddingRight: 6, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
+      <View style={{ flexDirection: "row", alignItems: value.includes("\n") ? "flex-end" : "center", gap: 4, paddingLeft: 6, paddingRight: 6, paddingVertical: 6, borderRadius: 28, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.card }}>
         <Pressable accessibilityLabel="+" onPress={() => setOpen((current) => !current)} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
           <Icon name={open ? "close" : "add"} color={colors.ink} size={22} />
         </Pressable>
@@ -98,7 +98,18 @@ export function Composer({
           placeholder={placeholder}
           placeholderTextColor={colors.muted}
           multiline
-          style={{ flex: 1, minHeight: 36, maxHeight: 120, color: colors.ink, fontSize: 16, paddingVertical: 6 }}
+          style={{
+            flex: 1,
+            minHeight: 36,
+            maxHeight: 120,
+            color: colors.ink,
+            fontSize: 16,
+            paddingTop: 0,
+            paddingBottom: 0,
+            margin: 0,
+            textAlignVertical: "center",
+            ...(Platform.OS === "android" ? { includeFontPadding: false } : { paddingVertical: 8 }),
+          }}
         />
         {streaming ? (
           <Pressable onPress={onStop} accessibilityLabel={stopLabel} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" }}>
