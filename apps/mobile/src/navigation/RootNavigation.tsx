@@ -21,13 +21,21 @@ export type { AppStackParamList, AuthParams, ChatParams } from "./types";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const OPENING_MS = 700;
+let openingDone = false;
 
 export function RootNavigation() {
   const ready = usePrefs((state) => state.ready);
   const palette = usePalette();
-  const [held, setHeld] = useState(false);
+  const [held, setHeld] = useState(openingDone);
   useEffect(() => {
-    const timer = setTimeout(() => setHeld(true), OPENING_MS);
+    if (openingDone) {
+      setHeld(true);
+      return;
+    }
+    const timer = setTimeout(() => {
+      openingDone = true;
+      setHeld(true);
+    }, OPENING_MS);
     return () => clearTimeout(timer);
   }, []);
   if (!ready || !held) return <LoadingScreen />;
