@@ -193,7 +193,9 @@ export function DrawerMenu({
                     onChangeText={setQ}
                     placeholder={text.search}
                     placeholderTextColor={colors.muted}
+                    accessibilityLabel={text.search}
                     autoCorrect={false}
+                    autoCapitalize="none"
                     style={{ flex: 1, paddingVertical: 12, color: colors.ink }}
                   />
                 </View>

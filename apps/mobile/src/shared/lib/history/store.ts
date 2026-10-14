@@ -18,7 +18,7 @@ import {
 import { markdownFromThread } from "./export";
 import { inTrashWindow, lastActiveOf } from "./groups";
 import { clearCachedMedia, clearMediaMap } from "./media";
-import type { HistoryHit } from "./search";
+import { pickHits, type HistoryHit } from "./search";
 import { localThread, pullHistory, pullThread, queueOp } from "./sync";
 
 type HistoryState = {
@@ -330,23 +330,42 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
   const online = useHistoryStore((state) => state.online);
   const ready = useHistoryStore((state) => state.ready);
   const userId = useHistoryStore((state) => state.userId);
-  const [hits, setHits] = useState<HistoryHit[] | null>(null);
+  const [bodyHits, setBodyHits] = useState<HistoryHit[]>([]);
   const trash = Boolean(options?.trash);
+  const needle = options?.q?.trim() ?? "";
+  const searching = Boolean(needle) && !trash;
 
   useEffect(() => {
-    const needle = options?.q?.trim();
-    if (!needle || !userId || trash) {
-      setHits(null);
+    if (!searching || !userId) {
+      setBodyHits([]);
       return;
     }
+    setBodyHits([]);
     let cancelled = false;
     void searchHits(userId, needle).then((rows) => {
-      if (!cancelled) setHits(rows);
+      if (!cancelled) setBodyHits(rows);
     });
     return () => {
       cancelled = true;
     };
-  }, [options?.q, userId, conversations, trash]);
+  }, [needle, userId, conversations, searching]);
+
+  const titleHits = useMemo(() => {
+    if (!searching) return [];
+    return pickHits(
+      conversations.filter((item) => item.status !== ConversationStatus.DELETED),
+      [],
+      needle,
+    );
+  }, [searching, conversations, needle]);
+
+  const hits = useMemo(() => {
+    if (!searching) return [];
+    const latest = new Map<string, HistoryHit>();
+    for (const hit of titleHits) latest.set(hit.conversationId, hit);
+    for (const hit of bodyHits) latest.set(hit.conversationId, hit);
+    return [...latest.values()];
+  }, [searching, titleHits, bodyHits]);
 
   const items = useMemo(() => {
     let list = trash
@@ -356,16 +375,16 @@ export function useHistory(options?: { mode?: ConversationView["mode"]; q?: stri
           .sort((left, right) => (right.updatedAt ?? right.lastMessageAt).localeCompare(left.updatedAt ?? left.lastMessageAt))
       : conversations.filter((item) => item.status !== ConversationStatus.DELETED);
     if (options?.mode) list = list.filter((item) => item.mode === options.mode);
-    if (hits) {
+    if (searching) {
       const ids = new Set(hits.map((hit) => hit.conversationId));
       list = list.filter((item) => ids.has(item.id));
     }
     return list;
-  }, [conversations, options?.mode, hits, trash]);
+  }, [conversations, options?.mode, hits, trash, searching]);
 
   return {
     items,
-    hits: hits ?? [],
+    hits,
     lastActive: lastActiveOf(conversations),
     online,
     ready,
