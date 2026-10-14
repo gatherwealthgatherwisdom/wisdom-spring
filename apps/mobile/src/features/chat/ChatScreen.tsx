@@ -49,6 +49,7 @@ export function ChatScreen({ navigation, route }: Props) {
   const [searchQ, setSearchQ] = useState("");
   const trimmedSearch = searchQ.trim();
   const trialLeft = account?.registered === false ? Math.max(0, account.guestLimit - account.guestUses) : null;
+  const guestNow = account?.registered === false;
   const stream = useStream();
   const thread = useThread(conversationId);
   const deleted = thread.conversation?.status === ConversationStatus.DELETED;
@@ -101,6 +102,12 @@ export function ChatScreen({ navigation, route }: Props) {
       : stream.status === "streaming" || stream.text.length > 0 || stream.thinking.length > 0
         ? { content: stream.text, thinking: stream.thinking, generationKind: stream.generationKind }
         : null;
+
+  useEffect(() => {
+    if (guestNow || !guestBlocked) return;
+    setGuestBlocked(false);
+    setBanner(null);
+  }, [guestNow, guestBlocked]);
 
   async function refreshAccount() {
     const me = await spring.me();
@@ -454,7 +461,7 @@ export function ChatScreen({ navigation, route }: Props) {
         ) : null}
         <QuotaBanner
           message={banner}
-          action={guestBlocked ? text.completeRegistration : null}
+          action={guestBlocked && guestNow ? text.completeRegistration : null}
           onAction={() => navigation.navigate("Register")}
         />
         <View style={{ flex: 1 }}>
