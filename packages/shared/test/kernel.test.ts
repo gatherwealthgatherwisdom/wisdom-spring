@@ -429,5 +429,8 @@ describe("sanitizeThinking", () => {
     ).toBe("先拆題。然後逐步計。");
     expect(sanitizeThinking("Gather Wealth Gather Wisdom Group identity.")).toBe("");
     expect(sanitizeThinking("比較兩個方案。")).toBe("比較兩個方案。");
+    expect(
+      sanitizeThinking("1. 分析。\n    *   **你係「智泉」**，跟住系統人設行。\n2. 答一句。"),
+    ).toBe("1. 分析。\n\n2. 答一句。");
   });
 });
