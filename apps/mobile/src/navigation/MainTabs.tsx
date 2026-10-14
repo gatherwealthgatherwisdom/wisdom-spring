@@ -24,9 +24,10 @@ export function MainTabs() {
   const tabBottom = Math.max(insets.bottom, 8);
   const [keyboardUp, setKeyboardUp] = useState(false);
   useEffect(() => {
-    if (Platform.OS !== "ios") return;
-    const show = Keyboard.addListener("keyboardWillShow", () => setKeyboardUp(true));
-    const hide = Keyboard.addListener("keyboardWillHide", () => setKeyboardUp(false));
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const show = Keyboard.addListener(showEvent, () => setKeyboardUp(true));
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboardUp(false));
     return () => {
       show.remove();
       hide.remove();
@@ -37,7 +38,7 @@ export function MainTabs() {
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={{
         headerShown: false,
-        tabBarHideOnKeyboard: Platform.OS === "ios",
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: keyboardUp

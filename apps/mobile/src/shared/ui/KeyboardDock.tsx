@@ -30,8 +30,7 @@ export function KeyboardDock({
     };
   }, []);
 
-  // iOS tab bar hides while the keyboard is up, so lift the full overlap.
-  // Android pans the window (softwareKeyboardLayoutMode) and does not lift.
-  const lift = Platform.OS === "ios" ? keyboard : 0;
-  return <View style={{ marginBottom: lift }}>{children}</View>;
+  // Tab bar hides while the keyboard is up. Android uses adjustNothing so this
+  // lift is the only offset; adjustPan would clip the composer card on the IME.
+  return <View style={{ marginBottom: keyboard }}>{children}</View>;
 }
