@@ -1,4 +1,4 @@
-import { WRITE_TEMPLATES } from "@spring/shared";
+import { WRITE_TEMPLATES, blurbFor, labelFor } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -50,8 +50,8 @@ export function WriteScreen({ navigation }: Props) {
         >
           <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={22} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? template.en : template.zh}</Text>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>{locale === "en" ? template.blurbEn : template.blurbZh}</Text>
+            <Text style={{ color: colors.ink, fontSize: 16 }}>{labelFor(template, locale)}</Text>
+            <Text style={{ color: colors.muted, fontSize: 13 }}>{blurbFor(template, locale)}</Text>
           </View>
         </Pressable>
       ))}
@@ -64,8 +64,8 @@ export function WriteScreen({ navigation }: Props) {
             style={{ width: "47%", backgroundColor: colors.card, borderColor: colors.line, borderWidth: 1, borderRadius: 16, padding: 14, gap: 6 }}
           >
             <Icon name={TEMPLATE_ICON[template.id] ?? "create-outline"} color={colors.accent} size={20} />
-            <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? template.en : template.zh}</Text>
-            <Text style={{ color: colors.muted, fontSize: 13 }}>{locale === "en" ? template.blurbEn : template.blurbZh}</Text>
+            <Text style={{ color: colors.ink, fontSize: 16 }}>{labelFor(template, locale)}</Text>
+            <Text style={{ color: colors.muted, fontSize: 13 }}>{blurbFor(template, locale)}</Text>
           </Pressable>
         ))}
       </View>

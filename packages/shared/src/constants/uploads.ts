@@ -1,12 +1,12 @@
 export const LOOK_PROMPT = "請睇呢張圖，用繁體中文講你見到乜。";
-export const LOOK_TITLE = "睇圖";
+export const LOOK_TITLE = "看圖";
 export const FILE_PROMPT = "請用繁體中文講呢份文件嘅重點。";
 export const FILE_TITLE = "文件";
-export const FILE_LATER_COPY = "檔案下一輪先接。";
+export const FILE_LATER_COPY = "檔案功能稍後提供。";
 export const IMAGE_TOO_LARGE_COPY = "圖片最大 4MB。";
 export const IMAGE_FORMAT_COPY = "圖片格式不正確。";
-export const IMAGE_MODE_NO_UPLOAD_COPY = "圖像生成唔支援上圖。";
-export const FEATURE_OFF_COPY = "呢個功能暫時關閉。";
+export const IMAGE_MODE_NO_UPLOAD_COPY = "圖像生成不支援上載圖片。";
+export const FEATURE_OFF_COPY = "此功能暫時關閉。";
 
 export const UPLOAD_MIMES = ["image/jpeg", "image/png", "image/webp", "application/pdf"] as const;
 export type UploadMime = (typeof UPLOAD_MIMES)[number];

@@ -1,4 +1,4 @@
-import type { AppLocale } from "@spring/shared";
+import { blurbFor, labelFor, type AppLocale } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useQuery } from "@tanstack/react-query";
@@ -57,8 +57,8 @@ export function DiscoverScreen({ navigation }: Props) {
                 }}
                 style={{ flex: 1, justifyContent: "flex-end", padding: 14 }}
               >
-                <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{locale === "en" ? hero.en : hero.zh}</Text>
-                <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{locale === "en" ? hero.blurbEn : hero.blurbZh}</Text>
+                <Text style={{ color: "#F7F6F3", fontSize: 16 }} numberOfLines={2}>{labelFor(hero, locale)}</Text>
+                <Text style={{ color: "#F7F6F3", marginTop: 4 }}>{blurbFor(hero, locale)}</Text>
               </Pressable>
             </Cover>
           ))}
@@ -75,12 +75,12 @@ export function DiscoverScreen({ navigation }: Props) {
                   <Pressable
                     key={tool.id}
                     accessibilityRole="button"
-                    accessibilityLabel={locale === "en" ? tool.en : tool.zh}
+                    accessibilityLabel={labelFor(tool, locale)}
                     onPress={() => openTool(tool.id)}
                     style={{ width: "25%", alignItems: "center", marginBottom: 18, gap: 8 }}
                   >
                     <Icon name={tool.icon} color={colors.accent} size={28} />
-                    <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
+                    <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{labelFor(tool, locale)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -110,8 +110,8 @@ function RecoCard({ card, locale, tall, onPress }: { card: CardItem; locale: App
   return (
     <Cover source={card.art} style={{ width: "47%", minHeight: tall ? 188 : 148, borderRadius: 16 }} dim={0.45}>
       <Pressable onPress={onPress} style={{ flex: 1, minHeight: tall ? 188 : 148, justifyContent: "flex-end", padding: 14 }}>
-        <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{locale === "en" ? card.en : card.zh}</Text>
-        <Text style={{ color: "#F7F6F3CC", marginTop: 6, fontSize: 12 }}>{locale === "en" ? card.blurbEn : card.blurbZh}</Text>
+        <Text style={{ color: "#F7F6F3", fontSize: 16 }}>{labelFor(card, locale)}</Text>
+        <Text style={{ color: "#F7F6F3CC", marginTop: 6, fontSize: 12 }}>{blurbFor(card, locale)}</Text>
       </Pressable>
     </Cover>
   );

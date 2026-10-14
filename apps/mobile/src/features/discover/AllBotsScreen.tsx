@@ -1,3 +1,4 @@
+import { blurbFor, labelFor } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -36,8 +37,8 @@ export function AllBotsScreen({ navigation }: Props) {
           >
             <Cover source={bot.art} style={{ width: 52, height: 52, borderRadius: 26 }} dim={0} />
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? bot.en : bot.zh}</Text>
-              <Text style={{ color: colors.muted, marginTop: 4 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>
+              <Text style={{ color: colors.ink, fontSize: 16 }}>{labelFor(bot, locale)}</Text>
+              <Text style={{ color: colors.muted, marginTop: 4 }} numberOfLines={2}>{blurbFor(bot, locale)}</Text>
             </View>
           </Pressable>
         ))}

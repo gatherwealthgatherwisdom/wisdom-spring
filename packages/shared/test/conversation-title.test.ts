@@ -9,7 +9,7 @@ describe("conversationTitleFrom", () => {
     expect(conversationTitleFrom("abcdefghijklmnopqrstuvwxyz")).toBe("abcdefghijklmnopqrst");
   });
 
-  it("uses 睇圖 or 文件 when the first turn has no text", () => {
+  it("uses 看圖 or 文件 when the first turn has no text", () => {
     expect(conversationTitleFrom("", { hasImage: true })).toBe(LOOK_TITLE);
     expect(conversationTitleFrom("   ", { hasPdf: true })).toBe(FILE_TITLE);
     expect(conversationTitleFrom("", { hasImage: true, hasPdf: true })).toBe(FILE_TITLE);

@@ -1,4 +1,4 @@
-import { TRANSLATE_LANGUAGES } from "@spring/shared";
+import { TRANSLATE_LANGUAGES, labelFor } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -38,7 +38,7 @@ export function TranslateScreen({ navigation, route }: Props) {
   );
   const name = (id: string) => {
     const language = languages.find((item) => item.id === id);
-    return locale === "en" ? language?.en : language?.zh;
+    return language ? labelFor(language, locale) : undefined;
   };
   return (
     <Screen>
@@ -72,7 +72,7 @@ export function TranslateScreen({ navigation, route }: Props) {
             onPress={() => (side === "source" ? setSourceLang(language.id) : setTargetLang(language.id))}
             style={chip(colors, (side === "source" ? source : target) === language.id)}
           >
-            <Text style={{ color: colors.ink }}>{locale === "en" ? language.en : language.zh}</Text>
+            <Text style={{ color: colors.ink }}>{labelFor(language, locale)}</Text>
           </Pressable>
         ))}
       </View>

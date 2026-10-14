@@ -1,4 +1,4 @@
-import { toolsByGroup, type ToolGroup } from "@spring/shared";
+import { blurbFor, labelFor, toolsByGroup, type ToolGroup } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -39,7 +39,7 @@ export function AllToolsScreen({ navigation }: Props) {
                 <Pressable
                   key={tool.id}
                   accessibilityRole="button"
-                  accessibilityLabel={locale === "en" ? tool.en : tool.zh}
+                  accessibilityLabel={labelFor(tool, locale)}
                   onPress={() => openCatalogTool(navigation, tool.id)}
                   style={{
                     flexDirection: "row",
@@ -53,9 +53,9 @@ export function AllToolsScreen({ navigation }: Props) {
                 >
                   <Icon name={tool.icon} color={colors.accent} size={22} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.ink, fontSize: 16 }}>{locale === "en" ? tool.en : tool.zh}</Text>
+                    <Text style={{ color: colors.ink, fontSize: 16 }}>{labelFor(tool, locale)}</Text>
                     <Text style={{ color: colors.muted, marginTop: 2, fontSize: 13 }} numberOfLines={2}>
-                      {locale === "en" ? tool.blurbEn : tool.blurbZh}
+                      {blurbFor(tool, locale)}
                     </Text>
                   </View>
                   <Icon name="chevron-forward" color={colors.line} size={18} />

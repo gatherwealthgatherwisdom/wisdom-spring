@@ -1,4 +1,4 @@
-import { IMAGE_STYLES, conversationLabel } from "@spring/shared";
+import { IMAGE_STYLES, blurbFor, conversationLabel, labelFor } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
@@ -101,11 +101,11 @@ export function ImageScreen({ navigation }: Props) {
           {draws.map((card) => (
             <UseCard
               key={card.id}
-              title={locale === "en" ? card.en : card.zh}
+              title={labelFor(card, locale)}
               art={card.art}
               onPress={() => {
                 setStyleId(card.imageStyle ?? "ink");
-                setPrompt(locale === "en" ? card.en : card.zh);
+                setPrompt(labelFor(card, locale));
               }}
             />
           ))}
@@ -120,8 +120,8 @@ export function ImageScreen({ navigation }: Props) {
             >
               <Cover source={STYLE_ART[style.id] ?? HERO_ART.drawHero} style={{ flex: 1, minHeight: 104 }} dim={0.35}>
                 <View style={{ flex: 1, minHeight: 104, padding: 12, justifyContent: "flex-end" }}>
-                  <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? style.en : style.zh}</Text>
-                  <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{locale === "en" ? style.blurbEn : style.blurbZh}</Text>
+                  <Text style={{ color: "#F7F6F3" }}>{labelFor(style, locale)}</Text>
+                  <Text style={{ color: "#F7F6F3CC", fontSize: 12, marginTop: 4 }}>{blurbFor(style, locale)}</Text>
                 </View>
               </Cover>
             </Pressable>

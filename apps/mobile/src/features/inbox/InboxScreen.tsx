@@ -1,4 +1,4 @@
-import { conversationLabel } from "@spring/shared";
+import { blurbFor, conversationLabel, labelFor } from "@spring/shared";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -104,7 +104,7 @@ export function InboxScreen({ navigation }: Props) {
           <View style={{ flexDirection: "row", alignItems: "stretch", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.line, borderRadius: 14, marginBottom: 14, overflow: "hidden" }}>
             <View style={{ width: 4, backgroundColor: colors.accent }} />
             <Text style={{ flex: 1, color: colors.ink, paddingVertical: 12, paddingHorizontal: 12, lineHeight: 22 }}>
-              {locale === "en" ? banner.bodyEn : banner.bodyZh}
+              {labelFor({ zh: banner.bodyZh, en: banner.bodyEn }, locale)}
             </Text>
             <Pressable
               accessibilityLabel={text.dismissBanner}
@@ -124,7 +124,7 @@ export function InboxScreen({ navigation }: Props) {
             }}
             style={{ minHeight: 108, padding: 14, justifyContent: "space-between" }}
           >
-            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{locale === "en" ? inboxHero.en : inboxHero.zh}</Text>
+            <Text style={{ color: colors.bg, fontSize: 18, lineHeight: 26 }}>{labelFor(inboxHero, locale)}</Text>
             <View style={{ alignSelf: "flex-start", backgroundColor: colors.card, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8, marginTop: 12 }}>
               <Text style={{ color: colors.ink }}>{text.explore}</Text>
             </View>
@@ -141,12 +141,12 @@ export function InboxScreen({ navigation }: Props) {
               <Pressable
                 key={tool.id}
                 accessibilityRole="button"
-                accessibilityLabel={locale === "en" ? tool.en : tool.zh}
+                accessibilityLabel={labelFor(tool, locale)}
                 onPress={() => stack?.navigate("Tool", { id: tool.id })}
                 style={{ flex: 1, alignItems: "center", gap: 8 }}
               >
                 <Icon name={tool.icon} color={colors.accent} size={26} />
-                <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{locale === "en" ? tool.en : tool.zh}</Text>
+                <Text style={{ color: colors.ink, fontSize: 12, textAlign: "center" }}>{labelFor(tool, locale)}</Text>
               </Pressable>
             ))}
           </View>
@@ -163,7 +163,7 @@ export function InboxScreen({ navigation }: Props) {
                   <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
                     <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
                   </View>
-                  <Text style={{ color: "#F7F6F3" }}>{locale === "en" ? card.en : card.zh}</Text>
+                  <Text style={{ color: "#F7F6F3" }}>{labelFor(card, locale)}</Text>
                 </Pressable>
               </Cover>
             ))}
@@ -187,8 +187,8 @@ export function InboxScreen({ navigation }: Props) {
             >
               <Cover source={bot.art} style={{ width: 48, height: 48, borderRadius: 24 }} dim={0} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.ink }}>{locale === "en" ? bot.en : bot.zh}</Text>
-                <Text style={{ color: colors.muted, marginTop: 2 }} numberOfLines={2}>{locale === "en" ? bot.blurbEn : bot.blurbZh}</Text>
+                <Text style={{ color: colors.ink }}>{labelFor(bot, locale)}</Text>
+                <Text style={{ color: colors.muted, marginTop: 2 }} numberOfLines={2}>{blurbFor(bot, locale)}</Text>
               </View>
               <Icon name="chevron-forward" color={colors.line} size={18} />
             </Pressable>

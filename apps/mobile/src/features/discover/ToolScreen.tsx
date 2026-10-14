@@ -1,4 +1,4 @@
-import { toolPlaceholder, toolRequiresDraft } from "@spring/shared";
+import { blurbFor, labelFor, toolPlaceholder, toolRequiresDraft } from "@spring/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -20,13 +20,13 @@ type Props = NativeStackScreenProps<AppStackParamList, "Tool">;
 
 const EXAMPLES: Record<string, { zh: string; en: string }[]> = {
   rewrite: [
-    { zh: "今日天氣好好，我想去行山。", en: "The weather is lovely and I want to hike." },
+    { zh: "今日天氣很好，我想去行山。", en: "The weather is lovely and I want to hike." },
     { zh: "麻煩你盡快回覆，謝謝。", en: "Please reply as soon as you can, thanks." },
   ],
-  solve: [{ zh: "12 個人分 3 組，每組幾多人？", en: "12 people into 3 groups, how many each?" }],
-  memo: [{ zh: "聽日朝早九點見陳生，帶合約。", en: "Meet Mr Chan at 9am tomorrow. Bring the contract." }],
+  solve: [{ zh: "12 個人分成 3 組，每組多少人？", en: "12 people into 3 groups, how many each?" }],
+  memo: [{ zh: "明日早上九時見陳生，帶合約。", en: "Meet Mr Chan at 9am tomorrow. Bring the contract." }],
   plain: [{ zh: "鑒於貴司來函所述情況，現回覆如下。", en: "In light of your letter, we reply as follows." }],
-  search: [{ zh: "香港今日有無紅色暴雨警告？", en: "Is there a red rainstorm warning in Hong Kong today?" }],
+  search: [{ zh: "香港今日有沒有紅色暴雨警告？", en: "Is there a red rainstorm warning in Hong Kong today?" }],
 };
 
 export function ToolScreen({ navigation, route }: Props) {
@@ -45,8 +45,8 @@ export function ToolScreen({ navigation, route }: Props) {
       </Screen>
     );
   }
-  const title = locale === "en" ? tool.en : tool.zh;
-  const blurb = locale === "en" ? tool.blurbEn : tool.blurbZh;
+  const title = labelFor(tool, locale);
+  const blurb = blurbFor(tool, locale);
   const placeholder = toolPlaceholder(tool.id, locale) ?? text.placeholder;
   const typed = draft.trim();
   const ready = typed.length > 0 || !toolRequiresDraft(tool.id);
@@ -77,7 +77,7 @@ export function ToolScreen({ navigation, route }: Props) {
           <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.tryThis}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {examples.map((item) => {
-              const label = locale === "en" ? item.en : item.zh;
+              const label = labelFor(item, locale);
               return (
                 <Pressable
                   key={label}

@@ -14,3 +14,7 @@ export function labelFor(item: { zh: string; en: string }, locale: string): stri
   if (app === Locale.EN) return item.en;
   return app === Locale.ZH_CN ? toSimplified(item.zh) : item.zh;
 }
+
+export function blurbFor(item: { blurbZh: string; blurbEn: string }, locale: string): string {
+  return labelFor({ zh: item.blurbZh, en: item.blurbEn }, locale);
+}
