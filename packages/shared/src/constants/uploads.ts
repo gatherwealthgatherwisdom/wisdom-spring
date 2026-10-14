@@ -1,6 +1,9 @@
-export const LOOK_PROMPT = "請睇呢張圖，用繁體中文講你見到乜。";
+import { Locale, parseAppLocale } from "../enums/locale";
+import { toSimplified } from "../lib/zh-hans";
+
+export const LOOK_PROMPT = "請看這張圖，用香港書面語說明你所見。";
 export const LOOK_TITLE = "看圖";
-export const FILE_PROMPT = "請用繁體中文講呢份文件嘅重點。";
+export const FILE_PROMPT = "請用香港書面語說明這份文件的重點。";
 export const FILE_TITLE = "文件";
 export const FILE_LATER_COPY = "檔案功能稍後提供。";
 export const IMAGE_TOO_LARGE_COPY = "圖片最大 4MB。";
@@ -21,6 +24,16 @@ export function isImageMime(value: string): boolean {
 
 export function isPdfMime(value: string): boolean {
   return value === "application/pdf";
+}
+
+export function mediaPromptFor(kind: "look" | "file", locale: string, body: string): string {
+  const app = parseAppLocale(locale);
+  if (app === Locale.EN) {
+    return kind === "file"
+      ? "Please summarise the key points of this document."
+      : "Please look at this image and describe what you see.";
+  }
+  return app === Locale.ZH_CN ? toSimplified(body) : body;
 }
 
 const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/i;

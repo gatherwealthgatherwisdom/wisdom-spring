@@ -17,7 +17,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Business email",
     blurbZh: "穩重有禮，短段落",
     blurbEn: "Polite, in short paragraphs",
-    instruction: "幫用戶寫一封穩重、有禮嘅商務電郵。先確認對象同目的，再用短段落。唔好誇張。",
+    instruction: "幫用戶寫一封穩重、有禮的商務電郵。先確認對象和目的，再用短段落。不要誇張。",
   },
   {
     id: "report",
@@ -25,7 +25,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Report outline",
     blurbZh: "背景、要點、下一步",
     blurbEn: "Background, points, next step",
-    instruction: "幫用戶起一個清楚嘅報告大綱：背景、要點、風險、下一步。用繁體中文，除非用戶用另一種語言。",
+    instruction: "幫用戶起一個清楚的報告大綱：背景、要點、風險、下一步。跟隨用戶語言。",
   },
   {
     id: "rewrite",
@@ -33,7 +33,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Rewrite",
     blurbZh: "保留原意，句子更清楚",
     blurbEn: "Clearer sentences, same meaning",
-    instruction: "改寫用戶嘅文字，保留原意，句子更清楚。唔好聲稱可以避開任何偵測。",
+    instruction: "改寫用戶的文字，保留原意，句子更清楚。不要聲稱可以避開任何偵測。",
   },
   {
     id: "formal",
@@ -49,7 +49,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Plain",
     blurbZh: "淺白短句",
     blurbEn: "Plain, short sentences",
-    instruction: "用淺白繁體中文寫，短句，避免術語。",
+    instruction: "用淺白中文寫，短句，避免術語。",
   },
   {
     id: "cantonese",
@@ -57,7 +57,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Cantonese",
     blurbZh: "香港廣東話，語氣自然",
     blurbEn: "Natural Hong Kong Cantonese",
-    instruction: "用香港廣東話書面語撰寫，語氣自然、有分寸。",
+    instruction: "用香港廣東話口語撰寫，語氣自然、有分寸。",
   },
   {
     id: "memo",
@@ -65,7 +65,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Memo",
     blurbZh: "日期或場合、要點、下一步",
     blurbEn: "Date or occasion, points, next step",
-    instruction: "幫用戶寫一則短備忘：日期或場合、要點、下一步。短句、清楚，唔好誇張。",
+    instruction: "幫用戶寫一則短備忘：日期或場合、要點、下一步。短句、清楚，不要誇張。",
   },
   {
     id: "more",
@@ -73,7 +73,7 @@ export const WRITE_TEMPLATES: readonly WriteTemplate[] = [
     en: "Make more",
     blurbZh: "同一風格，寫得更長、例子更多",
     blurbEn: "Same style, longer, with more examples",
-    instruction: "用同一風格再寫一版：寫得更足、例子更多，唔好改語氣，唔好加唔存在嘅事實。",
+    instruction: "用同一風格再寫一版：寫得更足、例子更多，不要改語氣，不要加不存在的事實。",
   },
 ];
 

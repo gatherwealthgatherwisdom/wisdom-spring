@@ -16,6 +16,7 @@ import {
   messageFor,
   sanitizeThinking,
   usdPerTokenToMicrosPerMillion,
+  mediaPromptFor,
   usdToMicros,
   type PlanTier,
 } from "@spring/shared";
@@ -139,7 +140,11 @@ export async function runGeneration(
     loadPromptDocs(deps.prisma),
     loadAppLimits(deps.prisma),
   ]);
-  const emptyPrompt = hasPdf && !hasVision ? prompts.file : prompts.look;
+  const emptyPrompt = mediaPromptFor(
+    hasPdf && !hasVision ? "file" : "look",
+    input.locale ?? "zh-HK",
+    hasPdf && !hasVision ? prompts.file : prompts.look,
+  );
   const turns = history.slice(-historyMaxMessages).map((row) => {
     const attached = assetIdsOf(row.attachments).length > 0;
     const text =
@@ -184,7 +189,7 @@ export async function runGeneration(
         [
           {
             role: "system",
-            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint, prompts.system),
+            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint, prompts.system, input.locale),
           },
           ...turns,
         ],

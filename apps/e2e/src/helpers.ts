@@ -464,7 +464,9 @@ export async function waitForLiveTurn(
             "用三點解釋",
             "幫我寫一封禮貌",
             "將呢段文言",
+            "將這段文言",
             "今日有咩國際新聞",
+            "今日有甚麼國際新聞",
             "幫我列一個健康",
           ];
           const text = document.body.innerText || "";

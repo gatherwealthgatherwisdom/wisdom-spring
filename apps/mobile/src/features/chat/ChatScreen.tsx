@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, conversationLabel, generationKind, isImageMime, isPdfMime, messageFor, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, conversationLabel, generationKind, isImageMime, isPdfMime, messageFor, suggestionsFor, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -65,7 +65,7 @@ export function ChatScreen({ navigation, route }: Props) {
   });
   const flags = useQuery({ queryKey: ["flags"], queryFn: () => spring.flags() });
   const copyQuery = useQuery({ queryKey: ["copy"], queryFn: () => spring.copy() });
-  const suggestions = copyQuery.data?.emptyHero ?? [...SUGGESTED_PROMPTS_ZH];
+  const suggestions = suggestionsFor(copyQuery.data?.emptyHero ?? [...SUGGESTED_PROMPTS_ZH], locale);
   const flagOn = (key: FeatureFlagKey, fallback = true) =>
     flags.data?.items.find((item) => item.key === key)?.enabled ?? fallback;
   const chatTitle = conversationLabel(thread.conversation, text.app);

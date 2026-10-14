@@ -123,9 +123,9 @@ export function cardsFromDiscover(
 export const DRAW_CARDS: CardItem[] = cardsFromDiscover(undefined, "draw");
 
 export const BOTS: CardItem[] = [
-  { id: "biz", zh: "商務助手", en: "Business aide", blurbZh: "穩重短句，適合電郵同會議。", blurbEn: "Calm, short lines for mail and meetings.", tone: "#1F6B4A", art: art.botBiz },
-  { id: "family", zh: "家庭行程", en: "Family planner", blurbZh: "幫你排一日嘅家務同外出。", blurbEn: "Plan a day of errands and outings.", tone: "#3D9B6E", art: art.botFamily },
-  { id: "tutor", zh: "寫作導師", en: "Writing tutor", blurbZh: "改結構、改語氣，唔改原意。", blurbEn: "Fix structure and tone, keep the meaning.", tone: "#2F6F4E", art: art.botTutor },
+  { id: "biz", zh: "商務助手", en: "Business aide", blurbZh: "穩重短句，適合電郵和會議。", blurbEn: "Calm, short lines for mail and meetings.", tone: "#1F6B4A", art: art.botBiz },
+  { id: "family", zh: "家庭行程", en: "Family planner", blurbZh: "協助安排一天的家務和外出。", blurbEn: "Plan a day of errands and outings.", tone: "#3D9B6E", art: art.botFamily },
+  { id: "tutor", zh: "寫作導師", en: "Writing tutor", blurbZh: "改結構、改語氣，不改原意。", blurbEn: "Fix structure and tone, keep the meaning.", tone: "#2F6F4E", art: art.botTutor },
 ];
 
 export function aidesFromCatalog(items: CatalogAideView[] | undefined): CardItem[] {

@@ -575,13 +575,25 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
   for (const item of SPRING_AIDES) {
     await prisma.catalogEntry.updateMany({
       where: { kind: "AIDE", id: item.id },
-      data: { zh: item.zh, en: item.en, blurbZh: item.blurbZh, blurbEn: item.blurbEn },
+      data: {
+        zh: item.zh,
+        en: item.en,
+        blurbZh: item.blurbZh,
+        blurbEn: item.blurbEn,
+        instruction: item.instruction,
+      },
     });
   }
   for (const item of WRITE_TEMPLATES) {
     await prisma.catalogEntry.updateMany({
       where: { kind: "WRITE", id: item.id },
-      data: { zh: item.zh, en: item.en, blurbZh: item.blurbZh, blurbEn: item.blurbEn },
+      data: {
+        zh: item.zh,
+        en: item.en,
+        blurbZh: item.blurbZh,
+        blurbEn: item.blurbEn,
+        instruction: item.instruction,
+      },
     });
   }
   for (const item of IMAGE_STYLES) {
