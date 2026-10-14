@@ -72,9 +72,14 @@ export function MessageList({
     listRef.current?.scrollToEnd({ animated: false });
   }
 
+  useEffect(() => {
+    const frame = requestAnimationFrame(followEnd);
+    return () => cancelAnimationFrame(frame);
+  }, [streamLen, data.length, highlightedId]);
+
   function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    stickToEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 72;
+    stickToEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 80;
   }
 
   if (data.length === 0) {
@@ -90,7 +95,7 @@ export function MessageList({
       ref={listRef}
       data={data}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={{ paddingBottom: 20 }}
+      contentContainerStyle={{ paddingBottom: 48 }}
       onScroll={onScroll}
       scrollEventThrottle={16}
       onContentSizeChange={() => followEnd()}
