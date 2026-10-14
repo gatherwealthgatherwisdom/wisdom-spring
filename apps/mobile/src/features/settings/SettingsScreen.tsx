@@ -164,7 +164,7 @@ export function SettingsScreen() {
             }}
           />
           <SettingLine
-            icon="trash-outline"
+            icon="image-outline"
             label={text.clearCache}
             colors={colors}
             onPress={() => {
