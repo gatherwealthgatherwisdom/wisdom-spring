@@ -78,6 +78,7 @@ export async function runGeneration(
     assistantMessageId: string;
     turnMode?: string;
     imageStyle?: string | null;
+    locale?: string;
   },
   sink: SseSink,
 ): Promise<void> {
@@ -365,7 +366,7 @@ export async function runGeneration(
               latencyMs: Date.now() - started,
             },
           });
-          sink.send("error", { code: ErrorCode.STREAM_ABORTED, message: messageFor(ErrorCode.STREAM_ABORTED) });
+          sink.send("error", { code: ErrorCode.STREAM_ABORTED, message: messageFor(ErrorCode.STREAM_ABORTED, input.locale) });
           return;
         }
         if (
@@ -418,7 +419,7 @@ export async function runGeneration(
             })
             .catch(() => undefined);
         }
-        sink.send("error", { code, message: messageFor(code) });
+        sink.send("error", { code, message: messageFor(code, input.locale) });
         return;
       }
     }

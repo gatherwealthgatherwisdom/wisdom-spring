@@ -5,20 +5,20 @@ import { toSimplified } from "../lib/zh-hans";
 const ZH_HK_MESSAGES: Record<ErrorCode, string> = {
     [ErrorCode.AUTH_INVALID]: "登入資料不正確。",
     [ErrorCode.AUTH_EXPIRED]: "登入已過期，請再登入。",
-    [ErrorCode.USER_SUSPENDED]: "呢個帳戶已暫停。",
+    [ErrorCode.USER_SUSPENDED]: "此帳戶已暫停。",
     [ErrorCode.FORBIDDEN]: "沒有權限。",
     [ErrorCode.QUOTA_DAILY_MESSAGE]: "今日對話次數已用完。",
     [ErrorCode.QUOTA_MONTHLY_COST]: "本月用量已達上限。",
-    [ErrorCode.QUOTA_GUEST]: "試用 5 次已用完。完成註冊後可以繼續用。",
+    [ErrorCode.QUOTA_GUEST]: "試用 5 次已用完。完成註冊後可以繼續使用。",
     [ErrorCode.MODEL_POOL_EMPTY]: "暫時沒有可用模型，請稍後再試。",
-    [ErrorCode.UPSTREAM_REGION_BLOCKED]: "呢個模型暫時唔支援香港地區，已自動換過。",
+    [ErrorCode.UPSTREAM_REGION_BLOCKED]: "此模型暫時不支援香港地區，已自動更換。",
     [ErrorCode.UPSTREAM_RATE_LIMITED]: "系統繁忙，請稍後再試。",
-    [ErrorCode.UPSTREAM_UNAVAILABLE]: "智泉暫時回應唔到，請稍後再試。",
+    [ErrorCode.UPSTREAM_UNAVAILABLE]: "智泉暫時未能回應，請稍後再試。",
     [ErrorCode.STREAM_ABORTED]: "已停止生成。",
     [ErrorCode.VALIDATION]: "輸入格式不正確。",
     [ErrorCode.NOT_FOUND]: "找不到相關內容。",
     [ErrorCode.CONFLICT]: "請勿重複提交。",
-    [ErrorCode.INTERNAL]: "智泉暫時回應唔到，請稍後再試。",
+    [ErrorCode.INTERNAL]: "智泉暫時未能回應，請稍後再試。",
 };
 
 function hansMessages(source: Record<ErrorCode, string>): Record<ErrorCode, string> {

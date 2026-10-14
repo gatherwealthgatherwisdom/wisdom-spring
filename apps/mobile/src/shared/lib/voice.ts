@@ -19,11 +19,17 @@ function recognitionCtor(): RecognitionCtor | null {
   return host.SpeechRecognition ?? host.webkitSpeechRecognition ?? null;
 }
 
+function speechLang(locale: AppLocale): string {
+  if (locale === "en") return "en-US";
+  if (locale === "zh-CN") return "zh-CN";
+  return "zh-HK";
+}
+
 export function speak(text: string, locale: AppLocale): void {
   const spoken = text.replace(/!\[[^\]]*\]\([^)]+\)/g, "").trim();
   if (!spoken) return;
   Speech.stop();
-  Speech.speak(spoken, { language: locale === "en" ? "en-US" : "zh-HK" });
+  Speech.speak(spoken, { language: speechLang(locale) });
 }
 
 export function startDictation(
@@ -33,7 +39,7 @@ export function startDictation(
   const Ctor = recognitionCtor();
   if (!Ctor) return null;
   const recognition = new Ctor();
-  recognition.lang = locale === "en" ? "en-US" : "zh-HK";
+  recognition.lang = speechLang(locale);
   recognition.onresult = (event) => {
     const transcript = event.results[0]?.[0]?.transcript;
     if (transcript) onText(transcript);

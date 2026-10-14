@@ -282,7 +282,7 @@ describe("phone login", () => {
     });
     expect(blocked.statusCode).toBe(429);
     expect(blocked.json().error.code).toBe(ErrorCode.QUOTA_GUEST);
-    expect(blocked.json().error.message).toBe("試用 5 次已用完。完成註冊後可以繼續用。");
+    expect(blocked.json().error.message).toBe("試用 5 次已用完。完成註冊後可以繼續使用。");
     expect((await app.ctx.prisma.user.findUnique({ where: { phone: "+85264444444" } }))?.guestUses).toBe(5);
 
     const registered = await app.inject({

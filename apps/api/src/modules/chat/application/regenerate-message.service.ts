@@ -79,6 +79,7 @@ export class RegenerateMessageService {
         conversationId: prepared.conversationId,
         assistantMessageId: prepared.assistantMessageId,
         turnMode: prepared.turnMode,
+        locale: user.locale,
       },
       sink,
     );

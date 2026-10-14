@@ -11,7 +11,7 @@ import {
 const sample: PushMessage = {
   to: "ExponentPushToken[abc]",
   title: "今日額度將盡",
-  body: "今日仲剩 3 次。",
+  body: "今日尚餘 3 次。",
   data: { kind: "quota_low" },
 };
 

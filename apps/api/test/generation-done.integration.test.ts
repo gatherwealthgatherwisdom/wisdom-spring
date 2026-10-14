@@ -178,7 +178,7 @@ describe("generation after the client leaves", () => {
       {
         to: session.device,
         title: "智泉已經回覆",
-        body: "打開對話睇回覆。",
+        body: "打開對話查看回覆。",
         data: { kind: "generation_done", conversationId: prepared.conversationId },
       },
     ]);

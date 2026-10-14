@@ -7,9 +7,9 @@ export type PushKind = (typeof PUSH_KINDS)[number];
 export const PUSH_COPY = {
   "zh-HK": {
     generationDoneTitle: "智泉已經回覆",
-    generationDoneBody: "打開對話睇回覆。",
+    generationDoneBody: "打開對話查看回覆。",
     quotaLowTitle: "今日額度將盡",
-    quotaLowBody: (remaining: number) => `今日仲剩 ${remaining} 次。`,
+    quotaLowBody: (remaining: number) => `今日尚餘 ${remaining} 次。`,
   },
   en: {
     generationDoneTitle: "Wisdom Spring replied",

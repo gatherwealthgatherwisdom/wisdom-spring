@@ -29,14 +29,19 @@ function perMinute(max: number): {
   };
 }
 
-async function stream(request: FastifyRequest, reply: FastifyReply, run: (sink: ReturnType<typeof openSse>) => Promise<void>): Promise<void> {
+async function stream(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  run: (sink: ReturnType<typeof openSse>) => Promise<void>,
+  locale?: string,
+): Promise<void> {
   const sink = openSse(reply);
   try {
     await run(sink);
   } catch (error) {
     const appError = error instanceof AppError ? error : new AppError(ErrorCode.INTERNAL);
     request.log.error({ code: appError.code }, "generation failed before stream events");
-    sink.send("error", { code: appError.code, message: appError.message || messageFor(appError.code) });
+    sink.send("error", { code: appError.code, message: messageFor(appError.code, locale) });
   } finally {
     sink.close();
   }
@@ -47,7 +52,7 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     const user = await requireUser(request, app.ctx.auth);
     const body = SendMessageRequestSchema.parse(request.body);
     const prepared = await app.ctx.sendMessage.prepare(user, body);
-    await stream(request, reply, (sink) => app.ctx.sendMessage.continue(user, prepared, sink));
+    await stream(request, reply, (sink) => app.ctx.sendMessage.continue(user, prepared, sink), user.locale);
   });
 
   app.post("/v1/messages/:id/abort", async (request) => {
@@ -60,7 +65,7 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     const user = await requireUser(request, app.ctx.auth);
     const { id } = request.params as { id: string };
     const prepared = await app.ctx.regenerate.prepare(user, id);
-    await stream(request, reply, (sink) => app.ctx.regenerate.continue(user, prepared, sink));
+    await stream(request, reply, (sink) => app.ctx.regenerate.continue(user, prepared, sink), user.locale);
   });
 
   app.post("/v1/messages/:id/feedback", perMinute(60), async (request) => {

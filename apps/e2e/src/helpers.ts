@@ -228,7 +228,7 @@ export async function submitAdminOtp(page: Page, localDigits: string): Promise<v
 export const LIVE_SKIP_COPY = [
   "系統繁忙，請稍後再試。",
   "今日對話次數已用完。",
-  "試用 5 次已用完。完成註冊後可以繼續用。",
+  "試用 5 次已用完。完成註冊後可以繼續使用。",
   "暫時未有可用圖像模型。",
   "暫時未有可用的看圖模型。",
 ] as const;

@@ -197,7 +197,7 @@ describe("device tokens and quota-low push", () => {
     expect(memory.sent).toHaveLength(1);
     expect(memory.sent[0]?.to).toBe(ANDROID);
     expect(memory.sent[0]?.title).toBe("今日額度將盡");
-    expect(memory.sent[0]?.body).toBe("今日仲剩 3 次。");
+    expect(memory.sent[0]?.body).toBe("今日尚餘 3 次。");
     expect(memory.sent[0]?.data).toEqual({ kind: "quota_low" });
 
     await app.ctx.push.afterCompletedTurn({
@@ -270,7 +270,7 @@ describe("device tokens and quota-low push", () => {
     await app.ctx.push.afterCompletedTurn({ userId, conversationId: createId(), left: false });
     expect(memory.sent).toHaveLength(1);
     expect(memory.sent[0]?.data).toEqual({ kind: "quota_low" });
-    expect(memory.sent[0]?.body).toBe("今日仲剩 1 次。");
+    expect(memory.sent[0]?.body).toBe("今日尚餘 1 次。");
   });
 
   it("clears tokens on logout all and on account delete", async () => {

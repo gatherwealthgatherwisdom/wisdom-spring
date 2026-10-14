@@ -1,6 +1,6 @@
 import { ApiError } from "@spring/api-client";
 import * as Clipboard from "expo-clipboard";
-import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, conversationLabel, generationKind, isImageMime, isPdfMime, type AssetView } from "@spring/shared";
+import { ConversationStatus, ErrorCode, FeatureFlagKey, LIMITS, SUGGESTED_PROMPTS_ZH, conversationLabel, generationKind, isImageMime, isPdfMime, messageFor, type AssetView } from "@spring/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
@@ -308,7 +308,7 @@ export function ChatScreen({ navigation, route }: Props) {
     } catch (error) {
       if (controller.signal.aborted) return;
       if (expireIfNeeded(error)) {
-        stream.fail(error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。");
+        stream.fail(error instanceof ApiError ? error.message : messageFor(ErrorCode.UPSTREAM_UNAVAILABLE, locale));
         return;
       }
       if (isOfflineError(error)) {
@@ -317,7 +317,7 @@ export function ChatScreen({ navigation, route }: Props) {
         setBanner(text.offlineSend);
         return;
       }
-      const message = error instanceof ApiError ? error.message : "智泉暫時回應唔到，請稍後再試。";
+      const message = error instanceof ApiError ? error.message : messageFor(ErrorCode.UPSTREAM_UNAVAILABLE, locale);
       stream.fail(message);
       setBanner(message);
       noteGuest(error instanceof ApiError ? error.code : undefined);

@@ -139,7 +139,7 @@ export class SendMessageService {
 
   async continue(user: ActingUser, prepared: PreparedSend, sink: SseSink): Promise<void> {
     if (prepared.kind === "replay") {
-      await this.writeReplay(prepared.row, sink);
+      await this.writeReplay(prepared.row, sink, user.locale);
       return;
     }
     await runGeneration(
@@ -151,12 +151,13 @@ export class SendMessageService {
         assistantMessageId: prepared.assistantMessageId,
         turnMode: prepared.turnMode,
         imageStyle: prepared.imageStyle,
+        locale: user.locale,
       },
       sink,
     );
   }
 
-  private async writeReplay(row: ClientMessage, sink: SseSink): Promise<void> {
+  private async writeReplay(row: ClientMessage, sink: SseSink, locale: string): Promise<void> {
     const assistant = await this.prisma.message.findUnique({ where: { id: row.assistantMessageId } });
     if (!assistant) throw new AppError(ErrorCode.NOT_FOUND);
     const conversation = await this.prisma.conversation.findUnique({
@@ -195,6 +196,6 @@ export class SendMessageService {
           : assistant.errorCode && assistant.errorCode in ErrorCode
             ? (assistant.errorCode as ErrorCode)
             : ErrorCode.INTERNAL;
-    sink.send("error", { code, message: messageFor(code) });
+    sink.send("error", { code, message: messageFor(code, locale) });
   }
 }

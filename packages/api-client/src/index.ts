@@ -61,6 +61,7 @@ import type {
   UsageReport,
   UserPublic,
 } from "@spring/shared";
+import { ErrorCode, messageFor } from "@spring/shared";
 import { createSseParser } from "./sse";
 
 export class ApiError extends Error {
@@ -90,7 +91,7 @@ export interface StreamHandlers {
 
 type PageOf<T> = Page<T>;
 
-const AUTH_EXPIRED_MESSAGE = "登入已過期，請再登入。";
+const AUTH_EXPIRED_MESSAGE = messageFor(ErrorCode.AUTH_EXPIRED);
 
 export class SpringClient {
   private refreshLock: Promise<void> | null = null;
@@ -503,7 +504,7 @@ export class SpringClient {
         }
         resolve();
       };
-      xhr.onerror = () => reject(new ApiError("UPSTREAM_UNAVAILABLE", "智泉暫時回應唔到，請稍後再試。", 0));
+      xhr.onerror = () => reject(new ApiError("UPSTREAM_UNAVAILABLE", messageFor(ErrorCode.UPSTREAM_UNAVAILABLE), 0));
       xhr.onabort = () => resolve();
       signal?.addEventListener("abort", () => xhr.abort());
       xhr.send(JSON.stringify(body));
@@ -540,7 +541,7 @@ function errorFromText(text: string, status: number): ApiError {
   } catch {
     // Not an error envelope.
   }
-  return new ApiError("INTERNAL", "智泉暫時回應唔到，請稍後再試。", status);
+  return new ApiError("INTERNAL", messageFor(ErrorCode.INTERNAL), status);
 }
 
 function dispatchSse(text: string, handlers: StreamHandlers): void {

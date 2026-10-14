@@ -194,7 +194,9 @@ describe("SendMessageRequestSchema", () => {
 describe("copy", () => {
   it("uses the Hong Kong quota line", () => {
     expect(messageFor(ErrorCode.QUOTA_DAILY_MESSAGE)).toBe("今日對話次數已用完。");
-    expect(messageFor(ErrorCode.QUOTA_GUEST)).toBe("試用 5 次已用完。完成註冊後可以繼續用。");
+    expect(messageFor(ErrorCode.QUOTA_GUEST)).toBe("試用 5 次已用完。完成註冊後可以繼續使用。");
+    expect(messageFor(ErrorCode.UPSTREAM_UNAVAILABLE)).toBe("智泉暫時未能回應，請稍後再試。");
+    expect(messageFor(ErrorCode.UPSTREAM_UNAVAILABLE, Locale.ZH_CN)).toBe("智泉暂时未能回应，请稍后再试。");
   });
 });
 
@@ -369,7 +371,9 @@ describe("push copy and device schemas", () => {
   it("uses Hong Kong copy and quota thresholds", () => {
     expect(pushCopy("zh-HK").generationDoneTitle).toBe("智泉已經回覆");
     expect(pushCopy("zh-HK").quotaLowTitle).toBe("今日額度將盡");
-    expect(pushCopy("zh-HK").quotaLowBody(3)).toBe("今日仲剩 3 次。");
+    expect(pushCopy("zh-HK").quotaLowBody(3)).toBe("今日尚餘 3 次。");
+    expect(pushCopy("zh-CN").generationDoneBody).toBe("打开对话查看回复。");
+    expect(pushCopy("zh-CN").quotaLowBody(3)).toBe("今日尚余 3 次。");
     expect(pushCopy("en").generationDoneTitle).toBe("Wisdom Spring replied");
     expect(LIMITS.notifyQuotaRemaining).toBe(3);
     expect(LIMITS.notifyGuestRemaining).toBe(1);
