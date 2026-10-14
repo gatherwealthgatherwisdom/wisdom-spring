@@ -365,7 +365,7 @@ export function ChatScreen({ navigation, route }: Props) {
     const messageId = stream.messageId;
     stream.controller?.abort();
     if (messageId) void spring.abort(messageId).catch(() => undefined);
-    stream.fail(locale === "en" ? "Generation stopped." : "已停止生成。");
+    stream.fail(text.generationStopped);
   }
 
   async function exportChat() {

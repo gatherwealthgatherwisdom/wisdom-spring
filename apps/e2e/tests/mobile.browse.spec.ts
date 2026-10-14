@@ -13,7 +13,7 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await expect(visibleText(page, "水墨")).toBeVisible();
   await expect(visibleText(page, "紙本")).toBeVisible();
   await expect(visibleText(page, "夜色")).toBeVisible();
-  await expect(composerBox(page, "描述你想畫嘅圖")).toBeVisible();
+  await expect(composerBox(page, "描述你想畫的圖")).toBeVisible();
   await expectNoVendorModels(page);
 
   await clickText(page, "發現");
@@ -24,7 +24,7 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
 
   await clickText(page, "我的");
   await expect(visibleText(page, "未登入")).toBeVisible();
-  await expect(page.getByText("未登入都可以先睇各頁")).toBeVisible();
+  await expect(page.getByText("未登入亦可先瀏覽各頁")).toBeVisible();
   await expect(visibleText(page, "登入")).toBeVisible();
   await expect(visibleText(page, "中盈紫達集團")).toBeVisible();
   await expectNoVendorModels(page);
@@ -35,12 +35,12 @@ test("unsigned users can open the four tabs, tools, and image studio", async ({ 
   await clickLabel(page, "+");
   await expect(page.locator('[aria-label="問"]').filter({ visible: true })).toBeVisible();
   await expect(page.locator('[aria-label="畫圖"]').filter({ visible: true })).toBeVisible();
-  await expect(page.locator('[aria-label="睇圖"]').filter({ visible: true })).toBeVisible();
+  await expect(page.locator('[aria-label="看圖"]').filter({ visible: true })).toBeVisible();
   await expect(page.locator('[aria-label="文件"]').filter({ visible: true })).toBeVisible();
   await clickLabel(page, "畫圖");
-  await expect(composerBox(page, "描述你想畫嘅圖")).toBeVisible();
-  await clickLabel(page, "睇圖");
-  await expect(composerBox(page, "問呢張圖")).toBeVisible();
+  await expect(composerBox(page, "描述你想畫的圖")).toBeVisible();
+  await clickLabel(page, "看圖");
+  await expect(composerBox(page, "問這張圖")).toBeVisible();
   await expect(page.locator('[aria-label="相機"]').filter({ visible: true })).toBeVisible();
   await expect(page.locator('[aria-label="相簿"]').filter({ visible: true })).toBeVisible();
   await clickLabel(page, "問");

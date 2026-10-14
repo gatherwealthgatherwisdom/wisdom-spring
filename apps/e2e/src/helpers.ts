@@ -159,7 +159,7 @@ export async function expectComposerControls(page: Page): Promise<void> {
   const extras = await page.evaluate(() => {
     const input = Array.from(document.querySelectorAll("textarea, input")).find((node) => {
       const placeholder = (node as HTMLInputElement | HTMLTextAreaElement).placeholder;
-      return placeholder === "問智泉" || placeholder === "描述你想畫嘅圖" || placeholder === "問呢張圖" || placeholder === "問呢份文件";
+      return placeholder === "問智泉" || placeholder === "描述你想畫的圖" || placeholder === "問這張圖" || placeholder === "問這份文件";
     });
     if (!(input instanceof HTMLElement) || !input.parentElement) return { labels: [] as string[], mic: true, call: true };
     const labels = Array.from(input.parentElement.querySelectorAll("[aria-label]"))
@@ -230,7 +230,7 @@ export const LIVE_SKIP_COPY = [
   "今日對話次數已用完。",
   "試用 5 次已用完。完成註冊後可以繼續用。",
   "暫時未有可用圖像模型。",
-  "暫時未有可用睇圖模型。",
+  "暫時未有可用的看圖模型。",
 ] as const;
 
 export async function clickNewChatButton(page: Page): Promise<void> {
@@ -342,7 +342,7 @@ export async function fetchCapabilities(page: Page): Promise<{ image: boolean; v
 
 export async function attachPhotoFixture(page: Page, filePath: string): Promise<"ok" | string> {
   await clickLabel(page, "+");
-  await clickLabel(page, "睇圖");
+  await clickLabel(page, "看圖");
   await expect(page.locator('[aria-label="相簿"]').filter({ visible: true })).toBeVisible();
   await page.evaluate(() => {
     const body = document.body;
@@ -355,8 +355,8 @@ export async function attachPhotoFixture(page: Page, filePath: string): Promise<
     }) as typeof body.appendChild;
   });
   await clickLabel(page, "相簿");
-  if (await page.getByText("暫時未有可用睇圖模型。").filter({ visible: true }).isVisible().catch(() => false)) {
-    return "暫時未有可用睇圖模型。";
+  if (await page.getByText("暫時未有可用的看圖模型。").filter({ visible: true }).isVisible().catch(() => false)) {
+    return "暫時未有可用的看圖模型。";
   }
   const file = page.locator('[data-testid="file-input"]');
   try {
@@ -447,15 +447,16 @@ export async function waitForLiveTurn(
         return page.evaluate((needle: string) => {
           const noise = [
             "寫一封電郵",
-            "翻譯呢段",
+            "翻譯這段",
             "畫一幅",
             "繼續上次",
             "共飲智慧之泉",
             "問智泉",
-            "描述你想畫嘅圖",
-            "問呢張圖",
-            "問呢份文件",
+            "描述你想畫的圖",
+            "問這張圖",
+            "問這份文件",
             "畫圖",
+            "看圖",
             "睇圖",
             "試用剩餘",
             "剛剛",

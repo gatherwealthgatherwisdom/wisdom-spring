@@ -112,7 +112,7 @@ test("the pool sheet names 智泉 models and has no vendor picker", async ({ pag
   await waitForApp(page);
   await clickText(page, "對話");
   await clickText(page, "智泉");
-  await expect(page.getByText("每一句由智泉抽選，唔使揀模型。")).toBeVisible();
+  await expect(page.getByText("每一句由智泉抽選，無須選擇模型。")).toBeVisible();
   await expect(page.getByText("智泉 · DeepSeek")).toBeVisible();
   await expect(page.getByText("智泉 · Qwen")).toBeVisible();
   await expect(page.getByText("智泉 · Gemma")).toBeVisible();

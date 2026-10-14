@@ -62,7 +62,7 @@ test("the image tab generates a picture when the pool has an image model", async
   if (await visibleText(page, "暫時未有可用圖像模型。").isVisible().catch(() => false)) {
     test.skip(true, "暫時未有可用圖像模型。");
   }
-  await composerBox(page, "描述你想畫嘅圖").fill(IMAGE_PROMPT);
+  await composerBox(page, "描述你想畫的圖").fill(IMAGE_PROMPT);
   await clickLabel(page, "發送");
   const result = await waitForLiveTurn(page, { image: true });
   if (result !== "ok") test.skip(true, result);
@@ -84,7 +84,7 @@ test("a photo attach asks a vision model when the pool can look at pictures", as
   await openNewChat(page);
   const attached = await attachPhotoFixture(page, LOOK_PNG);
   if (attached !== "ok") test.skip(true, attached);
-  await composerBox(page, "問呢張圖").fill(VISION_PROMPT);
+  await composerBox(page, "問這張圖").fill(VISION_PROMPT);
   await clickLabel(page, "發送");
   const result = await waitForLiveTurn(page, { prompt: VISION_PROMPT });
   if (result !== "ok") test.skip(true, result);
@@ -111,8 +111,8 @@ test("the same chat can ask then draw without a second 智泉 draft", async ({ p
   await expectSingleCompletedReply(page);
   await clickLabel(page, "+");
   await clickLabel(page, "畫圖");
-  await expect(composerBox(page, "描述你想畫嘅圖")).toBeVisible();
-  await composerBox(page, "描述你想畫嘅圖").fill(IMAGE_PROMPT);
+  await expect(composerBox(page, "描述你想畫的圖")).toBeVisible();
+  await composerBox(page, "描述你想畫的圖").fill(IMAGE_PROMPT);
   await clickLabel(page, "發送");
   const drawn = await waitForLiveTurn(page, { image: true });
   if (drawn !== "ok") test.skip(true, drawn);
