@@ -143,7 +143,16 @@ sudo -u app /home/app/wisdom-spring/deploy/spring-deploy.sh
 
 改 nginx 設定檔之後先 `sudo nginx -t` 再 `sudo systemctl reload nginx`。改 `.env.production` 之後再跑一次腳本（`--update-env`）。
 
-手機 Metro／Debug 預設 `http://localhost:3000`。Release 包預設 `https://spring.gwgwgroup-it.com`。要本機 Debug 打生產：`EXPO_PUBLIC_API_URL=https://spring.gwgwgroup-it.com` 再開 Metro。生產 OTP 走真實短訊，唔再係 `123456`。今次唔出商店。
+手機 Metro／Debug 預設 `http://localhost:3000`。Release 包預設 `https://spring.gwgwgroup-it.com`。要本機 Debug 打生產：`EXPO_PUBLIC_API_URL=https://spring.gwgwgroup-it.com` 再開 Metro。生產 OTP 走真實短訊，唔再係 `123456`。
+
+EAS 設定喺 `apps/mobile/eas.json`。內部 APK（打生產 API）：
+
+```bash
+cd apps/mobile
+eas build --platform android --profile preview
+```
+
+今次唔提交 App Store／Play。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 
