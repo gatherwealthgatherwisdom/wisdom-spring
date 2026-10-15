@@ -23,7 +23,8 @@ const ctx = await createContext({
 
 await bootstrap(ctx.prisma);
 const app = await buildApp({ ctx });
-await app.listen({ port: env.port, host: "0.0.0.0" });
+await app.listen({ port: env.port, host: env.host });
+process.send?.("ready");
 
 if (env.workerEmbedded) {
   await startWorkers(ctx);

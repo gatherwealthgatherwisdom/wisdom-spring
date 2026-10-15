@@ -3,7 +3,23 @@ import { resolve } from "node:path";
 import { DEFAULT_ADMIN_PHONE, normalizeMobile } from "@spring/shared";
 
 const root = resolve(import.meta.dirname, "../../..");
-config({ path: resolve(root, ".env") });
+
+/** Production reads `.env.production` first; `.env` fills gaps. Existing process.env wins. */
+export function loadDotenv(rootDir: string, nodeEnv: string): void {
+  if (nodeEnv === "production") {
+    config({ path: resolve(rootDir, ".env.production"), override: false, quiet: true });
+  }
+  config({ path: resolve(rootDir, ".env"), override: false, quiet: true });
+}
+
+/** Pixel/emulator need 0.0.0.0 locally. Shared-host production stays on loopback. */
+export function listenHost(nodeEnv: string, host: string | undefined): string {
+  const trimmed = host?.trim() ?? "";
+  if (trimmed.length > 0) return trimmed;
+  return nodeEnv === "production" ? "127.0.0.1" : "0.0.0.0";
+}
+
+loadDotenv(root, process.env.NODE_ENV ?? "development");
 
 function secret(name: string, fallback: string): string {
   const value = process.env[name];
@@ -22,6 +38,7 @@ function flag(name: string, fallback: boolean): boolean {
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? "development",
+  host: listenHost(process.env.NODE_ENV ?? "development", process.env.HOST),
   port: Number(process.env.PORT ?? 3000),
   databaseUrl: process.env.DATABASE_URL ?? "mysql://spring:spring@127.0.0.1:3306/spring",
   redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",

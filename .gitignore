@@ -3,6 +3,7 @@ dist
 .turbo
 .env
 .env.local
+.env.production
 coverage
 .expo
 apps/mobile/.expo
