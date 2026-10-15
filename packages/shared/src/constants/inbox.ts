@@ -10,6 +10,7 @@ export const INBOX_KINDS = [
 export type InboxKind = (typeof INBOX_KINDS)[number];
 
 export const INBOX_OTP_TTL_MS = 5 * 60 * 1000;
+export const INBOX_FANOUT_BATCH = 100;
 
 export const ADMIN_OTP_NEED_APP = "請先在手機開啟智泉並允許通知。";
 

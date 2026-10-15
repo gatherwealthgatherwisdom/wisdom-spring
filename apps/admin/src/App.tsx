@@ -13,6 +13,7 @@ import { TemplatesPage } from "./pages/TemplatesPage";
 import { ToolsPage } from "./pages/ToolsPage";
 import { UserDetailPage, UserThreadPage } from "./pages/UserDetailPage";
 import { UsagePage } from "./pages/UsagePage";
+import { PushPage } from "./pages/PushPage";
 import { UsersPage } from "./pages/UsersPage";
 import { getSession, subscribeSession } from "./session";
 
@@ -51,6 +52,7 @@ export function App() {
           <Route path="/templates" element={<TemplatesPage />} />
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/announcements" element={<AnnouncementsPage />} />
+          <Route path="/push" element={<PushPage />} />
           <Route path="/audit" element={<AuditPage />} />
           <Route path="*" element={<Navigate to="/models" replace />} />
         </Routes>

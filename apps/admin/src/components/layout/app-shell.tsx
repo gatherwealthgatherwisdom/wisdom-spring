@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Bell,
   Compass,
   Cpu,
   Flag,
@@ -32,6 +33,7 @@ const GROUPS: Array<{
       { to: "/users", label: "用戶", icon: Users },
       { to: "/usage", label: "用量", icon: BarChart3 },
       { to: "/announcements", label: "公告", icon: Megaphone },
+      { to: "/push", label: "推送", icon: Bell },
       { to: "/audit", label: "審計", icon: ScrollText },
     ],
   },

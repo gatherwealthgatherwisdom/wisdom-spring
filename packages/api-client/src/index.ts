@@ -3,6 +3,9 @@ import type {
   AdminConversationDetail,
   AdminConversationView,
   AdminCopy,
+  AdminInboxAudience,
+  AdminInboxSendRequest,
+  AdminInboxSendResult,
   AdminLimits,
   AdminUpdateUserRequest,
   AdminUserDetail,
@@ -358,6 +361,14 @@ export class SpringClient {
 
   adminAudit(action?: string): Promise<{ items: AuditLogView[] }> {
     return this.request(`/admin/audit${queryString(action ? { action } : undefined)}`);
+  }
+
+  adminInboxAudience(): Promise<AdminInboxAudience> {
+    return this.request("/admin/inbox/audience");
+  }
+
+  adminSendInbox(body: AdminInboxSendRequest): Promise<AdminInboxSendResult> {
+    return this.request("/admin/inbox/send", { method: "POST", body: JSON.stringify(body) });
   }
 
   adminAnnouncements(): Promise<PageOf<AnnouncementView>> {

@@ -3,6 +3,7 @@ import type { Conversation, PrismaClient } from "@prisma/client";
 import {
   AdminAuditQuerySchema,
   AdminCatalogQuerySchema,
+  AdminInboxSendSchema,
   AdminUpdateUserSchema,
   AdminUsageQuerySchema,
   AdminUserQuerySchema,
@@ -588,6 +589,24 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     await app.ctx.prisma.announcement.delete({ where: { id } });
     await writeAudit(app.ctx.prisma, actor.id, "announcement.delete", { id });
     return { ok: true };
+  });
+
+  app.get("/admin/inbox/audience", async () => {
+    return { count: await app.ctx.inbox.audienceCount() };
+  });
+
+  app.post("/admin/inbox/send", async (request) => {
+    const actor = await requireAdmin(request, app.ctx.auth);
+    const body = AdminInboxSendSchema.parse(request.body ?? {});
+    const result = await app.ctx.inbox.broadcastAdmin(body);
+    await writeAudit(app.ctx.prisma, actor.id, "inbox.send", {
+      all: body.all === true,
+      userCount: result.userCount,
+      delivered: result.delivered,
+      withoutDevice: result.withoutDevice,
+      titleZh: body.titleZh,
+    });
+    return result;
   });
 
   app.get("/admin/catalog", async (request) => {

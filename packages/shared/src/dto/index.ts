@@ -6,6 +6,9 @@ import type {
   AdminConversationViewSchema,
   AdminMessageViewSchema,
   AdminUpdateUserSchema,
+  AdminInboxAudienceSchema,
+  AdminInboxSendResultSchema,
+  AdminInboxSendSchema,
   AdminUserDetailSchema,
   AdminUserQuerySchema,
   AdminUserRowSchema,
@@ -136,6 +139,9 @@ export type ModelPoolView = z.infer<typeof ModelPoolViewSchema>;
 export type UpdateModelPoolRequest = z.infer<typeof UpdateModelPoolSchema>;
 export type SimulateDrawRequest = z.infer<typeof SimulateDrawRequestSchema>;
 export type SimulateDrawResponse = z.infer<typeof SimulateDrawResponseSchema>;
+export type AdminInboxSendRequest = z.infer<typeof AdminInboxSendSchema>;
+export type AdminInboxSendResult = z.infer<typeof AdminInboxSendResultSchema>;
+export type AdminInboxAudience = z.infer<typeof AdminInboxAudienceSchema>;
 export type AdminUpdateUserRequest = z.infer<typeof AdminUpdateUserSchema>;
 export type AdminUserQuery = z.infer<typeof AdminUserQuerySchema>;
 export type AdminUserRow = z.infer<typeof AdminUserRowSchema>;

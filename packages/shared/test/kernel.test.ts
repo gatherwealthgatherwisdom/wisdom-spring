@@ -11,7 +11,7 @@ import { SYSTEM_PROMPT } from "../src/constants/openrouter";
 import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
-import { AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
+import { AdminInboxSendSchema, AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
 import { hkDayKey, hkMonthRange, hkMonthRangeFromKey, hkStartDaysAgo } from "../src/lib/hk-time";
 import {
   DEFAULT_ADMIN_PHONE,
@@ -347,6 +347,28 @@ describe("tool catalog", () => {
     expect(UpdateCatalogEntrySchema.safeParse({ section: "banner" }).success).toBe(false);
     expect(UpdateCatalogEntrySchema.safeParse({ tone: "pine" }).success).toBe(false);
     expect(UpdateCatalogEntrySchema.safeParse({ section: "hero" }).success).toBe(true);
+  });
+
+  it("accepts admin inbox send for all or for ids, not both", () => {
+    expect(
+      AdminInboxSendSchema.safeParse({ titleZh: "維護", bodyZh: "今晚暫停服務。", all: true }).success,
+    ).toBe(true);
+    expect(
+      AdminInboxSendSchema.safeParse({
+        titleZh: "維護",
+        bodyZh: "今晚暫停服務。",
+        userIds: ["01ADMINSENDUSER1EXAMPLE0001"],
+      }).success,
+    ).toBe(true);
+    expect(AdminInboxSendSchema.safeParse({ titleZh: "維護", bodyZh: "今晚暫停服務。" }).success).toBe(false);
+    expect(
+      AdminInboxSendSchema.safeParse({
+        titleZh: "維護",
+        bodyZh: "今晚暫停服務。",
+        all: true,
+        userIds: ["01ADMINSENDUSER1EXAMPLE0001"],
+      }).success,
+    ).toBe(false);
   });
 
   it("accepts a per-user bonus daily quota patch", () => {

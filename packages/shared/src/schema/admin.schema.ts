@@ -316,3 +316,33 @@ export const CreateCatalogEntrySchema = z.object({
     if (!value.tone) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tone"], message: "tone" });
     if (!value.art) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["art"], message: "art" });
   });
+
+export const AdminInboxSendSchema = z
+  .object({
+    titleZh: z.string().trim().min(1).max(80),
+    bodyZh: z.string().trim().min(1).max(500),
+    titleEn: z.string().trim().max(80).optional(),
+    bodyEn: z.string().trim().max(500).optional(),
+    all: z.boolean().optional(),
+    userIds: z.array(z.string().min(1).max(40)).max(10_000).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const all = value.all === true;
+    const ids = value.userIds ?? [];
+    if (all && ids.length > 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "all_or_ids" });
+    }
+    if (!all && ids.length === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "need_targets" });
+    }
+  });
+
+export const AdminInboxSendResultSchema = z.object({
+  userCount: z.number().int(),
+  delivered: z.number().int(),
+  withoutDevice: z.number().int(),
+});
+
+export const AdminInboxAudienceSchema = z.object({
+  count: z.number().int(),
+});

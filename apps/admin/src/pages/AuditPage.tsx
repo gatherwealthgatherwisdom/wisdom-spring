@@ -13,6 +13,7 @@ const ACTIONS = [
   "announcement.create",
   "announcement.update",
   "announcement.delete",
+  "inbox.send",
   "catalog.sync",
   "catalog.probe",
   "catalog.update",
