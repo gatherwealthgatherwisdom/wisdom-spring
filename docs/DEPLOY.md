@@ -90,6 +90,12 @@ ss -lptn | grep 3009
 
 健康檢查要 200。`pm2 list` 應同時見到其他站同 `spring-api`（fork ×1，online）。`ss` 只有 `127.0.0.1:3009`。
 
+`WORKER_EMBEDDED=true` 開機會同步 OpenRouter 目錄，跟着 probe 一批（20）標 `HK_SAFE`。之後每小時再 probe。`https://spring.gwgwgroup-it.com/v1/pool` 有 DeepSeek／Qwen／Gemma 標籤先代表可以對話。等唔到可以手動：
+
+```bash
+sudo -Hu app bash -lc 'cd /home/app/wisdom-spring && NODE_ENV=production pnpm --filter @spring/api catalog:probe'
+```
+
 開機重啟靠部機現有 `pm2-app.service`。**禁止** `pm2 kill`、`systemctl restart pm2-app`、`systemctl restart pm2-root`。
 
 ## 4. nginx
@@ -137,7 +143,7 @@ sudo -u app /home/app/wisdom-spring/deploy/spring-deploy.sh
 
 改 nginx 設定檔之後先 `sudo nginx -t` 再 `sudo systemctl reload nginx`。改 `.env.production` 之後再跑一次腳本（`--update-env`）。
 
-手機之後先改 `EXPO_PUBLIC_API_URL=https://spring.gwgwgroup-it.com`。今次唔出商店。
+手機 Metro／Debug 預設 `http://localhost:3000`。Release 包預設 `https://spring.gwgwgroup-it.com`。要本機 Debug 打生產：`EXPO_PUBLIC_API_URL=https://spring.gwgwgroup-it.com` 再開 Metro。生產 OTP 走真實短訊，唔再係 `123456`。今次唔出商店。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 

@@ -2,7 +2,9 @@ import { SpringClient } from "@spring/api-client";
 import { localMediaUri } from "./history/media";
 import { usePrefs } from "./prefs";
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000";
+const DEFAULT_API_URL = __DEV__ ? "http://localhost:3000" : "https://spring.gwgwgroup-it.com";
+
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL;
 
 export const spring = new SpringClient(
   API_URL,
