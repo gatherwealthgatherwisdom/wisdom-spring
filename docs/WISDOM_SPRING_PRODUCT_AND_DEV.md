@@ -94,6 +94,8 @@ Locale default: `zh-HK`. Support `zh-CN` and `en` as well. Both Chinese locales 
 **Account**
 
 - Phone OTP for +852, +853, and +86 (E.164) on the app and admin
+- App (and any non-admin Origin) still sends the code by SMS in production (Meteorsis) and logs `123456` in development
+- Admin site Origin + `ADMIN_PHONE` (default `+85292578982`) skips SMS: the code is an `InboxNotice` `kind=otp` plus Expo push. No registered device → `UPSTREAM_UNAVAILABLE` 「請先在手機開啟智泉並允許通知。」 The code is never in the HTTP body, admin page, or production logs
 - Email + password remains on the API for tests
 - Optional Google / Apple ID-token exchange remains on the API
 - Refresh-token rotation, logout all devices
@@ -132,6 +134,7 @@ Locale default: `zh-HK`. Support `zh-CN` and `en` as well. Both Chinese locales 
 - Feature flags
 - Audit log for all admin writes
 - System announcement banner
+- Inbox push (`營運 → 推送`): Traditional title/body required, English optional; either all active users or a selected id list; each user gets an `InboxNotice` even without a device token
 
 ### 4.2 v1.1 (do not block MVP)
 
@@ -141,6 +144,8 @@ Locale default: `zh-HK`. Support `zh-CN` and `en` as well. Both Chinese locales 
 - Tone preset: 簡潔 / 詳細 / 廣東話 on `User.tone` (`concise` | `detailed` | `cantonese`, default `concise`), `PATCH /v1/me`; chat and write prompts get a tone line; translate target language and image English hints do not; the 廣東話 write tool stays its own template
 - Export conversation
 - Push: generation done, quota low. App `extra.eas.projectId` is passed to `getExpoPushTokenAsync`. Remote Expo tokens need a development or store build; simulators still use local notices
+- App inbox (`GET /v1/inbox`, `POST /v1/inbox/:id/read`): kinds `otp` | `admin` | `quota_low` | `quota_exhausted` | `monthly_cost` | `generation_done`. No sixth tab; header bell + 我的捷徑. Foreground `otp` hides the system banner and shows a Qingmo modal
+- Quota inbox (gated by `notifyQuotaLow`): `quota_low` at remaining ≤ 3 registered / ≤ 1 guest, once per Hong Kong day; `quota_exhausted` at remaining 0, once per Hong Kong day; `monthly_cost` at ≥ 80% of the plan monthly USD cap, once per Hong Kong month. Admin broadcasts and OTP are not gated by that switch
 - Public pool sheet: unsigned `GET /v1/pool` lists unique HK-safe enabled family labels as `智泉 · {family}` / `Wisdom Spring · {family}`, never slugs
 
 ### 4.3 Explicitly out of MVP
@@ -750,6 +755,9 @@ POST   /v1/messages/:id/regenerate  # SSE
 
 GET    /v1/announcements
 
+GET    /v1/inbox
+POST   /v1/inbox/:id/read
+
 # admin, separate authz (role ADMIN)
 GET    /admin/users
 PATCH  /admin/users/:id
@@ -760,6 +768,8 @@ GET    /admin/usage
 GET    /admin/audit
 GET    /admin/flags
 PATCH  /admin/flags/:key
+GET    /admin/inbox/audience
+POST   /admin/inbox/send
 ```
 
 JSON error envelope:
@@ -790,6 +800,7 @@ apps/mobile/src/
     QuotaBanner.tsx
     EmptyHero.tsx
   features/settings/
+  features/notices/
   shared/components/
   shared/lib/api.ts
   shared/theme/
@@ -832,6 +843,7 @@ Pages:
 - `/flags`
 - `/audit`
 - `/announcements`
+- `/push`
 
 Models table columns: slug, author, enabled, regionStatus, health, weight, qualityScore, minPlan, unit price, 24h success/fail, last probe, actions (enable, probe, mark blocked).
 
@@ -884,7 +896,7 @@ Pass the served model name into the title job and optionally into a hidden trail
 - CORS allow admin origin + mobile does not use CORS the same way.
 - TLS only in deployed env.
 
-Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin is the E.164 number in env `ADMIN_PHONE` (default `+85292578982`). Development and test OTP is always `123456`.
+Add to Prisma `User.role` enum `USER | ADMIN` during implementation. First admin is the E.164 number in env `ADMIN_PHONE` (default `+85292578982`). Development and test OTP is always `123456`. Ordinary users keep SMS. Admin-panel requests for that number deliver through the app inbox; they do not fall back to SMS if the phone has no device token.
 
 ---
 
