@@ -231,6 +231,36 @@ describe("conversation search, feedback, export", () => {
     expect(userRate.json().error.message).toBe(FEEDBACK_ONLY_ASSISTANT_COPY);
   });
 
+  it("nudges pool weight when thumbs change", async () => {
+    const slug = `test/weight-nudge-${Date.now()}`;
+    const { token, userId } = await register(app, `weight-${Date.now()}@gwgwgroup.com`);
+    const { assistantId } = await seedThread(app.ctx.prisma, userId, "權重");
+    await app.ctx.prisma.message.update({ where: { id: assistantId }, data: { servedModel: slug } });
+    await app.ctx.prisma.modelPoolEntry.create({ data: { slug, enabled: true, weight: 100 } });
+    await app.inject({
+      method: "POST",
+      url: `/v1/messages/${assistantId}/feedback`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { rating: "up" },
+    });
+    expect((await app.ctx.prisma.modelPoolEntry.findUnique({ where: { slug } }))?.weight).toBe(101);
+    await app.inject({
+      method: "POST",
+      url: `/v1/messages/${assistantId}/feedback`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { rating: "down" },
+    });
+    expect((await app.ctx.prisma.modelPoolEntry.findUnique({ where: { slug } }))?.weight).toBe(99);
+    await app.inject({
+      method: "POST",
+      url: `/v1/messages/${assistantId}/feedback`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { rating: "down" },
+    });
+    expect((await app.ctx.prisma.modelPoolEntry.findUnique({ where: { slug } }))?.weight).toBe(100);
+    await app.ctx.prisma.modelPoolEntry.delete({ where: { slug } });
+  });
+
   it("exports completed turns without model names", async () => {
     const { token, userId } = await register(app, `export-${Date.now()}@gwgwgroup.com`);
     const { conversationId } = await seedThread(app.ctx.prisma, userId, "睇圖");

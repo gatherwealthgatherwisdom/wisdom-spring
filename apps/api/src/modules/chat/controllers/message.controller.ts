@@ -7,6 +7,8 @@ import {
   MessageRole,
   MessageStatus,
   SendMessageRequestSchema,
+  clampPoolWeight,
+  feedbackWeightDelta,
   messageFor,
   ratingOf,
 } from "@spring/shared";
@@ -81,9 +83,25 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     }
     const current = ratingOf(row.feedback);
     const next = body.rating !== null && body.rating === current ? null : body.rating;
-    const updated = await app.ctx.prisma.message.update({
-      where: { id },
-      data: { feedback: next },
+    const delta = feedbackWeightDelta(current, next);
+    const updated = await app.ctx.prisma.$transaction(async (tx) => {
+      const message = await tx.message.update({
+        where: { id },
+        data: { feedback: next },
+      });
+      if (delta !== 0 && row.servedModel) {
+        const pool = await tx.modelPoolEntry.findUnique({
+          where: { slug: row.servedModel },
+          select: { weight: true },
+        });
+        if (pool) {
+          await tx.modelPoolEntry.update({
+            where: { slug: row.servedModel },
+            data: { weight: clampPoolWeight(pool.weight + delta) },
+          });
+        }
+      }
+      return message;
     });
     const [view] = await messageViews(app.ctx.prisma, [updated]);
     if (!view) throw new AppError(ErrorCode.INTERNAL);

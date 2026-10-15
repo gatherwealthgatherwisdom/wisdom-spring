@@ -34,7 +34,7 @@ import { searchNeedle } from "../src/lib/search";
 import { conversationMarkdown, EXPORT_ASSISTANT, EXPORT_UNTITLED, EXPORT_USER } from "../src/lib/conversation-export";
 import { sanitizeThinking } from "../src/lib/thinking";
 import { poolFamilyLabel, poolLabelsForAuthors } from "../src/lib/pool-label";
-import { ratingOf } from "../src/constants/feedback";
+import { clampPoolWeight, feedbackWeightDelta, ratingOf } from "../src/constants/feedback";
 import { MessageRole } from "../src/enums/message-role";
 
 describe("money", () => {
@@ -216,6 +216,15 @@ describe("feedback rating", () => {
     expect(ratingOf("down")).toBe("down");
     expect(ratingOf("side")).toBeNull();
     expect(ratingOf(null)).toBeNull();
+  });
+
+  it("maps thumbs onto a one-step pool weight delta", () => {
+    expect(feedbackWeightDelta(null, "up")).toBe(1);
+    expect(feedbackWeightDelta("up", "down")).toBe(-2);
+    expect(feedbackWeightDelta("down", null)).toBe(1);
+    expect(feedbackWeightDelta("up", "up")).toBe(0);
+    expect(clampPoolWeight(0)).toBe(1);
+    expect(clampPoolWeight(10_001)).toBe(10_000);
   });
 });
 
