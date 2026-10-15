@@ -69,7 +69,7 @@ export const PhoneRegisterRequestSchema = z.object({
 
 export const UpdateMeRequestSchema = z
   .object({
-    displayName: z.string().trim().min(1).max(80).optional(),
+    displayName: z.string().trim().max(80).nullable().optional(),
     locale: z.nativeEnum(Locale).optional(),
     notifyGenerationDone: z.boolean().optional(),
     notifyQuotaLow: z.boolean().optional(),

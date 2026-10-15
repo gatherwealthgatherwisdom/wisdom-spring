@@ -398,6 +398,9 @@ describe("push copy and device schemas", () => {
     expect(UpdateMeRequestSchema.parse({ notifyQuotaLow: false }).notifyQuotaLow).toBe(false);
     expect(UpdateMeRequestSchema.parse({ notifyGenerationDone: true }).notifyGenerationDone).toBe(true);
     expect(UpdateMeRequestSchema.parse({ locale: Locale.ZH_CN }).locale).toBe("zh-CN");
+    expect(UpdateMeRequestSchema.parse({ displayName: "阿泉" }).displayName).toBe("阿泉");
+    expect(UpdateMeRequestSchema.parse({ displayName: "" }).displayName).toBe("");
+    expect(UpdateMeRequestSchema.parse({ displayName: null }).displayName).toBeNull();
     expect(UpdateMeRequestSchema.safeParse({}).success).toBe(false);
   });
 });

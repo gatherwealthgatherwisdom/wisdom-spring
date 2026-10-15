@@ -30,7 +30,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     const updated = await app.ctx.prisma.user.update({
       where: { id: user.id },
       data: {
-        ...(body.displayName !== undefined ? { displayName: body.displayName } : {}),
+        ...(body.displayName !== undefined ? { displayName: body.displayName ? body.displayName : null } : {}),
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
         ...(body.notifyGenerationDone !== undefined ? { notifyGenerationDone: body.notifyGenerationDone } : {}),
         ...(body.notifyQuotaLow !== undefined ? { notifyQuotaLow: body.notifyQuotaLow } : {}),

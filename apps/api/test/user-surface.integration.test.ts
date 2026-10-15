@@ -200,4 +200,25 @@ describe("home and me live data", () => {
       completionTokens: 6,
     });
   });
+
+  it("lets a signed-in user set and clear a display name", async () => {
+    const token = await register(app, `name-${Date.now()}@gwgwgroup.com`);
+    const named = await app.inject({
+      method: "PATCH",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { displayName: "阿泉" },
+    });
+    expect(named.statusCode).toBe(200);
+    expect(named.json().user.displayName).toBe("阿泉");
+    expect(named.json().user.planTier).toBe("FREE");
+    const cleared = await app.inject({
+      method: "PATCH",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${token}` },
+      payload: { displayName: "" },
+    });
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json().user.displayName).toBeNull();
+  });
 });
