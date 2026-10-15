@@ -16,11 +16,11 @@ const sample: PushMessage = {
 };
 
 describe("createPushSender", () => {
-  it("uses Noop in tests, Log in development, and Expo only in production with a token", () => {
+  it("uses Noop in tests, Log in development, and Expo in production", () => {
     expect(createPushSender({ nodeEnv: "test", expoAccessToken: "tok" })).toBeInstanceOf(NoopPushSender);
     expect(createPushSender({ nodeEnv: "development", expoAccessToken: "tok" })).toBeInstanceOf(LogPushSender);
     expect(createPushSender({ nodeEnv: "production", expoAccessToken: "tok" })).toBeInstanceOf(ExpoPushSender);
-    expect(createPushSender({ nodeEnv: "production", expoAccessToken: "   " })).toBeInstanceOf(NoopPushSender);
+    expect(createPushSender({ nodeEnv: "production", expoAccessToken: "   " })).toBeInstanceOf(ExpoPushSender);
   });
 });
 
@@ -54,6 +54,20 @@ describe("ExpoPushSender", () => {
     expect(body[0]?.channelId).toBe("spring-default");
     expect(body[0]?.sound).toBe("default");
     expect(result.invalidTokens).toEqual(["ExponentPushToken[dead]"]);
+  });
+
+  it("omits Authorization when the access token is empty", async () => {
+    const calls: Array<{ init: RequestInit }> = [];
+    const post: typeof fetch = async (_url, init) => {
+      calls.push({ init: init ?? {} });
+      return new Response(JSON.stringify({ data: [{ status: "ok" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+    await new ExpoPushSender({ expoAccessToken: "" }, post).send([sample]);
+    const headers = calls[0]?.init.headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
   });
 
   it("returns no invalid tokens when Expo is unreachable", async () => {

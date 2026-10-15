@@ -105,6 +105,5 @@ export type PushEnv = Pick<AppEnv, "nodeEnv" | "expoAccessToken">;
 export function createPushSender(env: PushEnv, post: typeof fetch = fetch): PushSender {
   if (env.nodeEnv === "test") return new NoopPushSender();
   if (env.nodeEnv !== "production") return new LogPushSender();
-  if (env.expoAccessToken.trim()) return new ExpoPushSender(env, post);
-  return new NoopPushSender();
+  return new ExpoPushSender(env, post);
 }
