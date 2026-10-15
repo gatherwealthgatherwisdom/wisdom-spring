@@ -482,5 +482,9 @@ describe("app locales", () => {
     for (const tool of SPRING_TOOLS) {
       expect(tool.blurbZh, tool.id).not.toMatch(/[嘅咗唔冇]/);
     }
+    for (const card of SPRING_DISCOVER_CARDS) {
+      expect(card.blurbZh, card.id).not.toMatch(/示範/);
+      expect(card.blurbEn, card.id).not.toMatch(/sample/i);
+    }
   });
 });

@@ -160,10 +160,8 @@ export function InboxScreen({ navigation }: Props) {
             {draws.map((card) => (
               <Cover key={card.id} source={card.art} style={{ flex: 1, minHeight: 118, borderRadius: 16 }} dim={0.18}>
                 <Pressable onPress={() => openChat(navigation, { mode: card.mode ?? "image", imageStyle: card.imageStyle ?? "ink" })} style={{ minHeight: 118, padding: 12, justifyContent: "flex-end" }}>
-                  <View style={{ alignSelf: "flex-end", backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
-                    <Text style={{ color: colors.onAccent, fontSize: 11 }}>New</Text>
-                  </View>
                   <Text style={{ color: "#F7F6F3" }}>{labelFor(card, locale)}</Text>
+                  <Text style={{ color: "#F7F6F3CC", marginTop: 4, fontSize: 12 }} numberOfLines={1}>{blurbFor(card, locale)}</Text>
                 </Pressable>
               </Cover>
             ))}

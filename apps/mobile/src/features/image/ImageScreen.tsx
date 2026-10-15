@@ -191,9 +191,6 @@ function UseCard({ title, art, onPress }: { title: string; art: import("react-na
   return (
     <Cover source={art} style={{ width: "47%", minHeight: 128, borderRadius: 16 }} dim={0.3}>
       <Pressable onPress={onPress} style={{ minHeight: 128, padding: 12, justifyContent: "flex-end" }}>
-        <View style={{ alignSelf: "flex-end", backgroundColor: "#1F6B4A", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, marginBottom: 8 }}>
-          <Text style={{ color: "#F7F6F3", fontSize: 11 }}>New</Text>
-        </View>
         <Text style={{ color: "#F7F6F3" }}>{title}</Text>
       </Pressable>
     </Cover>
