@@ -26,8 +26,6 @@ const TEMPLATE_ICON: Record<string, IconName> = {
   more: "copy-outline",
 };
 
-const FEATURED = ["email", "rewrite", "cantonese"];
-
 export function WriteScreen({ navigation }: Props) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
@@ -36,7 +34,7 @@ export function WriteScreen({ navigation }: Props) {
   const catalog = useQuery({ queryKey: ["catalog-write"], queryFn: () => spring.catalogWrite() });
   const templates = catalog.data?.items ?? WRITE_TEMPLATES;
   const recent = chats.items.slice(0, 5);
-  const featured = templates.filter((item) => FEATURED.includes(item.id));
+  const featured = templates.slice(0, 3);
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
