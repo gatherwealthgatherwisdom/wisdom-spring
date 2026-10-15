@@ -152,7 +152,7 @@ cd apps/mobile
 eas build --platform android --profile preview
 ```
 
-今次唔提交 App Store／Play。
+preview 用本機 `credentials.json`（gitignore）簽名。今次唔提交 App Store／Play。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 
