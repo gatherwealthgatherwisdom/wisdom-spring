@@ -25,6 +25,7 @@ export async function startWorkers(ctx: AppContext): Promise<{ stop: () => Promi
     async () => {
       if (!process.env.OPENROUTER_API_KEY) return;
       await ctx.sync.run();
+      await ctx.probe.run();
     },
     { connection: syncConnection },
   );
