@@ -197,6 +197,11 @@ const zhHK = {
     notifyGenerationDone: "生成完成",
     notifyQuotaLow: "額度將盡",
     speakNotify: "朗讀完成提示",
+    messages: "訊息",
+    emptyNotices: "未有訊息",
+    otpFill: "填入登入",
+    otpCopied: "已複製驗證碼。",
+    signInForNotices: "登入後可查看訊息。",
     version: "版本",
     cards: {
       email: "寫一封電郵",
@@ -385,6 +390,11 @@ const en = {
     notifyGenerationDone: "Generation finished",
     notifyQuotaLow: "Allowance running low",
     speakNotify: "Read-aloud notice",
+    messages: "Messages",
+    emptyNotices: "No messages yet",
+    otpFill: "Fill sign-in",
+    otpCopied: "Code copied.",
+    signInForNotices: "Sign in to read messages.",
     version: "Version",
     cards: {
       email: "Write an email",

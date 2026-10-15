@@ -19,6 +19,7 @@ import { usePrefs } from "../../shared/lib/prefs";
 import { useColors } from "../../shared/theme";
 import { Cover } from "../../shared/ui/Cover";
 import { Icon } from "../../shared/ui/Icon";
+import { NoticesBell } from "../notices/NoticesBell";
 import { Composer } from "../chat/Composer";
 import { placeholderFor, turnModeFor, type ComposerAction } from "../chat/composer-action";
 
@@ -83,20 +84,23 @@ export function InboxScreen({ navigation }: Props) {
         <Pressable accessibilityLabel={text.chatsMenu} onPress={() => setDrawerOpen(true)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Icon name="menu-outline" color={colors.ink} size={26} />
         </Pressable>
-        <Pressable
-          accessibilityLabel={signedIn ? text.mine : text.login}
-          onPress={() => {
-            if (signedIn) navigation.navigate("Settings");
-            else openAuth(navigation);
-          }}
-          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: signedIn ? colors.accent : colors.line, alignItems: "center", justifyContent: "center" }}
-        >
-          {signedIn && initial ? (
-            <Text style={{ color: colors.ink, fontSize: 15 }}>{initial}</Text>
-          ) : (
-            <Icon name="person-outline" color={colors.ink} size={18} />
-          )}
-        </Pressable>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <NoticesBell />
+          <Pressable
+            accessibilityLabel={signedIn ? text.mine : text.login}
+            onPress={() => {
+              if (signedIn) navigation.navigate("Settings");
+              else openAuth(navigation);
+            }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: signedIn ? colors.accent : colors.line, alignItems: "center", justifyContent: "center" }}
+          >
+            {signedIn && initial ? (
+              <Text style={{ color: colors.ink, fontSize: 15 }}>{initial}</Text>
+            ) : (
+              <Icon name="person-outline" color={colors.ink} size={18} />
+            )}
+          </Pressable>
+        </View>
       </View>
       <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 28 }}>

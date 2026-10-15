@@ -33,4 +33,5 @@ export type AppStackParamList = {
   AllBots: undefined;
   Write: undefined;
   Translate: { templateId?: string } | undefined;
+  Notices: undefined;
 };

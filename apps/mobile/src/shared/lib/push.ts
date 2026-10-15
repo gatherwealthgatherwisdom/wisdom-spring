@@ -2,8 +2,9 @@ import { expoProjectIdFromExtra, expoPushTokenRequest, pushCopy } from "@spring/
 import * as Notifications from "expo-notifications";
 import appJson from "../../../app.json";
 import { AppState, Platform } from "react-native";
-import { openChatFromPush } from "../../navigation/ref";
+import { openChatFromPush, openNoticesFromPush, openSettingsFromPush } from "../../navigation/ref";
 import { spring } from "./api";
+import { maybeShowLiveOtp, otpCodeOf, useOtpPrompt } from "./otp-prompt";
 import { usePrefs } from "./prefs";
 
 const CHANNEL = "spring-default";
@@ -13,21 +14,38 @@ function native(): boolean {
   return Platform.OS === "ios" || Platform.OS === "android";
 }
 
+function asRecord(data: unknown): Record<string, unknown> | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  return data as Record<string, unknown>;
+}
+
+function kindOf(data: unknown): string | undefined {
+  const kind = asRecord(data)?.kind;
+  return typeof kind === "string" ? kind : undefined;
+}
+
 function conversationIdOf(data: unknown): string | undefined {
-  if (!data || typeof data !== "object") return undefined;
-  const id = (data as { conversationId?: unknown }).conversationId;
+  const id = asRecord(data)?.conversationId;
+  return typeof id === "string" && id.length > 0 ? id : undefined;
+}
+
+function noticeIdOf(data: unknown): string | undefined {
+  const id = asRecord(data)?.noticeId;
   return typeof id === "string" && id.length > 0 ? id : undefined;
 }
 
 export function configurePush(): void {
   if (!native()) return;
   Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
+    handleNotification: async (notification) => {
+      const otp = kindOf(notification.request.content.data) === "otp";
+      return {
+        shouldShowBanner: !otp,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      };
+    },
   });
 }
 
@@ -57,9 +75,8 @@ export async function requestPushPermission(): Promise<boolean> {
 export async function registerPushDevice(): Promise<void> {
   if (!native() || !usePrefs.getState().accessToken) return;
   try {
-    const permission = await Notifications.getPermissionsAsync();
-    if (permission.status !== "granted") return;
-    await ensureChannel();
+    const granted = await requestPushPermission();
+    if (!granted) return;
     const token = (
       await Notifications.getExpoPushTokenAsync(
         expoPushTokenRequest(expoProjectIdFromExtra(appJson.expo.extra)),
@@ -100,21 +117,67 @@ export async function notifyGenerationDoneLocal(conversationId: string): Promise
   }
 }
 
+function handlePushPayload(data: unknown, body?: string): void {
+  const kind = kindOf(data);
+  const conversationId = conversationIdOf(data);
+  if (kind === "otp") {
+    const code = otpCodeOf({ kind, body, data: asRecord(data) });
+    if (code) useOtpPrompt.getState().show(code, noticeIdOf(data));
+    else openNoticesFromPush();
+    return;
+  }
+  if (kind === "generation_done" && conversationId) {
+    openChatFromPush(conversationId);
+    return;
+  }
+  if (kind === "quota_low" || kind === "quota_exhausted" || kind === "monthly_cost") {
+    openSettingsFromPush();
+    return;
+  }
+  if (conversationId) {
+    openChatFromPush(conversationId);
+    return;
+  }
+  if (kind === "admin") openNoticesFromPush();
+}
+
 export function subscribePushResponses(): () => void {
   if (!native()) return () => undefined;
   const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-    const conversationId = conversationIdOf(response.notification.request.content.data);
-    if (conversationId) openChatFromPush(conversationId);
+    const content = response.notification.request.content;
+    handlePushPayload(content.data, content.body ?? undefined);
   });
   return () => sub.remove();
+}
+
+export function subscribePushReceived(onAny?: () => void): () => void {
+  if (!native()) return () => undefined;
+  const sub = Notifications.addNotificationReceivedListener((notification) => {
+    const content = notification.request.content;
+    if (kindOf(content.data) === "otp") {
+      handlePushPayload(content.data, content.body ?? undefined);
+    }
+    onAny?.();
+  });
+  return () => sub.remove();
+}
+
+export async function refreshInboxNotices(): Promise<void> {
+  if (!usePrefs.getState().accessToken) return;
+  try {
+    const data = await spring.inbox();
+    maybeShowLiveOtp(data.items);
+  } catch {
+    // Signed-out or offline.
+  }
 }
 
 export async function openPendingPushChat(): Promise<void> {
   if (!native()) return;
   try {
     const last = await Notifications.getLastNotificationResponseAsync();
-    const conversationId = conversationIdOf(last?.notification.request.content.data);
-    if (conversationId) openChatFromPush(conversationId);
+    const content = last?.notification.request.content;
+    if (content) handlePushPayload(content.data, content.body ?? undefined);
   } catch {
     // Expo Go without a notification tap.
   }

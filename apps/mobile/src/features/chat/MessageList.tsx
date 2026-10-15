@@ -39,7 +39,7 @@ export function MessageList({
   suggestions?: string[];
   onSuggest?: (sentence: string) => void;
   onRegenerate?: (messageId: string) => void;
-  onListen: (content: string) => void;
+  onListen?: (content: string) => void;
   onFeedback?: (messageId: string, rating: "up" | "down") => void;
 }) {
   const locale = usePrefs((state) => state.locale);
@@ -156,7 +156,7 @@ export function MessageList({
             thumbsUpLabel={text.thumbsUp}
             thumbsDownLabel={text.thumbsDown}
             highlighted={item.id === highlightedId}
-            onListen={streaming ? undefined : () => onListen(sanitizeThinking(item.content))}
+            onListen={streaming || !onListen ? undefined : () => onListen(sanitizeThinking(item.content))}
             onRegenerate={streaming || mode === "image" || Boolean(imageUrl) || !onRegenerate ? undefined : () => onRegenerate(item.id)}
             onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
           />

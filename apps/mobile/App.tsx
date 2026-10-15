@@ -1,13 +1,21 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { OtpPrompt } from "./src/features/notices/OtpPrompt";
 import { RootNavigation } from "./src/navigation/RootNavigation";
 import { useHistoryStore } from "./src/shared/lib/history";
+import { INBOX_QUERY } from "./src/shared/lib/otp-prompt";
 import { usePrefs } from "./src/shared/lib/prefs";
-import { configurePush, registerPushDevice, subscribePushResponses } from "./src/shared/lib/push";
+import {
+  configurePush,
+  refreshInboxNotices,
+  registerPushDevice,
+  subscribePushReceived,
+  subscribePushResponses,
+} from "./src/shared/lib/push";
 import { ThemeProvider, usePalette } from "./src/shared/theme";
 
 const queryClient = new QueryClient();
@@ -31,14 +39,32 @@ function HistoryBridge() {
 function PushBridge() {
   const ready = usePrefs((state) => state.ready);
   const token = usePrefs((state) => state.accessToken);
+  const queryClient = useQueryClient();
   useEffect(() => {
     configurePush();
-    return subscribePushResponses();
-  }, []);
+    const stopResponses = subscribePushResponses();
+    const stopReceived = subscribePushReceived(() => {
+      void queryClient.invalidateQueries({ queryKey: INBOX_QUERY });
+    });
+    return () => {
+      stopResponses();
+      stopReceived();
+    };
+  }, [queryClient]);
   useEffect(() => {
     if (!ready || !token) return;
     void registerPushDevice();
-  }, [ready, token]);
+    void refreshInboxNotices();
+    void queryClient.invalidateQueries({ queryKey: INBOX_QUERY });
+  }, [ready, token, queryClient]);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active" || !usePrefs.getState().accessToken) return;
+      void refreshInboxNotices();
+      void queryClient.invalidateQueries({ queryKey: INBOX_QUERY });
+    });
+    return () => sub.remove();
+  }, [queryClient]);
   return null;
 }
 
@@ -58,6 +84,7 @@ function Shell() {
       <PushBridge />
       <ExpoStatusBar style={palette.bg === "#141311" ? "light" : "dark"} />
       <RootNavigation />
+      <OtpPrompt />
     </ThemeProvider>
   );
 }

@@ -7,7 +7,7 @@ import { useState, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from "react-native";
 import { Screen } from "../../shared/ui/Screen";
 import { useHostInsets } from "../../shared/ui/hostInsets";
-import { openAuth, openChat, openRegister } from "../../navigation/open";
+import { openAuth, openChat, openNotices, openRegister } from "../../navigation/open";
 import type { MainTabParamList } from "../../navigation/types";
 import { spring } from "../../shared/lib/api";
 import { useHistory, useHistoryStore } from "../../shared/lib/history";
@@ -18,6 +18,7 @@ import { formatWhen } from "../../shared/lib/time";
 import { useColors } from "../../shared/theme";
 import { Icon, type IconName } from "../../shared/ui/Icon";
 import { ScreenHeader } from "../../shared/ui/ScreenHeader";
+import { NoticesBell } from "../notices/NoticesBell";
 
 export function SettingsScreen() {
   const colors = useColors();
@@ -106,7 +107,7 @@ export function SettingsScreen() {
   const display = user?.displayName?.trim() || text.app;
   const used = guest ? user?.guestUses ?? 0 : quota?.dailyUsed ?? 0;
   const limit = guest ? user?.guestLimit ?? 5 : quota?.dailyLimit ?? 20;
-  const badge = planLabel(user, text);
+  const badge = planLabel(user ?? undefined, text);
 
   async function saveDisplayName() {
     if (!usePrefs.getState().accessToken) return;
@@ -132,7 +133,7 @@ export function SettingsScreen() {
   return (
     <Screen edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 + insets.bottom + 16 }}>
-      <ScreenHeader title={text.mine} />
+      <ScreenHeader title={text.mine} trailing={<NoticesBell />} />
       <View style={{ alignItems: "center", marginBottom: 14 }}>
         <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.accent, alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
           <Icon name="person-outline" color={colors.ink} size={32} />
@@ -177,6 +178,13 @@ export function SettingsScreen() {
         )}
       </View>
       <Group title={text.shortcuts} colors={colors}>
+        <SettingLine
+          icon="notifications-outline"
+          label={text.messages}
+          colors={colors}
+          chevron
+          onPress={() => openNotices(navigation)}
+        />
         <SettingLine
           icon="chatbubble-outline"
           label={last?.title || text.lastChat}

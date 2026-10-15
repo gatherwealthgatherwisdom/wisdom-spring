@@ -9,6 +9,7 @@ import { AllToolsScreen } from "../features/discover/AllToolsScreen";
 import { ToolScreen } from "../features/discover/ToolScreen";
 import { TranslateScreen } from "../features/translate/TranslateScreen";
 import { WriteScreen } from "../features/write/WriteScreen";
+import { NoticesScreen } from "../features/notices/NoticesScreen";
 import { usePrefs } from "../shared/lib/prefs";
 import { usePalette } from "../shared/theme";
 import { LoadingScreen } from "./LoadingScreen";
@@ -62,6 +63,7 @@ export function RootNavigation() {
         <Stack.Screen name="AllBots" component={AllBotsScreen} />
         <Stack.Screen name="Write" component={WriteScreen} />
         <Stack.Screen name="Translate" component={TranslateScreen} />
+        <Stack.Screen name="Notices" component={NoticesScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { AppStackParamList } from "../../navigation/RootNavigation";
 import { spring } from "../../shared/lib/api";
 import { copy, type Copy } from "../../shared/lib/i18n";
+import { setOtpFillHandler } from "../../shared/lib/otp-prompt";
 import { usePrefs } from "../../shared/lib/prefs";
 import { useColors, type Palette } from "../../shared/theme";
 import { Icon } from "../../shared/ui/Icon";
@@ -122,6 +123,14 @@ export function AuthScreen({ navigation, route }: Props) {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (step !== "code") return;
+    return setOtpFillHandler((next) => {
+      setCode(next);
+      void verify(next);
+    });
+  }, [step, phone]);
 
   return (
     <Screen>

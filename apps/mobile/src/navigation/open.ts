@@ -18,6 +18,11 @@ export function openAuth(navigation: NavigationProp<MainTabParamList>, resume?: 
   parent?.navigate("Auth", resume ? { resume } : undefined);
 }
 
+export function openNotices(navigation: NavigationProp<MainTabParamList>): void {
+  const parent = navigation.getParent<NativeStackNavigationProp<AppStackParamList>>();
+  parent?.navigate("Notices");
+}
+
 /** Empty chat is replaced so Auth back lands on Main tabs instead of a tab-less thread. */
 export function requireAuth(
   navigation: Pick<NativeStackNavigationProp<AppStackParamList>, "navigate" | "replace">,
