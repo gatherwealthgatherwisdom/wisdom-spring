@@ -32,6 +32,7 @@ import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
 import { conversationMarkdown, EXPORT_ASSISTANT, EXPORT_UNTITLED, EXPORT_USER } from "../src/lib/conversation-export";
 import { sanitizeThinking } from "../src/lib/thinking";
+import { poolFamilyLabel, poolLabelsForAuthors } from "../src/lib/pool-label";
 import { ratingOf } from "../src/constants/feedback";
 import { MessageRole } from "../src/enums/message-role";
 
@@ -428,6 +429,17 @@ describe("Macau and mainland mobile numbers", () => {
     expect(formatE164("+85291234567")).toBe("+852 9123 4567");
     expect(formatE164("+85366123456")).toBe("+853 6612 3456");
     expect(formatE164("+8613800138000")).toBe("+86 138 0013 8000");
+  });
+});
+
+describe("pool family labels", () => {
+  it("names authors without slugs", () => {
+    expect(poolFamilyLabel("deepseek")).toEqual({ zh: "智泉 · DeepSeek", en: "Wisdom Spring · DeepSeek" });
+    expect(poolFamilyLabel("google")).toEqual({ zh: "智泉 · Gemma", en: "Wisdom Spring · Gemma" });
+    expect(poolLabelsForAuthors(["qwen", "deepseek", "qwen"]).map((item) => item.zh)).toEqual([
+      "智泉 · DeepSeek",
+      "智泉 · Qwen",
+    ]);
   });
 });
 

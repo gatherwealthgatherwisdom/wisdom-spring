@@ -79,6 +79,8 @@ import type {
   CatalogDiscoverViewSchema,
   CatalogWriteResponseSchema,
   CatalogWriteViewSchema,
+  PublicPoolResponseSchema,
+  PublicPoolLabelSchema,
 } from "../schema/catalog.schema";
 import type {
   ModelPoolViewSchema,
@@ -159,6 +161,8 @@ export type CatalogStylesResponse = z.infer<typeof CatalogStylesResponseSchema>;
 export type CatalogLanguagesResponse = z.infer<typeof CatalogLanguagesResponseSchema>;
 export type CatalogDiscoverView = z.infer<typeof CatalogDiscoverViewSchema>;
 export type CatalogDiscoverResponse = z.infer<typeof CatalogDiscoverResponseSchema>;
+export type PublicPoolLabel = z.infer<typeof PublicPoolLabelSchema>;
+export type PublicPoolResponse = z.infer<typeof PublicPoolResponseSchema>;
 export type AdminCatalogItem = z.infer<typeof AdminCatalogItemSchema>;
 export type AdminCatalogQuery = z.infer<typeof AdminCatalogQuerySchema>;
 export type UpdateCatalogEntryRequest = z.infer<typeof UpdateCatalogEntrySchema>;

@@ -12,6 +12,8 @@ import {
   imageStyle,
   isDiscoverArtId,
   isDiscoverSection,
+  modelAuthor,
+  poolLabelsForAuthors,
   toolInstruction,
   usesWebSearch,
   writeTemplate,
@@ -24,6 +26,7 @@ import {
   type CatalogToolView,
   type CatalogWriteView,
   type ConversationMode,
+  type PublicPoolLabel,
   type CreateCatalogEntryRequest,
   type ImageStyle,
   type SpringAide,
@@ -356,6 +359,23 @@ export function toPublicDiscover(item: AdminCatalogItem): CatalogDiscoverView {
 
 export async function publicDiscover(prisma: PrismaClient): Promise<CatalogDiscoverView[]> {
   return (await listCatalog(prisma, "discover")).filter((item) => item.live).map(toPublicDiscover);
+}
+
+export async function publicPool(prisma: PrismaClient): Promise<PublicPoolLabel[]> {
+  const pools = await prisma.modelPoolEntry.findMany({
+    where: {
+      enabled: true,
+      regionStatus: "HK_SAFE",
+      healthStatus: { in: ["HEALTHY", "DEGRADED"] },
+    },
+    select: { slug: true },
+  });
+  if (pools.length === 0) return [];
+  const catalogs = await prisma.modelCatalog.findMany({
+    where: { slug: { in: pools.map((row) => row.slug) } },
+    select: { author: true, slug: true },
+  });
+  return poolLabelsForAuthors(catalogs.map((row) => row.author || modelAuthor(row.slug)));
 }
 
 export async function catalogInstruction(

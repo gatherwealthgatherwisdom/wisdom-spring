@@ -160,4 +160,3 @@ export const HERO_ART = {
   drawCreate: art.drawCreate,
 };
 
-export const POOL_LABELS = ["智泉 · DeepSeek", "智泉 · Qwen", "智泉 · Gemma"];

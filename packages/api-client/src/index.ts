@@ -33,6 +33,7 @@ import type {
   PublicCopy,
   PublicFlagsResponse,
   PublicLimits,
+  PublicPoolResponse,
   PhoneRegisterRequest,
   PhoneVerifyRequest,
   MessageView,
@@ -193,6 +194,10 @@ export class SpringClient {
 
   catalogDiscover(): Promise<CatalogDiscoverResponse> {
     return this.request("/v1/catalog/discover");
+  }
+
+  pool(): Promise<PublicPoolResponse> {
+    return this.request("/v1/pool");
   }
 
   conversations(query?: { q?: string; cursor?: string; mode?: string; limit?: string }): Promise<PageOf<ConversationView>> {

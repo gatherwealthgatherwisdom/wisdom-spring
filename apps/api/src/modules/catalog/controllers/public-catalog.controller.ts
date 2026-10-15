@@ -3,6 +3,7 @@ import {
   publicAides,
   publicDiscover,
   publicLanguages,
+  publicPool,
   publicStyles,
   publicTools,
   publicWrite,
@@ -31,5 +32,9 @@ export async function publicCatalogRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/v1/catalog/discover", async () => ({
     items: await publicDiscover(app.ctx.prisma),
+  }));
+
+  app.get("/v1/pool", async () => ({
+    items: await publicPool(app.ctx.prisma),
   }));
 }

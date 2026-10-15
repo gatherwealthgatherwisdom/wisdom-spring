@@ -44,3 +44,4 @@ export * from "./lib/assistant-markdown";
 export * from "./lib/thinking";
 export * from "./lib/conversation-title";
 export * from "./lib/zh-hans";
+export * from "./lib/pool-label";

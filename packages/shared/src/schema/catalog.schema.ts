@@ -77,3 +77,12 @@ export const CatalogDiscoverViewSchema = z.object({
 export const CatalogDiscoverResponseSchema = z.object({
   items: z.array(CatalogDiscoverViewSchema),
 });
+
+export const PublicPoolLabelSchema = z.object({
+  zh: z.string(),
+  en: z.string(),
+});
+
+export const PublicPoolResponseSchema = z.object({
+  items: z.array(PublicPoolLabelSchema),
+});

@@ -19,6 +19,7 @@ const PUBLIC_GET = [
   "/v1/catalog/styles",
   "/v1/catalog/languages",
   "/v1/catalog/discover",
+  "/v1/pool",
 ] as const;
 
 const AUTH_GET = [
@@ -65,6 +66,15 @@ test.describe("live API gates", () => {
     };
     for (const item of [...write.items, ...styles.items]) {
       expect(item).not.toHaveProperty("instruction");
+    }
+
+    const pool = (await (await api(request, "GET", "/v1/pool")).json()) as {
+      items: Array<{ zh: string; en: string }>;
+    };
+    for (const item of pool.items) {
+      expect(item.zh).toMatch(/^智泉 · /);
+      expect(item.zh).not.toMatch(/\//);
+      expect(item.en).not.toMatch(/\//);
     }
   });
 
