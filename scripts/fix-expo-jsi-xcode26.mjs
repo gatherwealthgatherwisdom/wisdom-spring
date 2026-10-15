@@ -113,6 +113,25 @@ function patchRuntimeScheduler(path) {
   });
 }
 
+function patchSendableRuntimeClasses(path) {
+  return patchFile(path, (src) => {
+    let next = src;
+    next = next.replace(
+      "public final class JavaScriptError: Error, Sendable {",
+      "public final class JavaScriptError: Error, @unchecked Sendable {",
+    );
+    next = next.replace(
+      "public final class JavaScriptValue: JavaScriptType, Equatable, Escapable {",
+      "public final class JavaScriptValue: JavaScriptType, Equatable, Escapable, @unchecked Sendable {",
+    );
+    next = next.replace(
+      "public final class JavaScriptPropNameID: JavaScriptType {",
+      "public final class JavaScriptPropNameID: JavaScriptType, @unchecked Sendable {",
+    );
+    return next;
+  });
+}
+
 function patchJavaScriptRuntime(path) {
   return patchFile(path, (src) => {
     let next = src;
@@ -232,6 +251,14 @@ for (const pkg of jsiPackages) {
     if (path.endsWith(".swift") && patchWeakLet(path)) files += 1;
     if (path.endsWith("RuntimeScheduler.h") && patchRuntimeScheduler(path)) files += 1;
     if (path.endsWith("JavaScriptRuntime.swift") && patchJavaScriptRuntime(path)) files += 1;
+    if (
+      (path.endsWith("JavaScriptError.swift") ||
+        path.endsWith("JavaScriptValue.swift") ||
+        path.endsWith("JavaScriptPropNameID.swift")) &&
+      patchSendableRuntimeClasses(path)
+    ) {
+      files += 1;
+    }
   });
   cleanJsiCaches(pkg);
 }
