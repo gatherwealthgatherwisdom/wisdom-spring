@@ -11,6 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.gwgwgroup.spring",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "智泉用相機影相，方便你問圖。",
         "NSPhotoLibraryUsageDescription": "智泉讀相簿相片，方便你問圖。"
       }
