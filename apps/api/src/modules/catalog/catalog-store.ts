@@ -562,6 +562,7 @@ export async function seedCatalog(prisma: PrismaClient): Promise<void> {
     ...SPRING_DISCOVER_CARDS.map((item, index) => toData(discoverFromConstant(item, index))),
   ];
   await prisma.catalogEntry.createMany({ data, skipDuplicates: true });
+  await prisma.catalogEntry.deleteMany({ where: { kind: "TOOL", id: "voice" } });
   for (const item of SPRING_TOOLS) {
     await prisma.catalogEntry.updateMany({
       where: { kind: "TOOL", id: item.id },

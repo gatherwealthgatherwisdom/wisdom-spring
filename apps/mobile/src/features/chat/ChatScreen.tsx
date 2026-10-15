@@ -482,7 +482,7 @@ export function ChatScreen({ navigation, route }: Props) {
             suggestions={suggestions}
             onSuggest={setDraft}
             onRegenerate={deleted ? undefined : (id) => void regenerate(id)}
-            onListen={(content) => speak(content, locale)}
+            onListen={flagOn(FeatureFlagKey.VOICE_UI) ? (content) => speak(content, locale) : undefined}
             onFeedback={(id, rating) => void rate(id, rating)}
           />
         </View>

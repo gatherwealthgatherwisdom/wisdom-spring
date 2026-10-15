@@ -74,5 +74,6 @@ export function openCatalogTool(
     navigation.navigate("Chat", params);
     return;
   }
+  if (!params) return;
   navigation.navigate("Tool", { id: toolId });
 }

@@ -27,7 +27,7 @@ const LABELS: Record<string, { title: string; note: string }> = {
   },
   [FeatureFlagKey.VOICE_UI]: {
     title: "語音介面",
-    note: "關咗之後隱藏咪同通話掣。唔包括聲音複製。",
+    note: "關咗之後隱藏氣泡「朗讀」。產品無咪同通話掣。",
   },
 };
 

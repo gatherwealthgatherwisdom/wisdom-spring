@@ -249,7 +249,8 @@ describe("tool catalog", () => {
     expect(SPRING_TOOLS.find((item) => item.id === "memo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "photo")?.live).toBe(true);
     expect(SPRING_TOOLS.find((item) => item.id === "pdf")?.live).toBe(true);
-    expect(SPRING_TOOLS.find((item) => item.id === "voice")?.live).toBe(false);
+    expect(SPRING_TOOLS.some((item) => item.id === "voice")).toBe(false);
+    expect(SPRING_TOOLS.filter((item) => item.live && item.page === 0)).toHaveLength(8);
     expect(SPRING_TOOLS.find((item) => item.id === "more")?.templateId).toBe("more");
     expect(SPRING_TOOLS.find((item) => item.id === "more")?.icon).toBe("copy-outline");
     expect(SPRING_TOOLS.find((item) => item.id === "interpret")?.templateId).toBe("interpret");

@@ -36,7 +36,6 @@ export function ToolScreen({ navigation, route }: Props) {
   const catalog = useQuery({ queryKey: ["catalog-tools"], queryFn: () => spring.catalogTools() });
   const tool = toolsFromCatalog(catalog.data?.items).find((item) => item.id === route.params.id);
   const [draft, setDraft] = useState("");
-  const [shown, setShown] = useState("");
   const chats = useHistory({ mode: tool?.mode });
   if (!tool) {
     return (
@@ -98,23 +97,14 @@ export function ToolScreen({ navigation, route }: Props) {
         accessibilityLabel={text.start}
         accessibilityState={{ disabled: !ready }}
         onPress={() => {
-          const live = paramsForLiveTool({ ...tool, live: true });
-          if (live) {
-            navigation.navigate("Chat", typed && !live.attach ? { ...live, seed: typed } : live);
-            return;
-          }
-          if (typed) setShown(typed);
+          const live = paramsForLiveTool(tool);
+          if (!live) return;
+          navigation.navigate("Chat", typed && !live.attach ? { ...live, seed: typed } : live);
         }}
         style={{ marginTop: 12, backgroundColor: colors.accent, borderRadius: 16, padding: 14, alignItems: "center", opacity: ready ? 1 : 0.45 }}
       >
         <Text style={{ color: colors.onAccent }}>{text.start}</Text>
       </Pressable>
-      {shown ? (
-        <View style={{ marginTop: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.line }}>
-          <Text style={{ color: colors.muted, marginBottom: 8 }}>{text.sample}</Text>
-          <Text style={{ color: colors.ink, lineHeight: 24 }}>{shown}</Text>
-        </View>
-      ) : null}
       <Text style={{ color: colors.ink, fontSize: 16, marginTop: 22, marginBottom: 8 }}>{recentLabel}</Text>
       {recent.length === 0 ? (
         emptyRecent ? <RecentRow modeLabel={title} locale={locale} empty={emptyRecent} /> : null
