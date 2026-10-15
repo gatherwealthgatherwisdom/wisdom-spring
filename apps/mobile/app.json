@@ -36,7 +36,7 @@
         {
           "color": "#1F6B4A",
           "defaultChannel": "spring-default",
-          "enableBackgroundRemoteNotifications": false
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       [
@@ -61,6 +61,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9"
+      }
+    },
+    "owner": "gatherwealthgatherwisdomlimited"
   }
 }

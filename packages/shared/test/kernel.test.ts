@@ -27,7 +27,7 @@ import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSec
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { FILE_PROMPT, LOOK_PROMPT, isImageMime, isPdfMime, isUploadMime, mediaPromptFor } from "../src/constants/uploads";
 import { RegisterDeviceRequestSchema, UpdateMeRequestSchema } from "../src/schema/auth.schema";
-import { pushCopy } from "../src/constants/push";
+import { expoProjectIdFromExtra, expoPushTokenRequest, pushCopy } from "../src/constants/push";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
@@ -387,6 +387,14 @@ describe("push copy and device schemas", () => {
     expect(pushCopy("zh-CN").generationDoneBody).toBe("打开对话查看回复。");
     expect(pushCopy("zh-CN").quotaLowBody(3)).toBe("今日尚余 3 次。");
     expect(pushCopy("en").generationDoneTitle).toBe("Wisdom Spring replied");
+    expect(expoProjectIdFromExtra({ eas: { projectId: "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9" } })).toBe(
+      "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9",
+    );
+    expect(expoPushTokenRequest("2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9")).toEqual({
+      projectId: "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9",
+    });
+    expect(expoProjectIdFromExtra({})).toBeUndefined();
+    expect(expoPushTokenRequest(undefined)).toBeUndefined();
     expect(LIMITS.notifyQuotaRemaining).toBe(3);
     expect(LIMITS.notifyGuestRemaining).toBe(1);
   });

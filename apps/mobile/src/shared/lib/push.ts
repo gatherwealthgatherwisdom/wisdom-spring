@@ -1,5 +1,6 @@
-import { pushCopy } from "@spring/shared";
+import { expoProjectIdFromExtra, expoPushTokenRequest, pushCopy } from "@spring/shared";
 import * as Notifications from "expo-notifications";
+import appJson from "../../../app.json";
 import { AppState, Platform } from "react-native";
 import { openChatFromPush } from "../../navigation/ref";
 import { spring } from "./api";
@@ -59,7 +60,11 @@ export async function registerPushDevice(): Promise<void> {
     const permission = await Notifications.getPermissionsAsync();
     if (permission.status !== "granted") return;
     await ensureChannel();
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const token = (
+      await Notifications.getExpoPushTokenAsync(
+        expoPushTokenRequest(expoProjectIdFromExtra(appJson.expo.extra)),
+      )
+    ).data;
     const platform = Platform.OS === "ios" ? "ios" : "android";
     await spring.registerDevice({ token, platform });
     usePrefs.getState().setPushToken(token);

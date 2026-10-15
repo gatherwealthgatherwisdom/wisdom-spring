@@ -26,6 +26,18 @@ export type PushCopy = {
   quotaLowBody: (remaining: number) => string;
 };
 
+export function expoProjectIdFromExtra(extra: unknown): string | undefined {
+  if (!extra || typeof extra !== "object") return undefined;
+  const eas = (extra as { eas?: unknown }).eas;
+  if (!eas || typeof eas !== "object") return undefined;
+  const id = (eas as { projectId?: unknown }).projectId;
+  return typeof id === "string" && id.trim().length > 0 ? id.trim() : undefined;
+}
+
+export function expoPushTokenRequest(projectId: string | undefined): { projectId: string } | undefined {
+  return projectId ? { projectId } : undefined;
+}
+
 export function pushCopy(locale: string): PushCopy {
   if (parseAppLocale(locale) === "en") return PUSH_COPY.en;
   const base = PUSH_COPY["zh-HK"];
