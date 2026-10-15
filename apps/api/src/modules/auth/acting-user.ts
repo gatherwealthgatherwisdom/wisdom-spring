@@ -1,5 +1,5 @@
 import type { User } from "@prisma/client";
-import { LIMITS, PlanTier, UserRole, UserStatus, type UserPublic } from "@spring/shared";
+import { LIMITS, PlanTier, UserRole, UserStatus, parseUserTone, type UserPublic, type UserTone } from "@spring/shared";
 
 export interface ActingUser {
   id: string;
@@ -7,6 +7,7 @@ export interface ActingUser {
   phone: string | null;
   displayName: string | null;
   locale: string;
+  tone: UserTone;
   planTier: PlanTier;
   role: UserRole;
   status: UserStatus;
@@ -38,6 +39,7 @@ export function toActingUser(user: User): ActingUser {
     phone: user.phone,
     displayName: user.displayName,
     locale: user.locale,
+    tone: parseUserTone(user.tone),
     planTier: asPlan(user.planTier),
     role: asRole(user.role),
     status: asStatus(user.status),
@@ -56,6 +58,7 @@ export function toPublic(user: ActingUser, guestLimit: number = LIMITS.guestTria
     phone: user.phone,
     displayName: user.displayName,
     locale: user.locale,
+    tone: user.tone,
     planTier: user.planTier,
     role: user.role,
     status: user.status,

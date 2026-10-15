@@ -9,6 +9,7 @@ export * from "./enums/model-health-status";
 export * from "./enums/model-capability";
 export * from "./enums/error-code";
 export * from "./enums/locale";
+export * from "./enums/user-tone";
 export * from "./enums/feature-flag";
 export * from "./schema/pagination.schema";
 export * from "./schema/auth.schema";

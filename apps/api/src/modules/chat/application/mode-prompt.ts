@@ -1,4 +1,13 @@
-import { Locale, SYSTEM_PROMPT, imageStyle, parseAppLocale, toolInstruction, writeTemplate } from "@spring/shared";
+import {
+  Locale,
+  SYSTEM_PROMPT,
+  UserTone,
+  imageStyle,
+  parseAppLocale,
+  parseUserTone,
+  toolInstruction,
+  writeTemplate,
+} from "@spring/shared";
 
 export interface ConversationModeFields {
   mode: string;
@@ -8,8 +17,12 @@ export interface ConversationModeFields {
   imageStyle: string | null;
 }
 
-export function generationLanguageLine(locale: string | undefined, templateId: string | null): string {
-  if (templateId === "cantonese") {
+export function generationLanguageLine(
+  locale: string | undefined,
+  templateId: string | null,
+  tone?: string,
+): string {
+  if (templateId === "cantonese" || parseUserTone(tone) === UserTone.CANTONESE) {
     return "用香港廣東話口語作答，不要改用書面語。";
   }
   const app = parseAppLocale(locale);
@@ -22,6 +35,13 @@ export function generationLanguageLine(locale: string | undefined, templateId: s
   return "預設以香港書面語、繁體中文作答。用戶以其他語言提問則跟隨該語言。";
 }
 
+export function generationToneLine(tone: string | undefined): string {
+  const parsed = parseUserTone(tone);
+  if (parsed === UserTone.CANTONESE) return "";
+  if (parsed === UserTone.DETAILED) return "回覆詳細，分點說明，把理由講清楚。";
+  return "回覆精簡，先講結論，避免冗句。";
+}
+
 export function systemPromptFor(
   conversation: ConversationModeFields,
   requestedModel: string,
@@ -29,6 +49,7 @@ export function systemPromptFor(
   extraHint?: string,
   systemPrompt = SYSTEM_PROMPT,
   locale?: string,
+  tone?: string,
 ): string {
   const extra = extraInstruction || toolInstruction(conversation.templateId);
   if (conversation.mode === "translate") {
@@ -46,8 +67,9 @@ export function systemPromptFor(
     const hint = extraHint || imageStyle(conversation.imageStyle)?.hint;
     return `Create one image and no extra caption. Style: ${hint ?? "restrained ink on warm paper"}.`;
   }
-  const language = generationLanguageLine(locale, conversation.templateId);
-  const identity = `${systemPrompt}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時才可以提及。\n${language}`;
+  const language = generationLanguageLine(locale, conversation.templateId, tone);
+  const style = generationToneLine(tone);
+  const identity = `${systemPrompt}\n今輪請求模型：${requestedModel}。只有使用者問及模型身份時才可以提及。\n${language}${style ? `\n${style}` : ""}`;
   if (extra) return `${identity}\n${extra}`;
   if (conversation.mode === "write") {
     const template = writeTemplate(conversation.templateId);

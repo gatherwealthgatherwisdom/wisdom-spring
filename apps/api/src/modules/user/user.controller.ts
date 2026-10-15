@@ -32,6 +32,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       data: {
         ...(body.displayName !== undefined ? { displayName: body.displayName ? body.displayName : null } : {}),
         ...(body.locale !== undefined ? { locale: body.locale } : {}),
+        ...(body.tone !== undefined ? { tone: body.tone } : {}),
         ...(body.notifyGenerationDone !== undefined ? { notifyGenerationDone: body.notifyGenerationDone } : {}),
         ...(body.notifyQuotaLow !== undefined ? { notifyQuotaLow: body.notifyQuotaLow } : {}),
       },

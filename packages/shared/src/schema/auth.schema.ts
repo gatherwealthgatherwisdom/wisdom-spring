@@ -4,6 +4,7 @@ import { Locale } from "../enums/locale";
 import { PlanTier } from "../enums/plan-tier";
 import { UserRole } from "../enums/user-role";
 import { UserStatus } from "../enums/user-status";
+import { UserTone } from "../enums/user-tone";
 import { normalizeMobile } from "../lib/phone";
 
 const MobilePhoneSchema = z
@@ -71,6 +72,7 @@ export const UpdateMeRequestSchema = z
   .object({
     displayName: z.string().trim().max(80).nullable().optional(),
     locale: z.nativeEnum(Locale).optional(),
+    tone: z.nativeEnum(UserTone).optional(),
     notifyGenerationDone: z.boolean().optional(),
     notifyQuotaLow: z.boolean().optional(),
   })
@@ -78,6 +80,7 @@ export const UpdateMeRequestSchema = z
     (value) =>
       value.displayName !== undefined ||
       value.locale !== undefined ||
+      value.tone !== undefined ||
       value.notifyGenerationDone !== undefined ||
       value.notifyQuotaLow !== undefined,
     { message: "empty" },
@@ -100,6 +103,7 @@ export const UserPublicSchema = z.object({
   phone: z.string().nullable(),
   displayName: z.string().nullable(),
   locale: z.string(),
+  tone: z.nativeEnum(UserTone).default(UserTone.CONCISE),
   planTier: z.nativeEnum(PlanTier),
   role: z.nativeEnum(UserRole),
   status: z.nativeEnum(UserStatus),

@@ -152,6 +152,7 @@ export class SendMessageService {
         turnMode: prepared.turnMode,
         imageStyle: prepared.imageStyle,
         locale: user.locale,
+        tone: user.tone,
       },
       sink,
     );

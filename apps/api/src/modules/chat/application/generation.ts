@@ -80,6 +80,7 @@ export async function runGeneration(
     turnMode?: string;
     imageStyle?: string | null;
     locale?: string;
+    tone?: string;
   },
   sink: SseSink,
 ): Promise<void> {
@@ -189,7 +190,7 @@ export async function runGeneration(
         [
           {
             role: "system",
-            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint, prompts.system, input.locale),
+            content: systemPromptFor(modeFields, pick.primary, extraInstruction, extraHint, prompts.system, input.locale, input.tone),
           },
           ...turns,
         ],

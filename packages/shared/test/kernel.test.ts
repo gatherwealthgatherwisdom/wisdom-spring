@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isAllowlisted } from "../src/constants/allowlist";
 import { ErrorCode } from "../src/enums/error-code";
 import { Locale, isAppLocale, parseAppLocale } from "../src/enums/locale";
+import { UserTone, parseUserTone } from "../src/enums/user-tone";
 import { blurbFor, labelFor, toSimplified } from "../src/lib/zh-hans";
 import { ERROR_MESSAGES, messageFor } from "../src/constants/messages";
 import { APP_SETTING_DEFAULTS, LIMITS, limitsFor } from "../src/constants/limits";
@@ -401,7 +402,18 @@ describe("push copy and device schemas", () => {
     expect(UpdateMeRequestSchema.parse({ displayName: "阿泉" }).displayName).toBe("阿泉");
     expect(UpdateMeRequestSchema.parse({ displayName: "" }).displayName).toBe("");
     expect(UpdateMeRequestSchema.parse({ displayName: null }).displayName).toBeNull();
+    expect(UpdateMeRequestSchema.parse({ tone: UserTone.DETAILED }).tone).toBe("detailed");
+    expect(UpdateMeRequestSchema.safeParse({ tone: "loud" }).success).toBe(false);
     expect(UpdateMeRequestSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("user tone", () => {
+  it("defaults unknown values to concise", () => {
+    expect(parseUserTone(undefined)).toBe(UserTone.CONCISE);
+    expect(parseUserTone("detailed")).toBe(UserTone.DETAILED);
+    expect(parseUserTone("cantonese")).toBe(UserTone.CANTONESE);
+    expect(parseUserTone("loud")).toBe(UserTone.CONCISE);
   });
 });
 

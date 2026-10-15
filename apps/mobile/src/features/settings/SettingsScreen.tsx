@@ -1,4 +1,4 @@
-import { formatE164, Locale, PlanTier, microsToUsd, type AppLocale, type MeResponse, type UserPublic } from "@spring/shared";
+import { formatE164, Locale, PlanTier, UserTone, microsToUsd, parseUserTone, type AppLocale, type MeResponse, type UserPublic } from "@spring/shared";
 import * as Clipboard from "expo-clipboard";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp } from "@react-navigation/native";
@@ -55,6 +55,27 @@ export function SettingsScreen() {
     if (!usePrefs.getState().accessToken) return;
     const updated = await spring.updateMe({ locale: next as Locale });
     usePrefs.getState().setUser(updated.user);
+  }
+
+  async function chooseTone(next: UserTone) {
+    if (!usePrefs.getState().accessToken) return;
+    const previous = queryClient.getQueryData<MeResponse>(["me"]);
+    const previousUser = usePrefs.getState().user;
+    if (previousUser) {
+      const nextUser = { ...previousUser, tone: next };
+      usePrefs.getState().setUser(nextUser);
+      queryClient.setQueryData<MeResponse>(["me"], (current) =>
+        current ? { ...current, user: { ...current.user, tone: next } } : current,
+      );
+    }
+    try {
+      const updated = await spring.updateMe({ tone: next });
+      usePrefs.getState().setUser(updated.user);
+      queryClient.setQueryData(["me"], updated);
+    } catch {
+      if (previousUser) usePrefs.getState().setUser(previousUser);
+      if (previous !== undefined) queryClient.setQueryData(["me"], previous);
+    }
   }
 
   async function setNotifyFlag(patch: { notifyGenerationDone?: boolean; notifyQuotaLow?: boolean }) {
@@ -239,6 +260,31 @@ export function SettingsScreen() {
         <SettingLine icon="language-outline" label="简体中文" selected={locale === "zh-CN"} colors={colors} onPress={() => void chooseLocale("zh-CN")} />
         <SettingLine icon="language-outline" label="English" selected={locale === "en"} colors={colors} onPress={() => void chooseLocale("en")} />
       </Group>
+      {signedIn ? (
+        <Group title={text.tone} colors={colors}>
+          <SettingLine
+            icon="text-outline"
+            label={text.toneConcise}
+            selected={parseUserTone(user?.tone) === UserTone.CONCISE}
+            colors={colors}
+            onPress={() => void chooseTone(UserTone.CONCISE)}
+          />
+          <SettingLine
+            icon="list-outline"
+            label={text.toneDetailed}
+            selected={parseUserTone(user?.tone) === UserTone.DETAILED}
+            colors={colors}
+            onPress={() => void chooseTone(UserTone.DETAILED)}
+          />
+          <SettingLine
+            icon="chatbubbles-outline"
+            label={text.toneCantonese}
+            selected={parseUserTone(user?.tone) === UserTone.CANTONESE}
+            colors={colors}
+            onPress={() => void chooseTone(UserTone.CANTONESE)}
+          />
+        </Group>
+      ) : null}
       <Group title={text.appearance} colors={colors}>
         <SettingLine icon="phone-portrait-outline" label={text.system} selected={appearance === "system"} colors={colors} onPress={() => setAppearance("system")} />
         <SettingLine icon="sunny-outline" label={text.light} selected={appearance === "light"} colors={colors} onPress={() => setAppearance("light")} />

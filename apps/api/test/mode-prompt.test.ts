@@ -81,4 +81,49 @@ describe("systemPromptFor", () => {
     expect(prompt).toContain("用香港廣東話口語撰寫");
     expect(prompt).not.toContain("預設以香港書面語、繁體中文作答。");
   });
+
+  it("adds a concise reply line by default", () => {
+    const prompt = systemPromptFor(chat, "qwen/qwen3-30b-a3b");
+    expect(prompt).toContain("回覆精簡，先講結論，避免冗句。");
+    expect(prompt).not.toContain("回覆詳細，分點說明");
+  });
+
+  it("asks for a detailed reply when the user tone is detailed", () => {
+    const prompt = systemPromptFor(chat, "qwen/qwen3-30b-a3b", undefined, undefined, SYSTEM_PROMPT, "zh-HK", "detailed");
+    expect(prompt).toContain("回覆詳細，分點說明，把理由講清楚。");
+    expect(prompt).not.toContain("回覆精簡，先講結論");
+    expect(prompt).toContain("預設以香港書面語、繁體中文作答。");
+  });
+
+  it("uses spoken Cantonese when the user tone is cantonese", () => {
+    const prompt = systemPromptFor(chat, "qwen/qwen3-30b-a3b", undefined, undefined, SYSTEM_PROMPT, "zh-HK", "cantonese");
+    expect(prompt).toContain("用香港廣東話口語作答，不要改用書面語。");
+    expect(prompt).not.toContain("預設以香港書面語、繁體中文作答。");
+    expect(prompt).not.toContain("回覆精簡，先講結論");
+  });
+
+  it("does not apply tone to translate or image turns", () => {
+    const translate = systemPromptFor(
+      { ...chat, mode: "translate", sourceLang: "en", targetLang: "zh-HK" },
+      "qwen/qwen3-30b-a3b",
+      undefined,
+      undefined,
+      SYSTEM_PROMPT,
+      "zh-HK",
+      "detailed",
+    );
+    const image = systemPromptFor(
+      { ...chat, mode: "image", imageStyle: "ink" },
+      "qwen/qwen-image-3",
+      undefined,
+      undefined,
+      SYSTEM_PROMPT,
+      "zh-HK",
+      "cantonese",
+    );
+    expect(translate).not.toContain("回覆詳細，分點說明");
+    expect(translate).not.toContain("回覆精簡，先講結論");
+    expect(image).not.toContain("用香港廣東話口語作答");
+    expect(image).toContain("Create one image");
+  });
 });

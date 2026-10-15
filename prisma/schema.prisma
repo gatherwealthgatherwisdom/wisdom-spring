@@ -65,6 +65,7 @@ model User {
   role          UserRole       @default(USER)
   planTier      PlanTier       @default(FREE)
   locale        String         @default("zh-HK") @db.VarChar(16)
+  tone                 String         @default("concise") @db.VarChar(16)
   displayName   String?        @db.VarChar(80)
   phone         String?        @unique @db.VarChar(16)
   registeredAt         DateTime?

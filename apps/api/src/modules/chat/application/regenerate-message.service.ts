@@ -80,6 +80,7 @@ export class RegenerateMessageService {
         assistantMessageId: prepared.assistantMessageId,
         turnMode: prepared.turnMode,
         locale: user.locale,
+        tone: user.tone,
       },
       sink,
     );
