@@ -21,6 +21,15 @@
         "EXPO_PUBLIC_API_URL": "https://spring.gwgwgroup-it.com"
       }
     },
+    "preview-ios": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://spring.gwgwgroup-it.com"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"

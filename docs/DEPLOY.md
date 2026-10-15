@@ -150,9 +150,10 @@ EAS 設定喺 `apps/mobile/eas.json`。內部 APK（打生產 API）：
 ```bash
 cd apps/mobile
 eas build --platform android --profile preview
+eas build --platform ios --profile preview-ios
 ```
 
-preview 用本機 `credentials.json`（gitignore）簽名。今次唔提交 App Store／Play。
+Android preview 用本機 `credentials.json`（gitignore）簽名。iOS `preview-ios` 係 simulator 包，免 Apple 裝置憑證。今次唔提交 App Store／Play。生產推送打 Expo Push API；`EXPO_ACCESS_TOKEN` 可選。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 
