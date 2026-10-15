@@ -43,6 +43,7 @@ const ANDROID = "ExponentPushToken[spring-android-1]";
 const DEAD = "ExponentPushToken[spring-dead-1]";
 
 async function reset(prisma: PrismaClient): Promise<void> {
+  await prisma.inboxNotice.deleteMany();
   await prisma.deviceToken.deleteMany();
   await prisma.phoneCode.deleteMany();
   await prisma.usageLedger.deleteMany();
@@ -198,7 +199,16 @@ describe("device tokens and quota-low push", () => {
     expect(memory.sent[0]?.to).toBe(ANDROID);
     expect(memory.sent[0]?.title).toBe("今日額度將盡");
     expect(memory.sent[0]?.body).toBe("今日尚餘 3 次。");
-    expect(memory.sent[0]?.data).toEqual({ kind: "quota_low" });
+    expect(memory.sent[0]?.data.kind).toBe("quota_low");
+    expect(memory.sent[0]?.data.noticeId).toEqual(expect.any(String));
+    const inbox = await app.inject({
+      method: "GET",
+      url: "/v1/inbox",
+      headers: { authorization: `Bearer ${session.token}` },
+    });
+    expect(inbox.json().items).toHaveLength(1);
+    expect(inbox.json().items[0].kind).toBe("quota_low");
+    expect(inbox.json().items[0].body).toBe("今日尚餘 3 次。");
 
     await app.ctx.push.afterCompletedTurn({
       userId: session.userId,
@@ -206,6 +216,9 @@ describe("device tokens and quota-low push", () => {
       left: false,
     });
     expect(memory.sent).toHaveLength(1);
+    expect(
+      await app.ctx.prisma.inboxNotice.count({ where: { userId: session.userId, kind: "quota_low" } }),
+    ).toBe(1);
   });
 
   it("does not send quota_low above the threshold or when the switch is off", async () => {
@@ -269,8 +282,133 @@ describe("device tokens and quota-low push", () => {
     });
     await app.ctx.push.afterCompletedTurn({ userId, conversationId: createId(), left: false });
     expect(memory.sent).toHaveLength(1);
-    expect(memory.sent[0]?.data).toEqual({ kind: "quota_low" });
+    expect(memory.sent[0]?.data.kind).toBe("quota_low");
     expect(memory.sent[0]?.body).toBe("今日尚餘 1 次。");
+  });
+
+  it("writes quota_low to the inbox even without a device", async () => {
+    memory.sent.length = 0;
+    const session = await register(app, `push-inbox-${Date.now()}@gwgwgroup.com`);
+    const day = hkDayKey(new Date());
+    await app.ctx.redis.set(`spring:quota:daily:${session.userId}:${day}`, String(LIMITS.freeDailyMessages - 3));
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(0);
+    const inbox = await app.inject({
+      method: "GET",
+      url: "/v1/inbox",
+      headers: { authorization: `Bearer ${session.token}` },
+    });
+    expect(inbox.json().items).toHaveLength(1);
+    expect(inbox.json().items[0].kind).toBe("quota_low");
+  });
+
+  it("sends quota_exhausted once per Hong Kong day at remaining 0", async () => {
+    memory.sent.length = 0;
+    const session = await register(app, `push-empty-${Date.now()}@gwgwgroup.com`);
+    await app.inject({
+      method: "POST",
+      url: "/v1/devices",
+      headers: { authorization: `Bearer ${session.token}` },
+      payload: { token: `ExponentPushToken[empty-${session.userId.slice(0, 8)}]`, platform: "ios" },
+    });
+    const day = hkDayKey(new Date());
+    await app.ctx.redis.set(`spring:quota:daily:${session.userId}:${day}`, String(LIMITS.freeDailyMessages));
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(1);
+    expect(memory.sent[0]?.data.kind).toBe("quota_exhausted");
+    expect(memory.sent[0]?.title).toBe("今日對話次數已用完");
+    const inbox = await app.inject({
+      method: "GET",
+      url: "/v1/inbox",
+      headers: { authorization: `Bearer ${session.token}` },
+    });
+    expect(inbox.json().items[0].kind).toBe("quota_exhausted");
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(1);
+    expect(
+      await app.ctx.prisma.inboxNotice.count({ where: { userId: session.userId, kind: "quota_low" } }),
+    ).toBe(0);
+  });
+
+  it("sends monthly_cost once per Hong Kong month at 80 percent of the cap", async () => {
+    memory.sent.length = 0;
+    const session = await register(app, `push-month-${Date.now()}@gwgwgroup.com`);
+    await app.inject({
+      method: "POST",
+      url: "/v1/devices",
+      headers: { authorization: `Bearer ${session.token}` },
+      payload: { token: `ExponentPushToken[month-${session.userId.slice(0, 8)}]`, platform: "ios" },
+    });
+    await app.ctx.prisma.usageLedger.create({
+      data: {
+        id: createId(),
+        userId: session.userId,
+        messageId: createId(),
+        model: "deepseek/deepseek-chat",
+        promptTokens: 1,
+        completionTokens: 1,
+        costUsdMicros: BigInt(Math.ceil(LIMITS.freeMonthlyUsdMicros * 0.8)),
+        occurredAt: new Date(),
+      },
+    });
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(1);
+    expect(memory.sent[0]?.data.kind).toBe("monthly_cost");
+    expect(memory.sent[0]?.title).toBe("本月用量將盡");
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(1);
+  });
+
+  it("does not send quota_exhausted or monthly_cost when the switch is off", async () => {
+    memory.sent.length = 0;
+    const session = await register(app, `push-off-${Date.now()}@gwgwgroup.com`);
+    await app.inject({
+      method: "PATCH",
+      url: "/v1/me",
+      headers: { authorization: `Bearer ${session.token}` },
+      payload: { notifyQuotaLow: false },
+    });
+    const day = hkDayKey(new Date());
+    await app.ctx.redis.set(`spring:quota:daily:${session.userId}:${day}`, String(LIMITS.freeDailyMessages));
+    await app.ctx.prisma.usageLedger.create({
+      data: {
+        id: createId(),
+        userId: session.userId,
+        messageId: createId(),
+        model: "deepseek/deepseek-chat",
+        promptTokens: 1,
+        completionTokens: 1,
+        costUsdMicros: BigInt(LIMITS.freeMonthlyUsdMicros),
+        occurredAt: new Date(),
+      },
+    });
+    await app.ctx.push.afterCompletedTurn({
+      userId: session.userId,
+      conversationId: createId(),
+      left: false,
+    });
+    expect(memory.sent).toHaveLength(0);
+    expect(await app.ctx.prisma.inboxNotice.count({ where: { userId: session.userId } })).toBe(0);
   });
 
   it("clears tokens on logout all and on account delete", async () => {

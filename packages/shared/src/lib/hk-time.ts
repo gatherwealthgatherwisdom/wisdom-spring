@@ -8,6 +8,11 @@ export function hkDayKey(now: Date): string {
   }).format(now);
 }
 
+/** Calendar month in Asia/Hong_Kong as YYYY-MM. */
+export function hkMonthKey(now: Date): string {
+  return hkDayKey(now).slice(0, 7);
+}
+
 /** Start of the Hong Kong calendar day `days` before `now`. */
 export function hkStartDaysAgo(now: Date, days: number): Date {
   if (!Number.isInteger(days) || days < 0) throw new Error("days");

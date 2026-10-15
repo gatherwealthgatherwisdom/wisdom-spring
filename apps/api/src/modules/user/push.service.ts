@@ -8,7 +8,10 @@ import {
   PlanTier,
   createId,
   hkDayKey,
+  hkMonthKey,
   pushCopy,
+  type InboxKind,
+  type PushCopy,
   type PushKind,
 } from "@spring/shared";
 import { loadAppLimits } from "../admin/app-limits";
@@ -46,11 +49,11 @@ export class PushService {
   }): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: input.userId } });
     if (!user || user.status !== "ACTIVE") return;
-    await this.maybeQuotaLow(user);
+    await this.maybeQuotaNotices(user);
     if (input.left) await this.maybeGenerationDone(user, input.conversationId);
   }
 
-  private async maybeQuotaLow(user: {
+  private async maybeQuotaNotices(user: {
     id: string;
     locale: string;
     registeredAt: Date | null;
@@ -62,22 +65,84 @@ export class PushService {
     if (!user.notifyQuotaLow) return;
     const remaining = await this.remaining(user);
     if (remaining === null) return;
-    const threshold = user.registeredAt == null ? LIMITS.notifyGuestRemaining : LIMITS.notifyQuotaRemaining;
-    if (remaining > threshold) return;
-    const tokens = await this.tokensOf(user.id);
-    if (tokens.length === 0) return;
-    const key = `spring:push:quota:${user.id}:${hkDayKey(new Date())}`;
-    const locked = await this.redis.set(key, "1", "EX", 60 * 60 * 48, "NX");
-    if (locked !== "OK") return;
     const copy = pushCopy(user.locale);
+    const day = hkDayKey(new Date());
+    if (remaining === 0) {
+      await this.deliverQuotaNotice(
+        user,
+        "quota_exhausted",
+        `spring:push:quota_exhausted:${user.id}:${day}`,
+        60 * 60 * 48,
+        copy.quotaExhaustedTitle,
+        copy.quotaExhaustedBody,
+      );
+    } else {
+      const threshold = user.registeredAt == null ? LIMITS.notifyGuestRemaining : LIMITS.notifyQuotaRemaining;
+      if (remaining <= threshold) {
+        await this.deliverQuotaNotice(
+          user,
+          "quota_low",
+          `spring:push:quota:${user.id}:${day}`,
+          60 * 60 * 48,
+          copy.quotaLowTitle,
+          copy.quotaLowBody(remaining),
+        );
+      }
+    }
+    if (user.registeredAt != null) await this.maybeMonthlyCost(user, copy);
+  }
+
+  private async maybeMonthlyCost(
+    user: { id: string; locale: string; planTier: string; bonusDailyMessages: number },
+    copy: PushCopy,
+  ): Promise<void> {
+    const plan = user.planTier === PlanTier.PLUS || user.planTier === PlanTier.INTERNAL ? user.planTier : PlanTier.FREE;
+    const snapshot = await this.quota.snapshot(user.id, plan, new Date(), user.bonusDailyMessages);
+    const spent = BigInt(snapshot.monthlyUsdMicros);
+    const limit = BigInt(snapshot.monthlyLimitUsdMicros);
+    if (limit <= 0n || spent * 100n < limit * 80n) return;
+    await this.deliverQuotaNotice(
+      user,
+      "monthly_cost",
+      `spring:push:monthly_cost:${user.id}:${hkMonthKey(new Date())}`,
+      60 * 60 * 24 * 40,
+      copy.monthlyCostTitle,
+      copy.monthlyCostBody,
+    );
+  }
+
+  private async deliverQuotaNotice(
+    user: { id: string },
+    kind: Extract<InboxKind, "quota_low" | "quota_exhausted" | "monthly_cost">,
+    lockKey: string,
+    ttlSeconds: number,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    const locked = await this.redis.set(lockKey, "1", "EX", ttlSeconds, "NX");
+    if (locked !== "OK") return;
     try {
-      await this.sendTo(tokens, {
-        title: copy.quotaLowTitle,
-        body: copy.quotaLowBody(remaining),
-        data: { kind: "quota_low" satisfies PushKind },
+      const notice = await this.prisma.inboxNotice.create({
+        data: {
+          id: createId(),
+          userId: user.id,
+          kind,
+          title,
+          body,
+          data: { kind },
+        },
       });
+      await this.sendToUser(
+        user.id,
+        {
+          title,
+          body,
+          data: { kind: kind satisfies PushKind, noticeId: notice.id },
+        },
+        false,
+      );
     } catch {
-      await this.redis.del(key);
+      await this.redis.del(lockKey);
     }
   }
 

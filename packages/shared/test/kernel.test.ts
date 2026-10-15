@@ -12,7 +12,7 @@ import { PROMPT_DOC_DEFAULTS, mergePromptDocs } from "../src/constants/prompts";
 import { FLAG_DEFAULTS, FeatureFlagKey, publicFlagItems } from "../src/enums/feature-flag";
 import { PlanTier } from "../src/enums/plan-tier";
 import { AdminInboxSendSchema, AdminUpdateUserSchema, CreateCatalogEntrySchema, UpdateCatalogEntrySchema, UpdateCopySchema, UpdateLimitsSchema } from "../src/schema/admin.schema";
-import { hkDayKey, hkMonthRange, hkMonthRangeFromKey, hkStartDaysAgo } from "../src/lib/hk-time";
+import { hkDayKey, hkMonthKey, hkMonthRange, hkMonthRangeFromKey, hkStartDaysAgo } from "../src/lib/hk-time";
 import {
   DEFAULT_ADMIN_PHONE,
   DEV_PHONE_CODE,
@@ -97,6 +97,8 @@ describe("Hong Kong calendar", () => {
   it("splits the day at Hong Kong midnight", () => {
     expect(hkDayKey(new Date("2026-09-23T15:59:00.000Z"))).toBe("2026-09-23");
     expect(hkDayKey(new Date("2026-09-23T16:00:00.000Z"))).toBe("2026-09-24");
+    expect(hkMonthKey(new Date("2026-09-30T15:59:00.000Z"))).toBe("2026-09");
+    expect(hkMonthKey(new Date("2026-09-30T16:00:00.000Z"))).toBe("2026-10");
   });
 
   it("bounds the month in Hong Kong", () => {
