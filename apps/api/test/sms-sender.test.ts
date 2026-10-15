@@ -88,6 +88,20 @@ describe("MeteorsisSmsSender", () => {
     expect(recipients).toEqual(["85291234567", "8613800138000"]);
   });
 
+  it("throws without calling Meteorsis when sender id is not 1–11 alphanumeric", async () => {
+    const seen = capture();
+    let called = 0;
+    const get: typeof fetch = async () => {
+      called += 1;
+      return new Response("SMSDID:1", { status: 200 });
+    };
+    const sender = new MeteorsisSmsSender({ ...meteorsisEnv, smsSenderId: "Wisdom Spring" }, get);
+    await expect(sender.send("+85291234567", "123456", seen.log)).rejects.toMatchObject({
+      code: ErrorCode.INTERNAL,
+    });
+    expect(called).toBe(0);
+  });
+
   it("throws without calling Meteorsis when credentials are missing", async () => {
     const seen = capture();
     let called = 0;

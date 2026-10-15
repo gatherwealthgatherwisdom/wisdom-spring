@@ -14,6 +14,15 @@ export type SmsEnv = Pick<AppEnv, "nodeEnv" | "smsUsername" | "smsPassword" | "s
 const SEND_URL = "https://www.meteorsis.com/misweb/f_sendsms.aspx";
 const OTP_BODY = (code: string) => `智泉驗證碼 ${code}，5 分鐘內有效。`;
 const SMS_UNAVAILABLE = "短訊暫時未能發送，請稍後再試。";
+const SENDER_ID = /^[A-Za-z0-9]{1,11}$/;
+
+export function meteorsisSenderId(raw: string): string {
+  const senderId = raw.trim();
+  if (!SENDER_ID.test(senderId)) {
+    throw new AppError(ErrorCode.INTERNAL, "短訊服務未設定。");
+  }
+  return senderId;
+}
 
 /** Meteorsis Unicode-16: UTF-16BE code units as 4 hex digits each, no BOM. */
 export function toUnicode16Hex(text: string): string {
@@ -44,8 +53,8 @@ export class MeteorsisSmsSender implements SmsSender {
   async send(phone: string, code: string, _log: SmsLog): Promise<void> {
     const username = this.env.smsUsername.trim();
     const password = this.env.smsPassword.trim();
-    const senderId = this.env.smsSenderId.trim();
-    if (!username || !password || !senderId) throw new AppError(ErrorCode.INTERNAL, "短訊服務未設定。");
+    const senderId = meteorsisSenderId(this.env.smsSenderId);
+    if (!username || !password) throw new AppError(ErrorCode.INTERNAL, "短訊服務未設定。");
     const params = new URLSearchParams({
       username,
       password,
