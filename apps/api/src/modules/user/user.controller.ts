@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import {
   FeatureFlagKey,
+  InboxListQuerySchema,
   ModelCapability,
   RegisterDeviceRequestSchema,
   UnregisterDeviceRequestSchema,
@@ -51,6 +52,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
         data: { revokedAt: new Date() },
       }),
       app.ctx.prisma.deviceToken.deleteMany({ where: { userId: user.id } }),
+      app.ctx.prisma.inboxNotice.deleteMany({ where: { userId: user.id } }),
       app.ctx.prisma.user.update({
         where: { id: user.id },
         data: { status: "DELETED", email: null, passwordHash: null, displayName: null, phone: null },
@@ -71,6 +73,18 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     const body = UnregisterDeviceRequestSchema.parse(request.body ?? {});
     await app.ctx.push.unregister(user.id, body.token);
     return { ok: true };
+  });
+
+  app.get("/v1/inbox", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const query = InboxListQuerySchema.parse(request.query);
+    return app.ctx.inbox.list(user.id, query);
+  });
+
+  app.post("/v1/inbox/:id/read", async (request) => {
+    const user = await requireUser(request, app.ctx.auth);
+    const { id } = request.params as { id: string };
+    return app.ctx.inbox.markRead(user.id, id);
   });
 
   app.get("/v1/capabilities", async (request) => {

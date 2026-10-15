@@ -62,7 +62,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.post("/v1/auth/phone/request", limit(env.nodeEnv === "production" ? 5 : 60, "1 hour"), async (request) => {
     const body = PhoneCodeRequestSchema.parse(request.body);
-    await app.ctx.phone.requestCode(body.phone, request.log);
+    await app.ctx.phone.requestCode(body.phone, request.log, request.headers.origin);
     return { ok: true };
   });
 

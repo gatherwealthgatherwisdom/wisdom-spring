@@ -28,6 +28,7 @@ const AUTH_GET = [
   "/v1/conversations",
   "/v1/me/usage",
   "/v1/conversations/sync",
+  "/v1/inbox",
   "/admin/users",
   "/admin/models",
   "/admin/flags",

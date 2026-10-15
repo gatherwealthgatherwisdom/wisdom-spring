@@ -1,6 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
 import type { Redis } from "ioredis";
 import {
+  ADMIN_OTP_NEED_APP,
+  AppError,
+  ErrorCode,
   LIMITS,
   PlanTier,
   createId,
@@ -107,13 +110,28 @@ export class PushService {
     return Math.max(0, snapshot.dailyLimit - snapshot.dailyUsed);
   }
 
+  async deviceCount(userId: string): Promise<number> {
+    return this.prisma.deviceToken.count({ where: { userId } });
+  }
+
+  async sendToUser(
+    userId: string,
+    content: { title: string; body: string; data: PushMessage["data"] },
+    requireDevice = false,
+  ): Promise<void> {
+    const tokens = await this.tokensOf(userId);
+    if (tokens.length === 0) {
+      if (requireDevice) throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, ADMIN_OTP_NEED_APP);
+      return;
+    }
+    await this.sendTo(tokens, content);
+  }
+
   private async dispatch(
     userId: string,
     content: { title: string; body: string; data: PushMessage["data"] },
   ): Promise<void> {
-    const tokens = await this.tokensOf(userId);
-    if (tokens.length === 0) return;
-    await this.sendTo(tokens, content);
+    await this.sendToUser(userId, content, false);
   }
 
   private tokensOf(userId: string) {

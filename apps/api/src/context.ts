@@ -25,6 +25,7 @@ import { AuthService } from "./modules/auth/auth.service";
 import { OAuthService } from "./modules/auth/oauth";
 import { PhoneAuthService } from "./modules/auth/phone-auth.service";
 import { createSmsSender, type SmsSender } from "./modules/auth/sms-sender";
+import { InboxService } from "./modules/user/inbox.service";
 import { createPushSender, type PushSender } from "./modules/user/push-sender";
 import { PushService } from "./modules/user/push.service";
 
@@ -45,6 +46,7 @@ export interface AppContext {
   reader: PrismaModelPoolReader;
   aborts: AbortRegistry;
   push: PushService;
+  inbox: InboxService;
   disconnect: () => Promise<void>;
 }
 
@@ -81,6 +83,7 @@ export async function createContext(options?: {
     },
   };
   const push = new PushService(prisma, redis, quota, options?.push ?? createPushSender(env));
+  const inbox = new InboxService(prisma, push);
   const generation = {
     prisma,
     picker,
@@ -99,7 +102,7 @@ export async function createContext(options?: {
     prisma,
     redis,
     auth,
-    phone: new PhoneAuthService(prisma, auth, options?.sms ?? createSmsSender(env), env),
+    phone: new PhoneAuthService(prisma, auth, options?.sms ?? createSmsSender(env), env, inbox),
     oauth: new OAuthService(prisma, auth, env),
     quota,
     sendMessage: new SendMessageService(prisma, quota, generation),
@@ -112,6 +115,7 @@ export async function createContext(options?: {
     reader,
     aborts,
     push,
+    inbox,
     disconnect: async () => {
       await redis.quit();
       await prisma.$disconnect();

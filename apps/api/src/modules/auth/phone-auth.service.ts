@@ -1,15 +1,18 @@
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import type { PrismaClient, User } from "@prisma/client";
 import {
+  ADMIN_OTP_NEED_APP,
   AppError,
   DEV_PHONE_CODE,
   ErrorCode,
   Locale,
   UserRole,
   createId,
+  isAdminSiteOrigin,
   type AuthResponse,
 } from "@spring/shared";
 import type { AppEnv } from "../../env";
+import type { InboxService } from "../user/inbox.service";
 import type { AuthService } from "./auth.service";
 import type { SmsLog, SmsSender } from "./sms-sender";
 
@@ -36,25 +39,20 @@ export class PhoneAuthService {
     private readonly prisma: PrismaClient,
     private readonly auth: AuthService,
     private readonly sms: SmsSender,
-    private readonly env: Pick<AppEnv, "jwtAccessSecret" | "adminPhone" | "nodeEnv">,
+    private readonly env: Pick<AppEnv, "jwtAccessSecret" | "adminPhone" | "nodeEnv" | "appOriginAdmin">,
+    private readonly inbox: InboxService,
   ) {}
 
-  async requestCode(phone: string, log: SmsLog): Promise<void> {
+  async requestCode(phone: string, log: SmsLog, origin?: string | string[]): Promise<void> {
     const code =
       this.env.nodeEnv === "production" ? randomInt(0, 1_000_000).toString().padStart(6, "0") : DEV_PHONE_CODE;
     const now = new Date();
-    await this.prisma.phoneCode.updateMany({
-      where: { phone, usedAt: null },
-      data: { usedAt: now },
-    });
-    await this.prisma.phoneCode.create({
-      data: {
-        id: createId(),
-        phone,
-        codeHash: hashCode(phone, code, this.env.jwtAccessSecret),
-        expiresAt: new Date(now.getTime() + CODE_TTL_MS),
-      },
-    });
+    if (this.isAdminPhone(phone) && isAdminSiteOrigin(origin, this.env.appOriginAdmin)) {
+      await this.deliverAdminOtp(phone, code);
+      await this.replacePhoneCode(phone, code, now);
+      return;
+    }
+    await this.replacePhoneCode(phone, code, now);
     await this.sms.send(phone, code, log);
   }
 
@@ -74,6 +72,7 @@ export class PhoneAuthService {
     }
     await this.prisma.phoneCode.update({ where: { id: row.id }, data: { usedAt: new Date() } });
     const user = await this.findOrCreate(phone);
+    await this.inbox.markOtpRead(user.id);
     return this.auth.issue(user);
   }
 
@@ -121,6 +120,29 @@ export class PhoneAuthService {
       if (raced.status === "SUSPENDED") throw new AppError(ErrorCode.USER_SUSPENDED);
       return this.promoteAdmin(raced, phone);
     }
+  }
+
+  private async replacePhoneCode(phone: string, code: string, now: Date): Promise<void> {
+    await this.prisma.phoneCode.updateMany({
+      where: { phone, usedAt: null },
+      data: { usedAt: now },
+    });
+    await this.prisma.phoneCode.create({
+      data: {
+        id: createId(),
+        phone,
+        codeHash: hashCode(phone, code, this.env.jwtAccessSecret),
+        expiresAt: new Date(now.getTime() + CODE_TTL_MS),
+      },
+    });
+  }
+
+  private async deliverAdminOtp(phone: string, code: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { phone } });
+    if (!user || user.status !== "ACTIVE" || user.role !== UserRole.ADMIN) {
+      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, ADMIN_OTP_NEED_APP);
+    }
+    await this.inbox.deliverOtp(user.id, user.locale, code);
   }
 
   private isAdminPhone(phone: string): boolean {

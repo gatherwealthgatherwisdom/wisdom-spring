@@ -81,6 +81,23 @@ model User {
   oauthAccounts OAuthAccount[]
   assets        Asset[]
   deviceTokens  DeviceToken[]
+  inboxNotices  InboxNotice[]
+}
+
+model InboxNotice {
+  id        String    @id
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String    @db.VarChar(32)
+  title     String    @db.VarChar(80)
+  body      String    @db.VarChar(500)
+  data      Json?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  expiresAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }
 
 model DeviceToken {

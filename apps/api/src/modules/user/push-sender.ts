@@ -7,7 +7,7 @@ export interface PushMessage {
   to: string;
   title: string;
   body: string;
-  data: { kind: PushKind; conversationId?: string };
+  data: { kind: PushKind; conversationId?: string; noticeId?: string; code?: string };
 }
 
 export interface PushSendResult {

@@ -27,7 +27,14 @@ import { DISCOVER_TONE_RE, SPRING_DISCOVER_CARDS, isDiscoverArtId, isDiscoverSec
 import { IMAGE_STYLES, TRANSLATE_LANGUAGES, WRITE_TEMPLATES, writeTemplate } from "../src/constants/tools";
 import { FILE_PROMPT, LOOK_PROMPT, isImageMime, isPdfMime, isUploadMime, mediaPromptFor } from "../src/constants/uploads";
 import { RegisterDeviceRequestSchema, UpdateMeRequestSchema } from "../src/schema/auth.schema";
-import { expoProjectIdFromExtra, expoPushTokenRequest, pushCopy } from "../src/constants/push";
+import {
+  ADMIN_OTP_NEED_APP,
+  INBOX_KINDS,
+  INBOX_OTP_TTL_MS,
+  isAdminSiteOrigin,
+  presentInboxNotice,
+} from "../src/constants/inbox";
+import { expoProjectIdFromExtra, expoPushTokenRequest, PUSH_KINDS, pushCopy } from "../src/constants/push";
 import { SendMessageRequestSchema } from "../src/schema/message.schema";
 import { createId } from "../src/lib/id";
 import { searchNeedle } from "../src/lib/search";
@@ -384,9 +391,18 @@ describe("push copy and device schemas", () => {
     expect(pushCopy("zh-HK").generationDoneTitle).toBe("智泉已經回覆");
     expect(pushCopy("zh-HK").quotaLowTitle).toBe("今日額度將盡");
     expect(pushCopy("zh-HK").quotaLowBody(3)).toBe("今日尚餘 3 次。");
+    expect(pushCopy("zh-HK").otpTitle).toBe("智泉驗證碼");
+    expect(pushCopy("zh-HK").otpBody("123456")).toBe("智泉驗證碼 123456，5 分鐘內有效。");
+    expect(pushCopy("zh-HK").quotaExhaustedTitle).toBe("今日對話次數已用完");
+    expect(pushCopy("zh-HK").monthlyCostTitle).toBe("本月用量將盡");
     expect(pushCopy("zh-CN").generationDoneBody).toBe("打开对话查看回复。");
     expect(pushCopy("zh-CN").quotaLowBody(3)).toBe("今日尚余 3 次。");
+    expect(pushCopy("zh-CN").otpTitle).toBe("智泉验证码");
     expect(pushCopy("en").generationDoneTitle).toBe("Wisdom Spring replied");
+    expect(PUSH_KINDS).toEqual(INBOX_KINDS);
+    expect(INBOX_KINDS).toContain("otp");
+    expect(INBOX_OTP_TTL_MS).toBe(5 * 60 * 1000);
+    expect(ADMIN_OTP_NEED_APP).toBe("請先在手機開啟智泉並允許通知。");
     expect(expoProjectIdFromExtra({ eas: { projectId: "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9" } })).toBe(
       "2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9",
     );
@@ -422,6 +438,38 @@ describe("push copy and device schemas", () => {
     expect(UpdateMeRequestSchema.parse({ tone: UserTone.DETAILED }).tone).toBe("detailed");
     expect(UpdateMeRequestSchema.safeParse({ tone: "loud" }).success).toBe(false);
     expect(UpdateMeRequestSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("treats the admin site origin as the app OTP channel", () => {
+    expect(isAdminSiteOrigin("http://localhost:5173", "http://localhost:5173")).toBe(true);
+    expect(isAdminSiteOrigin("http://127.0.0.1:5173/", "https://admin.gwgwgroup.com")).toBe(true);
+    expect(isAdminSiteOrigin("http://localhost:8081", "http://localhost:5173")).toBe(false);
+    expect(isAdminSiteOrigin(undefined, "http://localhost:5173")).toBe(false);
+  });
+
+  it("masks OTP digits after expiry or read", () => {
+    const now = new Date("2026-10-15T04:00:00.000Z");
+    const row = {
+      id: "01NOTICEOTP000000000000001",
+      kind: "otp",
+      title: "智泉驗證碼",
+      body: "智泉驗證碼 123456，5 分鐘內有效。",
+      data: { kind: "otp", code: "123456" },
+      createdAt: now,
+      readAt: null,
+      expiresAt: new Date(now.getTime() + INBOX_OTP_TTL_MS),
+    };
+    const live = presentInboxNotice(row, now);
+    expect(live.body).toContain("123456");
+    expect(live.data).toEqual({ kind: "otp", code: "123456" });
+    expect(live.expired).toBe(false);
+    const expired = presentInboxNotice(row, new Date(now.getTime() + INBOX_OTP_TTL_MS + 1));
+    expect(expired.body).toBe("智泉驗證碼 ••••••，5 分鐘內有效。");
+    expect(expired.data).toEqual({ kind: "otp" });
+    expect(expired.expired).toBe(true);
+    const read = presentInboxNotice({ ...row, readAt: now }, now);
+    expect(read.body).toContain("••••••");
+    expect(read.body).not.toContain("123456");
   });
 });
 

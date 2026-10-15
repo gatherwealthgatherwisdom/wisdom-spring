@@ -152,6 +152,7 @@ export function LoginPage() {
           ) : (
             <>
               <p className="text-sm text-ink">{formatE164(phone)}</p>
+              <p className="text-sm text-muted">驗證碼已發到智泉 App。</p>
               <Field label="驗證碼">
                 <Input
                   value={code}

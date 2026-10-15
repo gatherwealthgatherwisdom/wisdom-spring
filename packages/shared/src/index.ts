@@ -31,6 +31,8 @@ export * from "./constants/uploads";
 export * from "./constants/feedback";
 export * from "./constants/prompts";
 export * from "./constants/push";
+export * from "./constants/inbox";
+export * from "./schema/inbox.schema";
 export * from "./schema/catalog.schema";
 export * from "./schema/upload.schema";
 export * from "./lib/id";

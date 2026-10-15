@@ -88,9 +88,13 @@ import type {
   SimulateDrawResponseSchema,
   UpdateModelPoolSchema,
 } from "../schema/model.schema";
+import type { InboxListQuerySchema, InboxListResponseSchema, InboxNoticeViewSchema } from "../schema/inbox.schema";
 import type { PaginationQuerySchema } from "../schema/pagination.schema";
 
 export type PaginationQuery = z.infer<typeof PaginationQuerySchema>;
+export type InboxListQuery = z.infer<typeof InboxListQuerySchema>;
+export type InboxNoticeView = z.infer<typeof InboxNoticeViewSchema>;
+export type InboxListResponse = z.infer<typeof InboxListResponseSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;

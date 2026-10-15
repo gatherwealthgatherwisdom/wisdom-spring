@@ -26,6 +26,8 @@ import type {
   ConversationView,
   FeatureFlagView,
   FeedbackRequest,
+  InboxListResponse,
+  InboxNoticeView,
   LoginRequest,
   MeResponse,
   MeUsage,
@@ -154,6 +156,14 @@ export class SpringClient {
 
   unregisterDevice(body: UnregisterDeviceRequest): Promise<{ ok: true }> {
     return this.request("/v1/devices", { method: "DELETE", body: JSON.stringify(body) });
+  }
+
+  inbox(query?: { cursor?: string; limit?: string }): Promise<InboxListResponse> {
+    return this.request(`/v1/inbox${queryString(query)}`);
+  }
+
+  readInbox(id: string): Promise<InboxNoticeView> {
+    return this.request(`/v1/inbox/${encodeURIComponent(id)}/read`, { method: "POST" });
   }
 
   flags(): Promise<PublicFlagsResponse> {
