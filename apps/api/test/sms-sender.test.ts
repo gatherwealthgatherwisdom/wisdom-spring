@@ -108,6 +108,7 @@ describe("MeteorsisSmsSender", () => {
     const get: typeof fetch = async () => new Response("ERROR:3", { status: 200 });
     await expect(new MeteorsisSmsSender(meteorsisEnv, get).send("+85291234567", "123456", seen.log)).rejects.toMatchObject({
       code: ErrorCode.UPSTREAM_UNAVAILABLE,
+      message: "短訊暫時未能發送，請稍後再試。",
     });
     expect(JSON.stringify(seen.lines)).not.toContain("123456");
   });

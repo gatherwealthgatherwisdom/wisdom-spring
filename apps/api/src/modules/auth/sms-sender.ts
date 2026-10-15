@@ -13,6 +13,7 @@ export type SmsEnv = Pick<AppEnv, "nodeEnv" | "smsUsername" | "smsPassword" | "s
 
 const SEND_URL = "https://www.meteorsis.com/misweb/f_sendsms.aspx";
 const OTP_BODY = (code: string) => `智泉驗證碼 ${code}，5 分鐘內有效。`;
+const SMS_UNAVAILABLE = "短訊暫時未能發送，請稍後再試。";
 
 /** Meteorsis Unicode-16: UTF-16BE code units as 4 hex digits each, no BOM. */
 export function toUnicode16Hex(text: string): string {
@@ -61,16 +62,16 @@ export class MeteorsisSmsSender implements SmsSender {
         signal: AbortSignal.timeout(10_000),
       });
     } catch {
-      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, "短訊暫時發送唔到，請稍後再試。");
+      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, SMS_UNAVAILABLE);
     }
     let body = "";
     try {
       body = (await response.text()).trim();
     } catch {
-      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, "短訊暫時發送唔到，請稍後再試。");
+      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, SMS_UNAVAILABLE);
     }
     if (!body.startsWith("SMSDID:")) {
-      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, "短訊暫時發送唔到，請稍後再試。");
+      throw new AppError(ErrorCode.UPSTREAM_UNAVAILABLE, SMS_UNAVAILABLE);
     }
   }
 }

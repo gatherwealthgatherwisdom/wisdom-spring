@@ -1,4 +1,4 @@
-import type { MessageView } from "@spring/shared";
+import { sanitizeThinking, type MessageView } from "@spring/shared";
 import { useEffect, useRef } from "react";
 import { FlatList, type NativeScrollEvent, type NativeSyntheticEvent, Text, View } from "react-native";
 import type { Copy } from "../../shared/lib/i18n";
@@ -143,6 +143,7 @@ export function MessageList({
             content={item.content}
             imageUrl={imageUrl}
             generationKind={("generationKind" in item ? item.generationKind : null) || (streaming && mode === "image" ? "text-to-image" : null)}
+            fallbackUsed={"fallbackUsed" in item ? item.fallbackUsed : false}
             thinking={"thinking" in item ? item.thinking : null}
             thinkingLabel={text.thinking}
             thinkingNowLabel={text.thinkingNow}
@@ -155,7 +156,7 @@ export function MessageList({
             thumbsUpLabel={text.thumbsUp}
             thumbsDownLabel={text.thumbsDown}
             highlighted={item.id === highlightedId}
-            onListen={streaming ? undefined : () => onListen(item.content)}
+            onListen={streaming ? undefined : () => onListen(sanitizeThinking(item.content))}
             onRegenerate={streaming || mode === "image" || Boolean(imageUrl) || !onRegenerate ? undefined : () => onRegenerate(item.id)}
             onFeedback={streaming || !onFeedback ? undefined : (rating) => onFeedback(item.id, rating)}
           />
@@ -205,7 +206,7 @@ function TranslatePair({
       <View style={{ height: 1, backgroundColor: colors.line }} />
       <View style={{ padding: 12 }}>
         <Text style={{ color: colors.muted, marginBottom: 4 }}>{translatedLabel}</Text>
-        <MarkdownBody source={translation} color={colors.ink} size={16} lineHeight={22} />
+        <MarkdownBody source={sanitizeThinking(translation)} color={colors.ink} size={16} lineHeight={22} />
         {streaming ? <StreamingCursor /> : null}
       </View>
     </View>

@@ -114,6 +114,7 @@ export function AssistantBubble({
   onFeedback,
   highlighted,
   generationKind,
+  fallbackUsed,
 }: {
   content: string;
   imageUrl?: string | null;
@@ -134,11 +135,13 @@ export function AssistantBubble({
   onFeedback?: (rating: "up" | "down") => void;
   highlighted?: boolean;
   generationKind?: string | null;
+  fallbackUsed?: boolean;
 }) {
   const colors = useColors();
   const locale = usePrefs((state) => state.locale);
   const labels = copy[locale];
   const image = splitImage(content);
+  const visible = sanitizeThinking(image.text);
   const uri = mediaUrl(imageUrl ?? image.uri);
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -171,12 +174,13 @@ export function AssistantBubble({
         </View>
         <Text style={{ color: colors.ink, fontFamily: "Palatino", fontSize: 16 }}>智泉</Text>
         {generationKind ? <Text style={{ color: colors.accent, fontSize: 12 }}>· {generationKind}</Text> : null}
+        {fallbackUsed ? <Text style={{ color: colors.muted, fontSize: 12 }}>· {labels.fallbackUsed}</Text> : null}
         {timeLabel ? <Text style={{ color: colors.muted, fontSize: 12 }}>{timeLabel}</Text> : null}
       </View>
       <ThinkingBlock
         thinking={thinking}
         streaming={streaming}
-        hasAnswer={Boolean(image.text) || Boolean(uri)}
+        hasAnswer={Boolean(visible) || Boolean(uri)}
         label={thinkingLabel ?? "思考"}
         nowLabel={thinkingNowLabel ?? "思考中"}
       />
@@ -185,9 +189,9 @@ export function AssistantBubble({
           <Image source={{ uri }} style={{ width: 260, height: 260, borderRadius: 12, marginBottom: 8, backgroundColor: colors.card }} />
         </Pressable>
       ) : null}
-      {image.text ? (
+      {visible ? (
         <View>
-          <MarkdownBody source={image.text} color={colors.ink} />
+          <MarkdownBody source={visible} color={colors.ink} />
           {streaming ? <StreamingCursor /> : null}
         </View>
       ) : streaming && generationKind === "text-to-image" && !uri ? (
@@ -198,15 +202,15 @@ export function AssistantBubble({
       ) : streaming && !thinking ? (
         <StreamingCursor />
       ) : null}
-      {!streaming && (image.text || uri) ? (
+      {!streaming && (visible || uri) ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 10 }}>
           {uri ? (
             <ActionChip label={labels.saveAs} icon="download-outline" color={colors.muted} colors={colors} onPress={() => void save()} />
           ) : null}
-          {image.text ? (
-            <ActionChip label={copyLabel ?? labels.copy} icon="copy-outline" color={colors.muted} colors={colors} onPress={() => void Clipboard.setStringAsync(image.text)} />
+          {visible ? (
+            <ActionChip label={copyLabel ?? labels.copy} icon="copy-outline" color={colors.muted} colors={colors} onPress={() => void Clipboard.setStringAsync(visible)} />
           ) : null}
-          {onListen && image.text ? (
+          {onListen && visible ? (
             <ActionChip label={listenLabel ?? labels.listen} icon="volume-medium-outline" color={colors.muted} colors={colors} onPress={onListen} />
           ) : null}
           {onRegenerate ? (

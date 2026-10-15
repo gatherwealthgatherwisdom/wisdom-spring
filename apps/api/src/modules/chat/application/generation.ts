@@ -293,7 +293,7 @@ export async function runGeneration(
             where: { id: input.assistantMessageId },
             data: {
               status: "COMPLETED",
-              content: text,
+              content: sanitizeThinking(text),
               thinking: (() => {
                 const cleaned = sanitizeThinking(thinking);
                 return cleaned.length > 0 ? cleaned : null;
@@ -366,7 +366,7 @@ export async function runGeneration(
             where: { id: input.assistantMessageId },
             data: {
               status: "CANCELLED",
-              content: text,
+              content: sanitizeThinking(text),
               errorCode: ErrorCode.STREAM_ABORTED,
               latencyMs: Date.now() - started,
             },
@@ -411,7 +411,7 @@ export async function runGeneration(
           where: { id: input.assistantMessageId },
           data: {
             status: "FAILED",
-            content: text,
+            content: sanitizeThinking(text),
             errorCode: code,
             latencyMs: Date.now() - started,
           },

@@ -441,6 +441,9 @@ describe("sanitizeThinking", () => {
     expect(
       sanitizeThinking("1. 分析。\n    *   **你係「智泉」**，跟住系統人設行。\n2. 答一句。"),
     ).toBe("1. 分析。\n\n2. 答一句。");
+    expect(sanitizeThinking("你好。我是中盈紫達集團的智泉。有什麼可以幫忙？")).toBe(
+      "你好。有什麼可以幫忙？",
+    );
   });
 });
 
@@ -467,6 +470,7 @@ describe("app locales", () => {
     expect(toolPlaceholder("rewrite", "zh-HK")).toBe("貼上你想改寫的句子");
     expect(toolPlaceholder("email", "zh-CN")).toBe("这封电邮想说甚么？");
     expect(SYSTEM_PROMPT).toMatch(/香港書面語/);
+    expect(SYSTEM_PROMPT).toMatch(/問候或閒聊不要提及公司名/);
     expect(SYSTEM_PROMPT).not.toMatch(/嘅智能助手/);
     expect(writeTemplate("cantonese")?.instruction).toMatch(/廣東話口語/);
     expect(suggestionsFor([...SUGGESTED_PROMPTS_ZH], "en")).toEqual([...SUGGESTED_PROMPTS_EN]);
