@@ -58,9 +58,16 @@ test.describe("live API gates", () => {
     expect(copy).not.toHaveProperty("system");
     expect(copy).not.toHaveProperty("look");
 
+    const tools = (await (await api(request, "GET", "/v1/catalog/tools")).json()) as {
+      items: Array<{ id: string; live: boolean; page?: number }>;
+    };
+    expect(tools.items.some((item) => item.id === "voice")).toBe(false);
+    expect(tools.items.filter((item) => item.live && item.page === 0)).toHaveLength(8);
+
     const write = (await (await api(request, "GET", "/v1/catalog/write")).json()) as {
       items: Array<Record<string, unknown>>;
     };
+    expect(write.items.slice(0, 3).map((item) => item.id)).toEqual(["email", "report", "rewrite"]);
     const styles = (await (await api(request, "GET", "/v1/catalog/styles")).json()) as {
       items: Array<Record<string, unknown>>;
     };

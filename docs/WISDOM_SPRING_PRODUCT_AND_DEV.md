@@ -137,10 +137,11 @@ Locale default: `zh-HK`. Support `zh-CN` and `en` as well. Both Chinese locales 
 
 - Image input (only pick vision-capable models)
 - In-conversation search
-- Thumbs up / down (feeds pool weight later)
-- Tone preset: 簡潔 / 詳細 / 廣東話
+- Thumbs up / down: `POST /v1/messages/:id/feedback` stores the rating and nudges `ModelPoolEntry.weight` on `servedModel` by ±1 (up→down is −2), clamped 1–10000; clearing the thumb reverses
+- Tone preset: 簡潔 / 詳細 / 廣東話 on `User.tone` (`concise` | `detailed` | `cantonese`, default `concise`), `PATCH /v1/me`; chat and write prompts get a tone line; translate target language and image English hints do not; the 廣東話 write tool stays its own template
 - Export conversation
-- Push: generation done, quota low
+- Push: generation done, quota low. App `extra.eas.projectId` is passed to `getExpoPushTokenAsync`. Remote Expo tokens need a development or store build; simulators still use local notices
+- Public pool sheet: unsigned `GET /v1/pool` lists unique HK-safe enabled family labels as `智泉 · {family}` / `Wisdom Spring · {family}`, never slugs
 
 ### 4.3 Explicitly out of MVP
 

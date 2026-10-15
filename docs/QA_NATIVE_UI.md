@@ -1,8 +1,8 @@
 # 智泉 Native UI QA
 
-**日期：** 2026-10-12（紀錄）／2026-10-13（第二至五輪修復）／2026-10-14（第六輪 F22／F31 至 F18；第七輪 F20／J／F29 同訪客註冊）  
-**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；第四輪見第 12 節；第五輪見第 13 節；第六輪見第 14 節；第七輪見第 15 節；原生 Debug `com.gwgwgroup.spring`）  
-**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。第四輪由 F03／F04 開始，跟住 F15、F16、F22、F31、F11／F12、F36、F38、F42，每項一個 commit push 去 `origin/main`。第五輪由 F01／F14 開始，跟住 F23、F43、F05。第六輪由 F22／F31 開始，跟住 F36、F18。第七輪由 F20／J／F29 開始，跟住訪客完成註冊後清額滿橫幅，每項一個 commit push 去 `origin/main`。
+**日期：** 2026-10-12（紀錄）／2026-10-13（第二至五輪修復）／2026-10-14（第六輪 F22／F31 至 F18；第七輪 F20／J／F29 同訪客註冊）／2026-10-15（規格 4.1＋4.2 做到 100%）  
+**建置：** `origin/main`（第二輪見第 10 節；第三輪見第 11 節；第四輪見第 12 節；第五輪見第 13 節；第六輪見第 14 節；第七輪見第 15 節；100% 見第 16 節；原生 Debug `com.gwgwgroup.spring`）  
+**本輪性質：** 2026-10-12 只記錄問題。2026-10-13 已按 ID 分 commit 修 F08、F13、F35、F30、F25，每項 push 去 `origin/main`。同日第三輪補洞：真實改寫／翻譯、Android 相簿／PDF、iOS 出圖等到完成、訪客同 +853／+86 OTP。翻譯品質修咗一次（`9b54750`），其餘補洞只更新本文件。第四輪由 F03／F04 開始，跟住 F15、F16、F22、F31、F11／F12、F36、F38、F42，每項一個 commit push 去 `origin/main`。第五輪由 F01／F14 開始，跟住 F23、F43、F05。第六輪由 F22／F31 開始，跟住 F36、F18。第七輪由 F20／J／F29 開始，跟住訪客完成註冊後清額滿橫幅，每項一個 commit push 去 `origin/main`。2026-10-15 對住規格 4.1＋4.2 由約 88% 做到產品 100%，十期各一個 commit。
 
 以真實用戶路徑，喺 **iPhone 16 Pro（iOS 18.6 Simulator）** 同 **Pixel 9 Pro XL（Android API 36 Emulator）** 用同一組案例行過每個主要畫面。生成全部打真實本機 API（`:3000`）同 OpenRouter，無 mock 回覆。
 
@@ -12,11 +12,10 @@
 
 清墨外觀（紙底、墨字、松綠）兩邊都立得住，未登入可以四個 tab 亂睇，發送先逼登入，香港手機 OTP、串流對話、水墨出圖、翻譯頁同工具清單，開心路徑都通。
 
-開心路徑（登入、對話、出圖、翻譯、改寫、發現、我的）兩邊都通。第一至第七輪修咗鍵盤抬、Markdown 表、生成種類、歷史標題、第一屏裁切、Debug LogBox、登入／空 Chat 空白、氣泡動作文字、返回名、畫圖區塊名、長回覆跟尾、iOS 打字收 tab、思考人設清洗、外觀切換閃啟動頁、抽屉搜尋、快取圖示、訪客用盡後完成註冊。剩餘多數係系統鍵盤同未覆蓋路徑：
+開心路徑（登入、對話、出圖、翻譯、改寫、發現、我的）兩邊都通。第一至第七輪修咗鍵盤抬、Markdown 表、生成種類、歷史標題、第一屏裁切、Debug LogBox、登入／空 Chat 空白、氣泡動作文字、返回名、畫圖區塊名、長回覆跟尾、iOS 打字收 tab、思考人設清洗、外觀切換閃啟動頁、抽屉搜尋、快取圖示、訪客用盡後完成註冊。2026-10-15 規格 4.1＋4.2 產品 100%：回覆洗集團名、發現真文案、公開池名單、拆即時語音格、我的計劃／顯示名／刪除確認、寫作熱門跟 catalog sort、語氣三選、讚踩餵權重、EAS `projectId`。剩餘唔扣 100%：
 
-1. iOS 鍵盤聽寫咪（F32）屬系統鍵盤，產品無咪；軟件鍵盤見到聽寫咪，未再見到「要啟用聽寫嗎？」彈窗。  
-2. 寫作 prompt 順序、遠程推送、EAS／真機。  
-3. 可見回覆仍會寫出「中盈紫達集團／Gather Wealth Gather Wisdom Group」（F36 只洗思考）。
+1. iOS 鍵盤聽寫咪（F32）屬系統鍵盤，產品無咪。  
+2. App Store／Play 上架要你嘅 Apple／Google 帳號。遠程 Expo token 要 development／store 包。
 
 ---
 
@@ -71,7 +70,7 @@
 | J | 抽屉、分組、最近刪除 | And ✓ | ✓ 兩邊 `healthy` 出搜尋結果 | | | 標題即時命中 | iOS Maestro 搜尋對話 | ✓ |
 | K | 未登入／已登入我的 | ✓ | ✓ | | F13 已修（And 繁中+English 完整） | F16 電話一次有空格 | 深色 And ✓ | ✓ |
 | K | 外觀 深色→跟隨系統 | | And F18 已修，停留我的 | | | | | ✓ 深色 token |
-| L | 推送開關、離線、額滿 | △ 開關睇到 | — 背景推送 | — | — | 生成完成 DB 關住 | | |
+| L | 推送開關、離線、額滿 | △ 開關睇到 | 碼已接 EAS `projectId`；模擬器本機通知 | — | — | 生成完成 DB 關住 | | |
 
 ---
 
@@ -218,11 +217,11 @@ Android 抽屉：新對話、搜尋對話、模式晶片、更早列表、最近
 | 擁有人 +85292578982 | 額度同權限會假失敗 |
 | 刪除帳戶 | 破壞性 |
 | iOS 訪客／+853／+86 | 第三／七輪 Android 已覆蓋；iOS 未再登訪客 |
-| 寫作模板總覽 `Write` 頁 | 首頁改寫行去咗 Tool 頁（F42） |
+| 寫作模板總覽 `Write` 頁 | 第 16 節 Pixel 已開「創作」入寫作；熱門跟 catalog 前三 |
 | 額滿、離線、背景推送點擊 | 要改網絡／額度，另開一輪 |
-| EAS／商店包、真機、Maestro 入庫 | 本輪係 Debug 模擬器探索 |
+| EAS／商店包、真機、Maestro 入庫 | `projectId` 已寫入 `app.json`；上架要 Apple／Google 帳號 |
 | Admin 網頁 | 範圍外 |
-| 可見回覆寫出集團名 | F36 只洗思考；訪客「hi」答案仍有中盈紫達／Gather Wealth Gather Wisdom |
+| 可見回覆寫出集團名 | `15efdbc` 之後 Pixel「hi」回覆「您好！有什麼可以幫您？」無集團名。我的頁關於列仍寫中盈紫達集團 |
 
 ---
 
@@ -230,9 +229,8 @@ Android 抽屉：新對話、搜尋對話、模式晶片、更早列表、最近
 
 第一至第七輪已修 F19、F20、F21、F24、F33、F13、F08、F35、F03、F04、F30、F25、F15、F16、F22、F31、F11、F12、F36、F38、F42、F01、F17、F14、F23、F43、F05、F18、F29、J 搜尋、訪客完成註冊橫幅。下一輪可以按呢個次序：
 
-1. 寫作 prompt 順序、遠程推送、EAS／真機——另開一輪。  
-2. F32 iOS 系統聽寫咪（產品無咪；系統窗呢輪未再出）。  
-3. 可見回覆洗集團名（而家只洗思考）。
+1. F32 iOS 系統聽寫咪（產品無咪；系統窗呢輪未再出）。  
+2. App Store／Play 提交——要你嘅 Apple／Google 帳號。
 
 ---
 
@@ -240,7 +238,7 @@ Android 抽屉：新對話、搜尋對話、模式晶片、更早列表、最近
 
 同一組用戶路徑喺 iOS 同 Android 都跑過。登入、未登入瀏覽、真實對話、真實出圖、翻譯、改寫、清墨品牌，作為可用原型已經成立。第一至第七輪已修鍵盤抬、Markdown 表、生成種類、歷史標題、第一屏裁切、發送／工具中文名、登入後鍵盤、電話格式、發現文案同備忘圖、空翻譯、改寫工具頁、Debug LogBox、登入／空 Chat 空白、氣泡動作文字、返回名、畫圖區塊名、長回覆跟尾、iOS 打字收 tab、思考人設清洗、外觀切換閃啟動頁、抽屉搜尋、快取圖示、訪客用盡後完成註冊。
 
-2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。第四輪 F03／F04 至 F42 見第 12 節。第五輪 F01／F14 至 F05 見第 13 節。第六輪 F22／F31 至 F18 見第 14 節。第七輪 F20／J／F29 同訪客註冊見第 15 節。剩餘係 F32 系統聽寫、寫作 prompt 順序、遠程推送、EAS／真機、可見回覆集團名。
+2026-10-12 紀錄輪**無改產品碼**。第二輪已對住表改 F08、F13、F35、F30、F25。第三輪翻譯品質 `9b54750`，其餘補洞見第 11 節。第四輪 F03／F04 至 F42 見第 12 節。第五輪 F01／F14 至 F05 見第 13 節。第六輪 F22／F31 至 F18 見第 14 節。第七輪 F20／J／F29 同訪客註冊見第 15 節。2026-10-15 規格 4.1＋4.2 產品 100% 見第 16 節。剩餘唔扣 100%：F32 系統聽寫、商店上架帳號。
 
 ---
 
@@ -361,6 +359,29 @@ Android 核對後外觀還原跟隨系統。iOS 留未登入。
 
 Android 核對後訪客已變成 FREE `+852 9111 6666`。iOS 留喺七日表＋vision＋PDF 嗰條 Chat。
 
-仍未做：F32 系統聽寫咪、寫作 prompt 順序、遠程推送、EAS／真機、可見回覆集團名。
+仍未做（第七輪當日）：F32 系統聽寫咪、寫作 prompt 順序、遠程推送、EAS／真機、可見回覆集團名。第 16 節已收口後三項。
+
+---
+
+## 16. 規格 4.1＋4.2 做到 100%（2026-10-15）
+
+每一期一個 commit，做完即 push `origin/main`。裝置：Pixel 9 Pro XL（`emulator-5554`）。人物 `+85291116666`（已註冊免費）；API／Metro／MySQL 健康。唔 commit `.env`、`android/`、`ios/`、session 截圖。
+
+| 期 | commit | 核對 |
+|---|---|---|
+| 1 回覆洗集團名 | `15efdbc` Keep company names out of visible replies. | Pixel「hi」氣泡「您好！有什麼可以幫您？」無中盈紫達／Gather Wealth。後備文案「已改用其他模型」。 |
+| 2 發現假資料 | `9f52fd4` Replace sample discover blurbs and drop fake New badges. | 首頁畫圖「留白淡墨，水墨去印。」「暖色紙本人像。」無 New 角標。 |
+| 3 公開池名單 | `3e646ba` Show live Hong Kong-safe pool families in the model sheet. | 對話「智泉」chip 出「每一句由智泉抽選」；名單 `智泉 · DeepSeek` 等，無 slug。 |
+| 4 拆即時語音格 | `5ff2e31` Drop the voice tile and pack eight live tools on page 0. | 發現第一頁 8 格（改寫…大綱）；全部工具無「即時語音」。 |
+| 5 我的計劃／名／刪除 | `c8fccca` Show the real plan badge and confirm account deletion. | 我的徽章「免費」；顯示名稱彈窗可留空；刪除先確認。 |
+| 6 寫作熱門跟 sort | `e7ce773` Let write featured cards follow catalog sort. | 寫作「常用」商務電郵、報告大綱、改寫（catalog 前三）。 |
+| 7 語氣三選 | `2407447` Add concise, detailed, and Cantonese reply tones. | 我的「語氣」簡潔／詳細／廣東話，預設簡潔打勾。mode-prompt 11 通過。 |
+| 8 讚踩餵權重 | `1cc41c7` Feed thumbs up and down into pool weights. | 讚 +1、改踩 −2、取消還原；夾 1–10000。Pixel 撳「有用」。 |
+| 9 EAS projectId | `7a1069b` Wire Expo push tokens to the EAS project. | `app.json` `extra.eas.projectId` `2a019e7f-aa6c-44ca-b5d9-da5049cbc2e9`；`getExpoPushTokenAsync({ projectId })`。 |
+| 10 文件同抽樣 | 本 commit | 本節；kernel 42；`GET /v1/catalog/tools` 無 voice、page 0 八格；`GET /v1/catalog/write` 前三 email／report／rewrite。 |
+
+刻意唔做（唔扣 100%）：4.3 市集／自訂人設／RAG／結帳、即時語音通話、Google／Apple 登入掣、F32 系統聽寫、App Store／Play 提交。
+
+我的頁關於列仍然寫「中盈紫達集團」，只喺帳戶頁，唔喺氣泡。
 
 
