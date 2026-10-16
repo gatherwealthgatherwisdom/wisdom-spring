@@ -164,7 +164,7 @@ sudo -u app /home/app/wisdom-spring/deploy/spring-deploy.sh
 
 手機 Metro／Debug 預設 `http://localhost:3000`。Release 包預設 `https://spring.gwgwgroup-it.com`。要本機 Debug 打生產：`EXPO_PUBLIC_API_URL=https://spring.gwgwgroup-it.com` 再開 Metro。生產 OTP 走真實短訊，唔再係 `123456`。
 
-EAS 設定喺 `apps/mobile/eas.json`。內部 APK（打生產 API）：
+EAS 設定喺 `apps/mobile/eas.json`。內部試機包（打生產 API）：
 
 ```bash
 cd apps/mobile
@@ -172,7 +172,15 @@ eas build --platform android --profile preview
 eas build --platform ios --profile preview-ios
 ```
 
-Android preview 用本機 `credentials.json`（gitignore）簽名。iOS `preview-ios` 係 simulator 包，免 Apple 裝置憑證。今次唔提交 App Store／Play。生產推送打 Expo Push API；`EXPO_ACCESS_TOKEN` 可選。
+上架包（Play AAB、App Store IPA，打 `https://spring.gwgwgroup-it.com`）：
+
+```bash
+cd apps/mobile
+eas build --platform android --profile production
+eas build --platform ios --profile production
+```
+
+Android preview 用本機 `credentials.json`（gitignore）簽名。production AAB 用 EAS 代管 upload key（Play App Signing）。iOS `preview-ios` 係 simulator 包；production IPA 要 Apple Distribution 憑證。下載完自己喺 Play Console／App Store Connect 上傳；唔好 `eas submit` 除非明確叫。生產推送打 Expo Push API；`EXPO_ACCESS_TOKEN` 可選。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 
