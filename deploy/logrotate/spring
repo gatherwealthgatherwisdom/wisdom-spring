@@ -1,14 +1,35 @@
+# Match /etc/logrotate.d/app on the shared host.
 # PM2 keeps log file descriptors open — copytruncate, not create+kill.
 # Install: sudo cp deploy/logrotate/spring /etc/logrotate.d/spring
 # nginx /var/log/nginx/spring*.log is already rotated by /etc/logrotate.d/nginx.
-/home/app/wisdom-spring/logs/*.log {
-    su app app
-    daily
-    rotate 14
-    compress
-    delaycompress
-    missingok
-    notifempty
-    copytruncate
-    dateext
+/home/app/wisdom-spring/logs/spring-api-error.log
+/home/app/wisdom-spring/logs/spring-api-error-*.log {
+  daily
+  rotate 14
+  missingok
+  notifempty
+  compress
+  delaycompress
+  dateext
+  dateformat -%Y%m%d
+  copytruncate
+
+  su app app
+  create 0644 app app
+}
+
+/home/app/wisdom-spring/logs/spring-api-out.log
+/home/app/wisdom-spring/logs/spring-api-out-*.log {
+  daily
+  rotate 14
+  missingok
+  notifempty
+  compress
+  delaycompress
+  dateext
+  dateformat -%Y%m%d
+  copytruncate
+
+  su app app
+  create 0644 app app
 }

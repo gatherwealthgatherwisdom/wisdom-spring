@@ -133,7 +133,7 @@ sudo cp /home/app/wisdom-spring/deploy/logrotate/spring /etc/logrotate.d/spring
 sudo logrotate -d /etc/logrotate.d/spring
 ```
 
-PM2 日誌每日輪替、留 14 日、`copytruncate`，用 `su app app`。nginx `/var/log/nginx/spring*.log` 由系統 `/etc/logrotate.d/nginx` 處理。唔好 `pm2 install pm2-logrotate`。
+PM2 `spring-api-error`／`spring-api-out` 跟部機 `/etc/logrotate.d/app`：每日、留 14 日、`copytruncate`、`dateformat -%Y%m%d`、`su app app`、`create 0644 app app`。nginx `/var/log/nginx/spring*.log` 由系統 `/etc/logrotate.d/nginx` 每日留 14 日。唔好 `pm2 install pm2-logrotate`。
 
 ## 日常更新
 
