@@ -19,7 +19,7 @@
 | MySQL | 庫 `spring`；用戶 `spring@127.0.0.1`，只 `GRANT` `spring.*` | 共用業務用戶 `app@localhost`；改其他庫 |
 | Redis | `redis://127.0.0.1:6379/3` | db2（盤析，約 9 萬 key） |
 | nginx | 只加 `spring`、`admin.spring` 兩個 site | 改 `default_server` 或其他 vhost |
-| 磁碟 | 上列目錄、`/var/log/nginx/spring*.log`、`/etc/logrotate.d/spring` | 其他 project 檔 |
+| 磁碟 | 上列目錄、`/var/log/nginx/spring*.log`、`/etc/logrotate.d/spring`、`/var/backups/mysql/spring_*.sql.gz` | 其他 project 檔 |
 | 密鑰 | 主機 `.env.production`（gitignore） | commit `.env` / `.env.production` |
 | Compose | 唔用 | `infra/docker-compose.yml` 會撞部機 MySQL 3306 同 Redis 6379 |
 
@@ -135,6 +135,25 @@ sudo logrotate -d /etc/logrotate.d/spring
 
 PM2 `spring-api-error`／`spring-api-out` 跟部機 `/etc/logrotate.d/app`：每日、留 14 日、`copytruncate`、`dateformat -%Y%m%d`、`su app app`、`create 0644 app app`。nginx `/var/log/nginx/spring*.log` 由系統 `/etc/logrotate.d/nginx` 每日留 14 日。唔好 `pm2 install pm2-logrotate`。
 
+## 7. MySQL 備份
+
+跟部機現有 `/root/scripts/backup_mysql.sh`，唔另開第二套腳本或 cron。改腳本前先 `cp` 一份 `.bakN`。
+
+- `mysqldump -uroot $DB | gzip` → `/var/backups/mysql/${DB}_${DATE}.sql.gz`
+- rclone 上 `gdrive:Server_Backups/MySQL/$YEAR/$MONTH`
+- 本地留 30 日
+- cron：`0 3 * * * /bin/bash /root/scripts/backup_mysql.sh >> /var/log/mysql_backup.log 2>&1`
+- 備份 log 由 `/etc/logrotate.d/mysql-backup` 每週留 4 份
+
+智泉只把庫名 `spring` 加進 `DB_LIST`（喺 `paansik` 之後）。唔改其他庫名、rclone remote、retention、cron。
+
+```bash
+grep '^DB_LIST=' /root/scripts/backup_mysql.sh
+# DB_LIST=("app" "king_kong_air_msg" "rate_my_teacher_hk" "rate_my_teacher_cn" "files_system" "free_loan" "forlucky" "paansik" "spring")
+```
+
+首次加庫之後可以只 dump `spring` 一次核對 gzip／rclone；唔好為咗試智泉而即場跑成條腳本 dump 晒其他庫。之後等 03:00 一齊走。
+
 ## 日常更新
 
 ```bash
@@ -166,6 +185,8 @@ Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以�
 - `pm2 list` 其他站仍然 **online**，並多咗 `spring-api`
 - `mysql`：其他庫原封；只有新庫 `spring`
 - Redis `INFO keyspace`：db2 仍在；智泉用 db3
+- `/root/scripts/backup_mysql.sh` 嘅 `DB_LIST` 有 `spring`
+- `/var/backups/mysql/spring_*.sql.gz` 存在；rclone `gdrive:Server_Backups/MySQL/` 當月資料夾有同一檔
 
 ## 禁止
 
@@ -176,3 +197,5 @@ Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以�
 - 用 port 3000 或 Redis db2
 - 用 MySQL 用戶 `app` 連智泉庫
 - 把 `.env.production` 提交 git
+- 另開第二套 MySQL backup 腳本或 cron
+- 改 `/root/scripts/backup_mysql.sh` 入面其他庫名、rclone remote、retention
