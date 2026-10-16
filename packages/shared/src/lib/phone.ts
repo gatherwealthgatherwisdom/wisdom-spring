@@ -8,6 +8,12 @@ export type DialCode = (typeof DIALS)[number]["code"];
 
 export const DEFAULT_ADMIN_PHONE = "+85292578982";
 export const DEV_PHONE_CODE = "123456";
+/** App Store / Play review login. Always OTP 123456; never send SMS. */
+export const REVIEW_PHONE = "+85240001234";
+
+export function isReviewPhone(phone: string): boolean {
+  return normalizeMobile(phone) === REVIEW_PHONE;
+}
 
 function specFor(dial: DialCode) {
   const spec = DIALS.find((item) => item.code === dial);

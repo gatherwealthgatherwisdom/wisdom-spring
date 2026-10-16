@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEFAULT_ADMIN_PHONE, DEV_PHONE_CODE, ErrorCode, LIMITS, UserRole, createId } from "@spring/shared";
+import { DEFAULT_ADMIN_PHONE, DEV_PHONE_CODE, ErrorCode, LIMITS, PlanTier, REVIEW_PHONE, UserRole, createId } from "@spring/shared";
 import { buildApp } from "../src/app";
 import { createContext } from "../src/context";
 import { invalidateAppLimits } from "../src/modules/admin/app-limits";
@@ -174,6 +174,47 @@ describe("phone login", () => {
       payload: { phone: expiredPhone, code: expiredCode },
     });
     expect(expired.statusCode).toBe(401);
+  });
+
+  it("never SMSes the store-review phone and signs in as a registered internal user", async () => {
+    sms.code = "sentinel";
+    const requested = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/request",
+      payload: { phone: REVIEW_PHONE },
+    });
+    expect(requested.statusCode).toBe(200);
+    expect(sms.code).toBe("sentinel");
+    const ok = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: REVIEW_PHONE, code: DEV_PHONE_CODE },
+    });
+    expect(ok.statusCode).toBe(200);
+    const user = ok.json().user as {
+      phone: string;
+      registered: boolean;
+      role: string;
+      planTier: string;
+      displayName: string | null;
+    };
+    expect(user.phone).toBe(REVIEW_PHONE);
+    expect(user.registered).toBe(true);
+    expect(user.role).toBe(UserRole.USER);
+    expect(user.planTier).toBe(PlanTier.INTERNAL);
+    expect(user.displayName).toBe("App Review");
+    const wrong = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/request",
+      payload: { phone: REVIEW_PHONE },
+    });
+    expect(wrong.statusCode).toBe(200);
+    const denied = await app.inject({
+      method: "POST",
+      url: "/v1/auth/phone/verify",
+      payload: { phone: REVIEW_PHONE, code: "000000" },
+    });
+    expect(denied.statusCode).toBe(401);
   });
 
   it("issues 123456 outside production", async () => {

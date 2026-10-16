@@ -16,8 +16,10 @@ import { hkDayKey, hkMonthKey, hkMonthRange, hkMonthRangeFromKey, hkStartDaysAgo
 import {
   DEFAULT_ADMIN_PHONE,
   DEV_PHONE_CODE,
+  REVIEW_PHONE,
   formatE164,
   formatLocalDigits,
+  isReviewPhone,
   normalizeHkMobile,
   normalizeMobile,
 } from "../src/lib/phone";
@@ -407,6 +409,15 @@ describe("Hong Kong mobile numbers", () => {
     expect(DEFAULT_ADMIN_PHONE).toBe("+85292578982");
     expect(normalizeMobile(DEFAULT_ADMIN_PHONE)).toBe(DEFAULT_ADMIN_PHONE);
     expect(DEV_PHONE_CODE).toBe("123456");
+  });
+
+  it("keeps the store-review mobile on a Hong Kong range", () => {
+    expect(REVIEW_PHONE).toBe("+85240001234");
+    expect(normalizeMobile(REVIEW_PHONE)).toBe(REVIEW_PHONE);
+    expect(normalizeMobile("40001234")).toBe(REVIEW_PHONE);
+    expect(isReviewPhone("+852 4000 1234")).toBe(true);
+    expect(isReviewPhone(DEFAULT_ADMIN_PHONE)).toBe(false);
+    expect(isReviewPhone("+85291118888")).toBe(false);
   });
 });
 

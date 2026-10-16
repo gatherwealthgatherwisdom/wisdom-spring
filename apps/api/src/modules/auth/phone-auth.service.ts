@@ -6,9 +6,11 @@ import {
   DEV_PHONE_CODE,
   ErrorCode,
   Locale,
+  PlanTier,
   UserRole,
   createId,
   isAdminSiteOrigin,
+  isReviewPhone,
   type AuthResponse,
 } from "@spring/shared";
 import type { AppEnv } from "../../env";
@@ -17,6 +19,7 @@ import type { AuthService } from "./auth.service";
 import type { SmsLog, SmsSender } from "./sms-sender";
 
 const CODE_TTL_MS = 5 * 60 * 1000;
+const REVIEW_CODE_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
 function hashCode(phone: string, code: string, pepper: string): string {
@@ -44,15 +47,23 @@ export class PhoneAuthService {
   ) {}
 
   async requestCode(phone: string, log: SmsLog, origin?: string | string[]): Promise<void> {
+    const review = isReviewPhone(phone);
     const code =
-      this.env.nodeEnv === "production" ? randomInt(0, 1_000_000).toString().padStart(6, "0") : DEV_PHONE_CODE;
+      this.env.nodeEnv === "production" && !review
+        ? randomInt(0, 1_000_000).toString().padStart(6, "0")
+        : DEV_PHONE_CODE;
     const now = new Date();
+    const ttlMs = review ? REVIEW_CODE_TTL_MS : CODE_TTL_MS;
     if (this.isAdminPhone(phone) && isAdminSiteOrigin(origin, this.env.appOriginAdmin)) {
       await this.deliverAdminOtp(phone, code);
-      await this.replacePhoneCode(phone, code, now);
+      await this.replacePhoneCode(phone, code, now, ttlMs);
       return;
     }
-    await this.replacePhoneCode(phone, code, now);
+    await this.replacePhoneCode(phone, code, now, ttlMs);
+    if (review) {
+      log.warn({ phone, code }, "review phone verification code");
+      return;
+    }
     await this.sms.send(phone, code, log);
   }
 
@@ -98,11 +109,12 @@ export class PhoneAuthService {
           where: { id: existing.id },
           data: { status: "ACTIVE" },
         });
-        return this.promoteAdmin(restored, phone);
+        return this.promoteReview(await this.promoteAdmin(restored, phone), phone);
       }
-      return this.promoteAdmin(existing, phone);
+      return this.promoteReview(await this.promoteAdmin(existing, phone), phone);
     }
     const admin = this.isAdminPhone(phone);
+    const review = isReviewPhone(phone);
     try {
       return await this.prisma.user.create({
         data: {
@@ -110,7 +122,8 @@ export class PhoneAuthService {
           phone,
           locale: Locale.ZH_HK,
           role: admin ? UserRole.ADMIN : UserRole.USER,
-          registeredAt: admin ? new Date() : null,
+          registeredAt: admin || review ? new Date() : null,
+          ...(review ? { planTier: PlanTier.INTERNAL, displayName: "App Review" } : {}),
         },
       });
     } catch (error) {
@@ -118,11 +131,11 @@ export class PhoneAuthService {
       const raced = await this.prisma.user.findUnique({ where: { phone } });
       if (!raced || raced.status === "DELETED") throw new AppError(ErrorCode.AUTH_INVALID);
       if (raced.status === "SUSPENDED") throw new AppError(ErrorCode.USER_SUSPENDED);
-      return this.promoteAdmin(raced, phone);
+      return this.promoteReview(await this.promoteAdmin(raced, phone), phone);
     }
   }
 
-  private async replacePhoneCode(phone: string, code: string, now: Date): Promise<void> {
+  private async replacePhoneCode(phone: string, code: string, now: Date, ttlMs = CODE_TTL_MS): Promise<void> {
     await this.prisma.phoneCode.updateMany({
       where: { phone, usedAt: null },
       data: { usedAt: now },
@@ -132,7 +145,7 @@ export class PhoneAuthService {
         id: createId(),
         phone,
         codeHash: hashCode(phone, code, this.env.jwtAccessSecret),
-        expiresAt: new Date(now.getTime() + CODE_TTL_MS),
+        expiresAt: new Date(now.getTime() + ttlMs),
       },
     });
   }
@@ -157,6 +170,27 @@ export class PhoneAuthService {
       data: {
         role: UserRole.ADMIN,
         registeredAt: user.registeredAt ?? new Date(),
+      },
+    });
+  }
+
+  private async promoteReview(user: User, phone: string): Promise<User> {
+    if (!isReviewPhone(phone)) return user;
+    if (
+      user.role === UserRole.USER &&
+      user.registeredAt &&
+      user.planTier === PlanTier.INTERNAL &&
+      user.displayName === "App Review"
+    ) {
+      return user;
+    }
+    return this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        role: UserRole.USER,
+        registeredAt: user.registeredAt ?? new Date(),
+        planTier: PlanTier.INTERNAL,
+        displayName: user.displayName ?? "App Review",
       },
     });
   }
