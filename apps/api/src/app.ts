@@ -12,6 +12,7 @@ import { messageRoutes } from "./modules/chat/controllers/message.controller";
 import { uploadRoutes } from "./modules/chat/controllers/upload.controller";
 import { publicCatalogRoutes } from "./modules/catalog/controllers/public-catalog.controller";
 import { userRoutes } from "./modules/user/user.controller";
+import { legalRoutes } from "./modules/legal/legal.controller";
 import { createContext, type AppContext } from "./context";
 
 export async function buildApp(options?: { ctx?: AppContext }): Promise<FastifyInstance> {
@@ -42,6 +43,7 @@ export async function buildApp(options?: { ctx?: AppContext }): Promise<FastifyI
     nameSpace: "spring-rl:",
   });
   app.get("/health", async () => ({ ok: true }));
+  await app.register(legalRoutes);
   await app.register(authRoutes);
   await app.register(userRoutes);
   await app.register(publicCatalogRoutes);

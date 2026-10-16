@@ -9,6 +9,8 @@ const UNSIGNED_JWT =
 
 const PUBLIC_GET = [
   "/health",
+  "/support",
+  "/privacy",
   "/v1/flags",
   "/v1/limits",
   "/v1/copy",
