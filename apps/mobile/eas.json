@@ -38,6 +38,18 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://spring.gwgwgroup-it.com"
       }
+    },
+    "production-android": {
+      "extends": "production",
+      "credentialsSource": "local"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "gatherwealthgatherwisdom.it@gmail.com",
+        "appleTeamId": "9A49XA5Y45"
+      }
     }
   }
 }

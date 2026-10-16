@@ -11,6 +11,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.gwgwgroup.spring",
       "buildNumber": "1",
+      "appleTeamId": "9A49XA5Y45",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "智泉用相機影相，方便你問圖。",

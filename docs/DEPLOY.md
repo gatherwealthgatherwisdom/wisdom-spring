@@ -176,11 +176,11 @@ eas build --platform ios --profile preview-ios
 
 ```bash
 cd apps/mobile
-eas build --platform android --profile production
+eas build --platform android --profile production-android
 eas build --platform ios --profile production
 ```
 
-Android preview 用本機 `credentials.json`（gitignore）簽名。production AAB 用 EAS 代管 upload key（Play App Signing）。iOS `preview-ios` 係 simulator 包；production IPA 要 Apple Distribution 憑證。下載完自己喺 Play Console／App Store Connect 上傳；唔好 `eas submit` 除非明確叫。生產推送打 Expo Push API；`EXPO_ACCESS_TOKEN` 可選。
+Android preview 同 production AAB 都用本機 `credentials.json`（gitignore）嘅 upload key。iOS `preview-ios` 係 simulator 包；production IPA 要 Apple Distribution 憑證（EAS remote）。下載完自己喺 Play Console／App Store Connect 上傳；唔好 `eas submit` 除非明確叫。生產推送打 Expo Push API；`EXPO_ACCESS_TOKEN` 可選。
 
 Admin 後台 OTP 走 App 收件箱，唔走短訊。首次要用手機 App 以短訊登入 `ADMIN_PHONE` 並允許通知，之後先喺 `https://admin.spring.gwgwgroup-it.com` 收 OTP。
 
