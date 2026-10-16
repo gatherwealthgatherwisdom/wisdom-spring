@@ -15,6 +15,7 @@ import { usePalette } from "../shared/theme";
 import { LoadingScreen } from "./LoadingScreen";
 import { MainTabs } from "./MainTabs";
 import { navigationRef } from "./ref";
+import { linking } from "./linking";
 import { openPendingPushChat } from "../shared/lib/push";
 import type { AppStackParamList } from "./types";
 
@@ -52,7 +53,7 @@ export function RootNavigation() {
     },
   };
   return (
-    <NavigationContainer ref={navigationRef} theme={theme} onReady={() => void openPendingPushChat()}>
+    <NavigationContainer ref={navigationRef} linking={linking} theme={theme} onReady={() => void openPendingPushChat()}>
       <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="Chat" component={ChatScreen} />
